@@ -20,7 +20,7 @@ ssh "$HOST" "test -f '$APP_DIR/.env'" || { echo "Brak $APP_DIR/.env na serwerze 
 
 echo "→ wysyłanie kodu do $HOST:$APP_DIR"
 rsync -az --delete \
-  --exclude '.git' --exclude 'node_modules' --exclude '.env' --exclude '/data' --exclude '/public' \
+  --exclude '.git' --exclude 'node_modules' --exclude '.env' --exclude '/data' --exclude '/public' --exclude '/tmp' \
   --exclude '.DS_Store' --exclude '.claude' \
   ./ "$HOST:$APP_DIR/"
 

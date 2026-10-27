@@ -1,0 +1,53 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <h1>Importuj użytkowników z SZO</h1>
+  <a class="btn btn-secondary" href="/users">Wróć do użytkowników</a>
+</div>
+
+<% if (!enabled) { %>
+  <div class="note-box">
+    <p>Import z SZO nie jest skonfigurowany. Aby go włączyć:</p>
+    <ol>
+      <li>w SZO (Zarządzaj API) utwórz klucz API z uprawnieniem <strong>Tajemniczy Klient — lista użytkowników</strong> (<code>audytor:users</code>),</li>
+      <li>wpisz go w pliku <code>.env</code> aplikacji jako <code>SZO_API_KEY</code> i zrestartuj stronę.</li>
+    </ol>
+  </div>
+<% } else if (error) { %>
+  <div class="error-summary" role="alert"><%= error %></div>
+<% } else { %>
+  <p class="muted">Lista zawiera aktywne konta SZO z uprawnieniem „Tajemniczy Klient”. Nowa osoba dostaje wybraną rolę; po pierwszym logowaniu przez SZO trafia na to samo konto. Konta już zaimportowane lub zalogowane wcześniej są oznaczone i nie można ich zaznaczyć.</p>
+  <% const available = people.filter((p) => !p.imported); %>
+  <% if (!people.length) { %>
+    <p>SZO nie zwróciło żadnych kont z uprawnieniem do aplikacji. Nadaj uprawnienie osobom w panelu Użytkownicy w SZO.</p>
+  <% } else { %>
+    <form method="post" action="/users/import">
+      <div class="table-wrap"><table>
+        <caption class="sr-only">Konta SZO do zaimportowania</caption>
+        <thead><tr>
+          <th scope="col">
+            <% if (available.length) { %><input type="checkbox" id="pick-all" data-select-all="pick"><label for="pick-all" class="sr-only">Zaznacz wszystkie dostępne osoby</label><% } else { %><span class="sr-only">Wybór</span><% } %>
+          </th>
+          <th scope="col">Imię i nazwisko</th><th scope="col">E-mail</th><th scope="col">Rola w aplikacji</th><th scope="col">Stan</th>
+        </tr></thead>
+        <tbody>
+        <% for (const p of people) { %>
+          <tr>
+            <td><input type="checkbox" id="pick-<%= p.id %>" name="pick" value="<%= p.id %>" data-group="pick"<% if (p.imported) { %> disabled<% } %>></td>
+            <th scope="row"><label for="pick-<%= p.id %>"><%= p.name %></label></th>
+            <td><%= p.email %></td>
+            <td>
+              <label class="sr-only" for="role-<%= p.id %>">Rola: <%= p.name %></label>
+              <select id="role-<%= p.id %>" name="role_<%= p.id %>"<% if (p.imported) { %> disabled<% } %>>
+                <% for (const [v, l] of Object.entries(roleLabels)) { %><option value="<%= v %>"<% if (v === defaultRole) { %> selected<% } %>><%= l %></option><% } %>
+              </select>
+            </td>
+            <td><%= p.imported ? 'Już w aplikacji' : 'Do zaimportowania' %></td>
+          </tr>
+        <% } %>
+        </tbody>
+      </table></div>
+      <% if (available.length) { %><button type="submit">Importuj zaznaczone</button><% } else { %><p>Wszystkie osoby z SZO są już w aplikacji.</p><% } %>
+    </form>
+  <% } %>
+<% } %>
+<%- include('../partials/footer') %>

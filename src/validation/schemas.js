@@ -112,6 +112,9 @@ const officeDetailsSchema = z.object({
 
 const officeQuestionSchema = criterionSchema.omit({ area: true });
 
+/** Import z SZO: zaznaczone id (`pick`) i role per osoba (`role_<id>`) – id i dane osób i tak są weryfikowane w SZO. */
+const importSchema = z.object({ pick: idList });
+
 const idParam = z.coerce.number().int().positive();
 
 /** Zwraca { ok, data, errors } gdzie errors to mapa pole → komunikat (pierwszy błąd pola). */
@@ -128,5 +131,5 @@ function parseForm(schema, body) {
 
 module.exports = {
   objectSchema, criterionSchema, scenarioSchema, auditCreateSchema, answersSchema,
-  reviewSchema, returnSchema, userUpdateSchema, officeReviewSchema, scenarioAssignSchema, officeDetailsSchema, officeQuestionSchema, idParam, parseForm,
+  reviewSchema, returnSchema, userUpdateSchema, officeReviewSchema, scenarioAssignSchema, officeDetailsSchema, officeQuestionSchema, importSchema, idParam, parseForm,
 };

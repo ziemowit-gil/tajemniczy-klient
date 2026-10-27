@@ -55,6 +55,10 @@ Nazwy pól tokenu ustawiasz w `SZO_CLAIM_*`. Role z SZO mapuje `SZO_ROLE_MAP`, n
 
 > **Założenie:** format tokenu i endpointu SZO nie był dostępny przy tworzeniu aplikacji, dlatego pola są w pełni konfigurowalne. Przed wdrożeniem dopasuj `SZO_CLAIM_*`, `SZO_ROLE_MAP` i tryb do rzeczywistego SZO.
 
+## Import użytkowników z SZO
+
+W panelu **Użytkownicy → Importuj z SZO** administrator wybiera osoby z SZO i nadaje im role, zamiast czekać na ich pierwsze logowanie. Lista pochodzi z endpointu SZO `api/v1/audytor_users.php` (aktywne konta z uprawnieniem „Tajemniczy Klient”, tylko id, imię i nazwisko, e-mail). Dane osób są zawsze pobierane z SZO przy zapisie, nie z formularza, a konto ma ten sam identyfikator (`szo:<id>`) co przy logowaniu, więc po pierwszym logowaniu osoba trafia na zaimportowane konto. Wymaga klucza API z uprawnieniem `audytor:users` w `SZO_API_KEY`.
+
 ## Role i uprawnienia
 
 - **Administrator**: obiekty, kryteria, scenariusze, użytkownicy, przydzielanie audytów; może też zatwierdzać.
@@ -91,6 +95,7 @@ Wiadomości są **wyłącznie czystym tekstem** (bez HTML) i dotyczą: przydzia�
 - Zdarzenia trafiają do **kolejki w bazie**; wysyłka jest osobna. Nieudane próby są ponawiane (do 5 razy, rosnące opóźnienie), a awaria SMTP nie blokuje pracy w aplikacji.
 - `MAIL_MODE`: `off` (domyślnie), `log` (konsola, do testów ręcznych), `smtp`. Przy włączonych powiadomieniach wymagane jest `APP_URL`.
 - **Cron:** `npm run notify` (`node scripts/notify.js`) wysyła przypomnienia i opróżnia kolejkę. Na hostingu, który usypia aplikację po braku ruchu, uruchamiaj go co kilka minut. Równoległe procesy nie wysyłają tej samej wiadomości dwa razy.
+- **Włączanie na serwerze:** w `.env` ustaw `MAIL_MODE=smtp`, `MAIL_FROM` (adres nadawcy, z którego skrzynka ma prawo wysyłać) oraz `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` i zrestartuj stronę (`devil www restart`). Test wysyłki: `node -e "process.loadEnvFile('.env');const {loadConfig}=require('./src/config');require('./src/services/mailer').createMailer(loadConfig().mail).send({to:'adres@example.pl',subject:'Test',text:'Test'}).then(()=>console.log('wysłano'),e=>console.log('błąd:',e.message))"`. Najpierw można ustawić `MAIL_MODE=log`, żeby zobaczyć treść wiadomości w logach bez wysyłania.
 - Każdy użytkownik może wyłączyć powiadomienia w **Moje konto**. Pomijani są użytkownicy bez adresu e-mail i konta nieaktywne.
 
 ## Statystyki

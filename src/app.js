@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 
 const { openDatabase } = require('./db');
 const { createSzoClient } = require('./services/szoAuth');
+const { createSzoDirectory } = require('./services/szoDirectory');
 const { createSzoPkceClient } = require('./services/szoPkce');
 const { createSessionService } = require('./services/session');
 const { createUsersService } = require('./services/users');
@@ -54,6 +55,7 @@ function createApp(config, { db = openDatabase(config.databasePath), szoClient, 
   const office = createOfficeReviewsService(db, { objects, users, snapshots });
   const szo = szoClient || createSzoClient(config.szo);
   const szoPkce = createSzoPkceClient(config, { fetchImpl });
+  const szoDirectory = createSzoDirectory(config, { fetchImpl });
   const sessions = createSessionService(config);
   const stats = createStatsService(db, { objects, reports, office, audits });
   const history = createHistoryService(db);
@@ -87,7 +89,7 @@ function createApp(config, { db = openDatabase(config.databasePath), szoClient, 
   app.use(buildRouter({
     config,
     auth: createAuthController({ config, szo, szoPkce, users, sessions, notifier }),
-    admin: createAdminController({ objects, catalog, users }),
+    admin: createAdminController({ objects, catalog, users, szoDirectory }),
     auditsCtl: createAuditsController({ audits, objects, users, catalog, attachments, reports, history, notifier }),
     reportsCtl: createReportsController({ reports, objects, audits }),
     statsCtl: createStatsController({ stats }),

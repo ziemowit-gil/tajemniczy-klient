@@ -50,6 +50,8 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, 
 
   /* --- użytkownicy --- */
   r.get('/users', requireRole(ADMIN), admin.usersIndex);
+  r.get('/users/import', requireRole(ADMIN), admin.usersImportForm);
+  r.post('/users/import', requireRole(ADMIN), admin.usersImport);
   r.post('/users/:id', requireRole(ADMIN), admin.userUpdate);
 
   /* --- audyty --- */

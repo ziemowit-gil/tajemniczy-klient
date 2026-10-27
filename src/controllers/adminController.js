@@ -3,12 +3,13 @@ const {
   OBJECT_TYPES, AREA_LABELS, SCENARIO_AREAS, SCENARIO_USAGE, DISABILITIES, ANSWER_TYPE_LABELS, ROLES, ROLE_LABELS,
 } = require('../domain/constants');
 const {
-  objectSchema, criterionSchema, scenarioSchema, userUpdateSchema, parseForm,
+  objectSchema, criterionSchema, scenarioSchema, userUpdateSchema, importSchema, parseForm,
 } = require('../validation/schemas');
 const { STATUS_LABELS } = require('../domain/workflow');
+const { DirectoryError } = require('../services/szoDirectory');
 const { paramId, httpError } = require('./helpers');
 
-function createAdminController({ objects, catalog, users }) {
+function createAdminController({ objects, catalog, users, szoDirectory }) {
   const objectFormData = (extra = {}) => ({
     title: 'Obiekt', objectTypes: OBJECT_TYPES, errors: {}, values: {}, object: null,
     coordinators: users.listByRole(ROLES.COORDINATOR, ROLES.ADMIN), parents: objects.parentOptions(), ...extra,
@@ -167,7 +168,52 @@ function createAdminController({ objects, catalog, users }) {
     },
 
     /* ---------- Użytkownicy ---------- */
-    usersIndex: (req, res) => res.render('users/index', { title: 'Użytkownicy', users: users.list(), roleLabels: ROLE_LABELS }),
+    usersIndex: (req, res) => res.render('users/index', { title: 'Użytkownicy', users: users.list(), roleLabels: ROLE_LABELS, importEnabled: szoDirectory.enabled }),
+
+    /** Import osób z SZO: lista kont z uprawnieniem „Tajemniczy Klient”, których jeszcze nie ma w aplikacji. */
+    async usersImportForm(req, res) {
+      const view = { title: 'Importuj użytkowników z SZO', roleLabels: ROLE_LABELS, enabled: szoDirectory.enabled, people: [], error: null, defaultRole: ROLES.AUDITOR };
+      if (!szoDirectory.enabled) return res.render('users/import', view);
+      try {
+        const existing = users.existingExternalIds();
+        view.people = (await szoDirectory.listUsers()).map((p) => ({ ...p, imported: existing.has(`szo:${p.id}`) }));
+      } catch (err) {
+        if (!(err instanceof DirectoryError)) throw err;
+        view.error = err.message;
+        res.status(err.status === 400 ? 200 : 502);
+      }
+      return res.render('users/import', view);
+    },
+
+    /**
+     * Zapis importu. Dane osób (imię, e-mail) pochodzą z ponownego zapytania do SZO, nie z formularza,
+     * więc nie da się podstawić cudzego adresu; z formularza bierzemy tylko wybór osób i ich role.
+     */
+    async usersImport(req, res) {
+      const { data } = parseForm(importSchema, req.body);
+      const picked = new Set(data?.pick ?? []);
+      if (!picked.size) { res.flash('error', 'Zaznacz przynajmniej jedną osobę.'); return res.redirect(303, '/users/import'); }
+      let people;
+      try { people = await szoDirectory.listUsers(); } catch (err) {
+        if (!(err instanceof DirectoryError)) throw err;
+        res.flash('error', err.message);
+        return res.redirect(303, '/users/import');
+      }
+      const existing = users.existingExternalIds();
+      let created = 0; let skipped = 0;
+      for (const person of people) {
+        if (!picked.has(person.id)) continue;
+        if (existing.has(`szo:${person.id}`)) { skipped += 1; continue; }
+        const role = Object.values(ROLES).includes(req.body[`role_${person.id}`]) ? req.body[`role_${person.id}`] : ROLES.AUDITOR;
+        users.upsertFromIdentity({ externalId: `szo:${person.id}`, name: person.name, email: person.email, role });
+        created += 1;
+      }
+      const missing = [...picked].filter((id) => !people.some((p) => p.id === id)).length;
+      res.flash(created ? 'success' : 'error', created
+        ? `Zaimportowano osób: ${created}.${skipped ? ` Pominięto już istniejące: ${skipped}.` : ''}${missing ? ` Pominięto osoby, których SZO nie zwróciło: ${missing}.` : ''}`
+        : 'Nie zaimportowano nikogo (osoby są już w aplikacji albo SZO ich nie zwróciło).');
+      return res.redirect(303, '/users');
+    },
     userUpdate(req, res) {
       const id = paramId(req);
       const target = users.findById(id);

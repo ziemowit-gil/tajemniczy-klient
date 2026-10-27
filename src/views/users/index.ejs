@@ -1,5 +1,8 @@
 <%- include('../partials/header') %>
-<h1>Użytkownicy</h1>
+<div class="page-head">
+  <h1>Użytkownicy</h1>
+  <% if (importEnabled) { %><a class="btn" href="/users/import">Importuj z SZO</a><% } %>
+</div>
 <p class="muted">Konta powstają automatycznie przy pierwszym logowaniu przez SZO. Jeśli SZO przekazuje rolę w tokenie, ma ona pierwszeństwo przy każdym logowaniu; w przeciwnym razie obowiązuje rola ustawiona tutaj.</p>
 <div class="table-wrap"><table>
   <caption class="sr-only">Lista użytkowników</caption>

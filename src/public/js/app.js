@@ -11,3 +11,10 @@ window.addEventListener('DOMContentLoaded', () => {
     alert.focus();
   }
 });
+
+// „Zaznacz wszystkie”: checkbox z data-select-all steruje polami o tej samej nazwie grupy (progresywne rozszerzenie).
+document.addEventListener('change', (event) => {
+  const master = event.target.closest?.('[data-select-all]');
+  if (!master) return;
+  for (const box of document.querySelectorAll(`input[type="checkbox"][data-group="${master.dataset.selectAll}"]:not(:disabled)`)) box.checked = master.checked;
+});
