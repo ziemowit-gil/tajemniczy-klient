@@ -112,7 +112,17 @@ function createAdminController({ objects, catalog, users, szoDirectory }) {
       const list = catalog.scenarios.list()
         .filter((s) => !usage || s.usage === usage)
         .filter((s) => active === '' || String(s.active) === active);
-      res.render('scenarios/index', { title: 'Scenariusze', scenarios: list, filter: { usage, active }, ...scenarioLabels });
+      res.render('scenarios/index', { title: 'Scenariusze', scenarios: list, filter: { usage, active }, packs: catalog.scenarios.packs(), ...scenarioLabels });
+    },
+    /** Import przykładowej paczki scenariuszy (np. dla uczelni); istniejące tytuły są pomijane, nic nie jest nadpisywane. */
+    scenariosImportPack(req, res) {
+      const key = String(req.body.pack || '');
+      if (!catalog.scenarios.packs().some((p) => p.key === key)) throw httpError(404, 'Nie znaleziono paczki scenariuszy.');
+      const { added, skipped } = catalog.scenarios.importPack(key);
+      res.flash(added.length ? 'success' : 'info', added.length
+        ? `Zaimportowano scenariuszy: ${added.length}.${skipped.length ? ` Pominięto istniejące: ${skipped.length}.` : ''} Możesz je edytować, wyłączyć lub usunąć.`
+        : 'Wszystkie scenariusze z tej paczki już istnieją — nic nie zaimportowano.');
+      res.redirect(303, '/scenarios');
     },
     scenarioShow(req, res) {
       const s = catalog.scenarios.get(paramId(req));

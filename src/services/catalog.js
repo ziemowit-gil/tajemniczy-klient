@@ -1,4 +1,5 @@
 const { transaction } = require('../db');
+const { PACKS, importPack } = require('../db/scenarioPacks');
 
 /** Kryteria audytu i scenariusze „Tajemniczego Klienta”. */
 function createCatalogService(db) {
@@ -93,6 +94,14 @@ function createCatalogService(db) {
         steps: scenarios.steps(id).map((s) => s.text), active: false,
       });
     },
+
+    /** Paczki przykładowych scenariuszy z liczbą pozycji jeszcze niezaimportowanych (porównanie po tytule). */
+    packs: () => Object.entries(PACKS).map(([key, pack]) => {
+      const exists = db.prepare('SELECT 1 FROM scenarios WHERE title = ? COLLATE NOCASE');
+      const missing = pack.scenarios.filter((sc) => !exists.get(sc.title)).length;
+      return { key, label: pack.label, description: pack.description, total: pack.scenarios.length, missing };
+    }),
+    importPack: (key) => importPack(db, key),
 
     inUse: (id) => db.prepare('SELECT 1 FROM audit_scenarios WHERE scenario_id = ?').get(id) !== undefined
       || db.prepare('SELECT 1 FROM office_review_scenarios WHERE scenario_id = ?').get(id) !== undefined,

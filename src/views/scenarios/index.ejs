@@ -1,6 +1,24 @@
 <%- include('../partials/header') %>
 <div class="page-head"><h1>Scenariusze „Tajemniczego Klienta”</h1><a class="btn" href="/scenarios/new">Dodaj scenariusz</a></div>
 
+<% if (packs.length) { %>
+<section aria-labelledby="packs-h" class="note-box">
+  <h2 id="packs-h">Przykładowe scenariusze</h2>
+  <% for (const p of packs) { %>
+    <form method="post" action="/scenarios/import-pack" class="pack-form">
+      <input type="hidden" name="pack" value="<%= p.key %>">
+      <p><strong><%= p.label %></strong> (<%= p.total %> scenariuszy). <%= p.description %></p>
+      <% if (p.missing) { %>
+        <p class="muted">Do zaimportowania: <%= p.missing %>. Scenariusze o tych samych tytułach, które już masz, zostaną pominięte.</p>
+        <button type="submit">Importuj do słownika</button>
+      <% } else { %>
+        <p class="muted">Wszystkie scenariusze z tej paczki są już w słowniku.</p>
+      <% } %>
+    </form>
+  <% } %>
+</section>
+<% } %>
+
 <form method="get" action="/scenarios" class="actions filter-form">
   <div class="field-inline">
     <label for="f-usage">Dotyczy</label>

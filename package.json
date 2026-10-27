@@ -10,7 +10,8 @@
     "test": "node --test \"test/**/*.test.js\"",
     "demo:seed": "node --env-file-if-exists=.env scripts/demo.js",
     "demo": "npm run demo:seed && npm start",
-    "notify": "node --env-file-if-exists=.env scripts/notify.js"
+    "notify": "node --env-file-if-exists=.env scripts/notify.js",
+    "scenarios:import": "node --env-file-if-exists=.env scripts/import-scenarios.js"
   },
   "type": "commonjs",
   "dependencies": {

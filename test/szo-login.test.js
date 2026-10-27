@@ -222,3 +222,19 @@ test('konfiguracja trybu szo wymaga SZO_BASE_URL i APP_URL', () => {
   const cfg = loadConfig({ ...env, SZO_BASE_URL: 'https://szo.example.pl', APP_URL: 'https://a.example.pl', ADMIN_EMAILS: ' A@x.pl,b@x.pl ,, ' });
   assert.deepEqual(cfg.szo.adminEmails, ['a@x.pl', 'b@x.pl']);
 });
+
+test('nowa osoba logująca się pierwszy raz przez SZO dostaje rolę audytora; administratora nie da się ustawić jako domyślnego', async () => {
+  reset();
+  const b = new Browser();
+  const { params } = await b.start();
+  szoMock.tokenResponse = ok({ id: 900, name: 'Nowa Osoba', email: 'nowa@example.pl' });
+  await b.get(`/auth/szo/callback?code=${code()}&state=${params.state}`);
+  assert.equal(db.prepare(`SELECT role FROM users WHERE external_id = 'szo:900'`).get().role, 'auditor');
+  assert.equal(config.szo.defaultRole, 'auditor', 'domyślnie audytor, bez ustawiania SZO_DEFAULT_ROLE');
+  // pierwszy login nie daje dostępu do panelu administratora
+  assert.equal((await b.get('/users')).status, 403);
+  assert.equal((await b.get('/audits')).status, 200);
+
+  assert.throws(() => loadConfig({ NODE_ENV: 'test', SZO_AUTH_MODE: 'dev', SZO_DEFAULT_ROLE: 'administrator' }), /dozwolone auditor lub coordinator/);
+  assert.equal(loadConfig({ NODE_ENV: 'test', SZO_AUTH_MODE: 'dev', SZO_DEFAULT_ROLE: 'coordinator' }).szo.defaultRole, 'coordinator');
+});

@@ -46,7 +46,9 @@ const envSchema = z.object({
   SMTP_USER: optional(z.string()),
   SMTP_PASS: optional(z.string()),
 
-  SZO_DEFAULT_ROLE: z.enum(['administrator', 'auditor', 'coordinator']).default('auditor'),
+  // Rola nowego konta bez roli z SZO. Administratora celowo nie można tu ustawić (administratorów wskazuje ADMIN_EMAILS
+  // albo panel Użytkownicy), żeby błąd w konfiguracji nie dawał pełnych uprawnień każdemu zalogowanemu.
+  SZO_DEFAULT_ROLE: z.enum(['auditor', 'coordinator'], { error: 'SZO_DEFAULT_ROLE: dozwolone auditor lub coordinator' }).default('auditor'),
 });
 
 function loadConfig(env = process.env) {
