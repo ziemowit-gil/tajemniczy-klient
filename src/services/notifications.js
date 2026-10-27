@@ -164,7 +164,7 @@ function createNotifier(db, { config, mailer, users, objects }) {
           stats.sent += 1;
         } catch (err) {
           const message = String(err.message || err).slice(0, 500);
-          if (n.attempts >= MAX_ATTEMPTS) {
+          if (err.permanent || n.attempts >= MAX_ATTEMPTS) {
             db.prepare(`UPDATE notifications SET status = 'failed', last_error = ? WHERE id = ?`).run(message, id);
             stats.failed += 1;
           } else {

@@ -36,7 +36,7 @@ const envSchema = z.object({
   SZO_CLAIM_EMAIL: z.string().default('email'),
   SZO_CLAIM_ROLE: z.string().default('role'),
   SZO_ROLE_MAP: z.string().default('{}'),
-  MAIL_MODE: z.enum(['off', 'log', 'smtp']).default('off'),
+  MAIL_MODE: z.enum(['off', 'log', 'smtp', 'szo']).default('off'),
   MAIL_FROM: optional(z.string().max(200)),
   MAIL_AUTOFLUSH: z.enum(['true', 'false']).default('true'),
   MAIL_REMINDER_DAYS: z.coerce.number().int().min(1).max(30).default(3),
@@ -65,6 +65,7 @@ function loadConfig(env = process.env) {
     problems.push('Tryb jwt wymaga SZO_JWT_SECRET albo SZO_JWT_PUBLIC_KEY');
   }
   if (e.MAIL_MODE === 'smtp' && (!e.SMTP_HOST || !e.MAIL_FROM)) problems.push('Tryb smtp wymaga SMTP_HOST i MAIL_FROM');
+  if (e.MAIL_MODE === 'szo' && (!e.SZO_BASE_URL || !e.SZO_API_KEY)) problems.push('Tryb szo (wysyłka przez SZO / Microsoft Graph) wymaga SZO_BASE_URL i SZO_API_KEY');
   if (e.MAIL_MODE !== 'off' && !e.APP_URL) problems.push('Powiadomienia e-mail wymagają APP_URL (odnośniki w wiadomościach)');
   if (e.SZO_AUTH_MODE === 'szo' && !e.SZO_BASE_URL) problems.push('Tryb szo wymaga SZO_BASE_URL (np. https://szo.feer.org.pl)');
   if (e.SZO_AUTH_MODE === 'szo' && !e.APP_URL) problems.push('Tryb szo wymaga APP_URL (adres powrotu z SZO)');

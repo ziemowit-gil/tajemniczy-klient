@@ -37,7 +37,7 @@ const { pct, answerLabel } = require('./services/exporters');
 const dateFmt = new Intl.DateTimeFormat('pl-PL', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Warsaw' });
 const dayFmt = new Intl.DateTimeFormat('pl-PL', { dateStyle: 'long', timeZone: 'UTC' });
 
-function createApp(config, { db = openDatabase(config.databasePath), szoClient, mailer = createMailer(config.mail), fetchImpl } = {}) {
+function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), szoClient, mailer = createMailer(config.mail, { szo: config.szo, fetchImpl }) } = {}) {
   const app = express();
   app.disable('x-powered-by');
   if (config.trustProxy) app.set('trust proxy', 1);
