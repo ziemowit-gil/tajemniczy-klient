@@ -91,6 +91,27 @@ function officeReportCsv(report) {
   return BOM + csvRows(rows);
 }
 
+const signed = (n) => (n === null || n === undefined ? '' : `${n > 0 ? '+' : ''}${String(n).replace('.', ',')}`);
+
+function rankingCsv(rows) {
+  return BOM + csvRows([
+    ['Ranking obiektów (zatwierdzone audyty i oceny)'],
+    [],
+    ['Miejsce', 'Obiekt', 'Zatwierdzone audyty', 'Wynik ogólny', AREA_LABELS.OZN, AREA_LABELS.KSZTALCENIE, 'Oceny „Dostępność kształcenia”', 'Wynik „Dostępność kształcenia”'],
+    ...rows.map((r) => [r.rank ?? '', r.name, r.audits.count, pct(r.audits.total), pct(r.audits.ozn), pct(r.audits.edu), r.education.count, pct(r.education.percent)]),
+  ]);
+}
+
+function trendCsv(trend) {
+  const rows = [['Trend kwartalny (zatwierdzone audyty i oceny)'], [], ['Obiekt', 'Okres', 'Audyty', 'Wynik ogólny', AREA_LABELS.OZN, AREA_LABELS.KSZTALCENIE, 'Zmiana wyniku ogólnego (p.p.)', 'Oceny „Dostępność kształcenia”', 'Wynik „Dostępność kształcenia”', 'Zmiana (p.p.)']];
+  for (const o of trend) {
+    for (const p of o.periods) {
+      rows.push([o.name, p.period, p.audits.count, pct(p.audits.total), pct(p.audits.ozn), pct(p.audits.edu), signed(p.change.audits), p.education.count, pct(p.education.percent), signed(p.change.education)]);
+    }
+  }
+  return BOM + csvRows(rows);
+}
+
 /* ---------- PDF ---------- */
 
 const COLORS = { text: '#1D1D1A', muted: '#555555', primary: '#1457D1', track: '#E4E7EC' };
@@ -238,4 +259,4 @@ function objectPdf(report) {
   return doc;
 }
 
-module.exports = { auditCsv, objectCsv, officeReportCsv, auditPdf, objectPdf, csvCell, answerLabel, pct };
+module.exports = { auditCsv, objectCsv, officeReportCsv, rankingCsv, trendCsv, signed, auditPdf, objectPdf, csvCell, answerLabel, pct };

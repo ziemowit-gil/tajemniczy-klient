@@ -14,7 +14,7 @@ if (config.isProd) {
 
 const { db, services } = createApp(config);
 seedCatalog(db);
-const { users, objects, audits, catalog } = services;
+const { users, objects, audits, catalog, history } = services;
 
 const person = (email, name, role) => users.upsertFromIdentity({ externalId: `dev:${email}`, name, email, role });
 const admin = person('admin@demo.local', 'Anna Administrator', 'administrator');
@@ -64,6 +64,9 @@ const auditScenarios = catalog.scenarios.list({ usage: 'audit' });
 const byTitle = (title) => auditScenarios.find((s) => s.title === title).id;
 const full = byTitle('Pełna ocena dostępności obiektu');
 
+/** Dziennik zdarzeń demo (usługi wywoływane bezpośrednio nie logują historii same). */
+const track = (id, actor, action, note = null) => history.log('audit', id, actor, action, note);
+
 /** Wypełnia audyt deterministycznie; `quality` 0–1 steruje odsetkiem wysokich ocen. */
 function fill(audit, quality) {
   const answers = {};
@@ -77,20 +80,31 @@ function fill(audit, quality) {
 
 // 1) zatwierdzony
 let a = audits.create({ objectId: building.id, auditorId: aud1.id, scenarioIds: [full], dueDate: '2026-09-30' }, admin.id);
+track(a.id, admin, 'assigned', 'Audytor: Ewa Audytorka.');
 a = fill(a, 0.75);
+track(a.id, aud1, 'started');
 audits.submit(audits.get(a.id), aud1);
+track(a.id, aud1, 'submitted');
 audits.approve(audits.get(a.id), coord, 'Zgodne z wymaganiami.');
+track(a.id, coord, 'approved', 'Zgodne z wymaganiami.');
 
 // 2) zatwierdzony – inny obiekt, żeby raport zbiorczy uczelni agregował kilka audytów
 a = audits.create({ objectId: faculty.id, auditorId: aud2.id, scenarioIds: [full], dueDate: '2026-10-15' }, admin.id);
+track(a.id, admin, 'assigned', 'Audytor: Piotr Tajemniczy.');
 a = fill(a, 0.4);
+track(a.id, aud2, 'started');
 audits.submit(audits.get(a.id), aud2);
+track(a.id, aud2, 'submitted');
 audits.approve(audits.get(a.id), coord, null);
+track(a.id, coord, 'approved');
 
 // 3) złożony – czeka na koordynatora
 a = audits.create({ objectId: uni.id, auditorId: aud1.id, scenarioIds: [full], dueDate: '2026-11-15' }, admin.id);
+track(a.id, admin, 'assigned', 'Audytor: Ewa Audytorka.');
 a = fill(a, 0.6);
+track(a.id, aud1, 'started');
 audits.submit(audits.get(a.id), aud1);
+track(a.id, aud1, 'submitted');
 
 // 4) w trakcie – wypełniony częściowo
 a = audits.create({ objectId: building.id, auditorId: aud2.id, scenarioIds: [byTitle('Proces kształcenia: wsparcie i egzaminy'), byTitle('Student niesłyszący lub słabosłyszący')], dueDate: '2026-12-01' }, admin.id);

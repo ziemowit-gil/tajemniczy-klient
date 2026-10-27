@@ -28,6 +28,7 @@ Dane demo: 2 uczelnie, wydział, budynek, 5 audytów w statusach Przypisany, W t
 |---|---|
 | `npm start` | serwer (wczytuje `.env`) |
 | `npm run dev` | serwer z automatycznym restartem |
+| `npm run notify` | cykl powiadomień: przypomnienia + wysyłka kolejki (dla crona) |
 | `npm run db:seed` | uzupełnia pustą bazę kryteriami i scenariuszami (robi to też start serwera) |
 | `npm run demo:seed` | dane demonstracyjne (tylko poza produkcją) |
 | `npm test` | testy jednostkowe i integracyjne |
@@ -73,6 +74,27 @@ Scenariusz ma: tytuł, **cel**, **personę** (rodzaj niepełnosprawności, w kt�
 - **Duplikowanie:** „Duplikuj” tworzy nieaktywny szkic w wersji 1 z kopią kroków.
 - **Podgląd** (`/scenarios/:id`): pełna treść oraz lista audytów i ocen używających scenariusza, z wersją użytą przy przypisaniu. Lista scenariuszy ma filtry (moduł, aktywność) i liczniki kroków oraz użyć.
 - Scenariusza użytego w audycie lub ocenie nie da się usunąć, można go tylko wyłączyć.
+
+## Załączniki
+
+Załączniki (JPEG, PNG, WebP, PDF) można dodawać do każdego kryterium audytu **i do każdego pytania w „Dostępności kształcenia”**. Typ jest sprawdzany także po sygnaturze pliku; pliki leżą poza katalogiem publicznym i są serwowane po autoryzacji. Autor może je usuwać do złożenia, a skasowanie oceny usuwa jej pliki z dysku.
+
+## Historia zmian
+
+Każdy audyt i ocena ma dziennik zdarzeń (kto, kiedy, co): przydział, rozpoczęcie, złożenie, zatwierdzenie, zwrot z uzasadnieniem, zmiana scenariuszy, dodanie i usunięcie załączników. Widać go na stronie audytu lub oceny. Wpisy dla danych sprzed wprowadzenia dziennika uzupełnia migracja na podstawie znaczników czasu.
+
+## Powiadomienia e-mail
+
+Wiadomości są **wyłącznie czystym tekstem** (bez HTML) i dotyczą: przydziału audytu lub oceny, zmiany scenariuszy, złożenia (do koordynatora obiektu, a gdy go brak do administratorów), zatwierdzenia i zwrotu (do audytora) oraz terminów audytu (na `MAIL_REMINDER_DAYS` dni przed, w dniu terminu i po jego przekroczeniu, każde tylko raz).
+
+- Zdarzenia trafiają do **kolejki w bazie**; wysyłka jest osobna. Nieudane próby są ponawiane (do 5 razy, rosnące opóźnienie), a awaria SMTP nie blokuje pracy w aplikacji.
+- `MAIL_MODE`: `off` (domyślnie), `log` (konsola, do testów ręcznych), `smtp`. Przy włączonych powiadomieniach wymagane jest `APP_URL`.
+- **Cron:** `npm run notify` (`node scripts/notify.js`) wysyła przypomnienia i opróżnia kolejkę. Na hostingu, który usypia aplikację po braku ruchu, uruchamiaj go co kilka minut. Równoległe procesy nie wysyłają tej samej wiadomości dwa razy.
+- Każdy użytkownik może wyłączyć powiadomienia w **Moje konto**. Pomijani są użytkownicy bez adresu e-mail i konta nieaktywne.
+
+## Statystyki
+
+Panel **Statystyki** (administrator i koordynator, w swoim zakresie): ranking obiektów najwyższego poziomu (miejsca ex aequo) oraz trendy kwartalne ze zmianą w punktach procentowych. Wyniki audytów obiektów i „Dostępności kształcenia” są pokazywane obok siebie, nie mieszane. Eksport: `/stats/ranking.csv` i `/stats/trend.csv`.
 
 ## Przepływ audytu
 

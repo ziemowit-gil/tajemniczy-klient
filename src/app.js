@@ -13,6 +13,10 @@ const { createAuditsService } = require('./services/audits');
 const { createAttachmentsService } = require('./services/attachments');
 const { createReportsService } = require('./services/reports');
 const { createScenarioSnapshots } = require('./services/scenarioSnapshots');
+const { createStatsService } = require('./services/stats');
+const { createHistoryService } = require('./services/history');
+const { createMailer } = require('./services/mailer');
+const { createNotifier } = require('./services/notifications');
 const { createOfficeReviewsService } = require('./services/officeReviews');
 
 const { attachUser, sameOriginOnly } = require('./middleware/auth');
@@ -22,6 +26,7 @@ const { createAdminController } = require('./controllers/adminController');
 const { createAuditsController } = require('./controllers/auditsController');
 const { createReportsController } = require('./controllers/reportsController');
 const { createOfficeController } = require('./controllers/officeController');
+const { createStatsController } = require('./controllers/statsController');
 const { buildRouter } = require('./routes');
 const { ROLE_LABELS, AREA_LABELS, OBJECT_TYPES } = require('./domain/constants');
 const { STATUS_LABELS } = require('./domain/workflow');
@@ -30,7 +35,7 @@ const { pct, answerLabel } = require('./services/exporters');
 const dateFmt = new Intl.DateTimeFormat('pl-PL', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Warsaw' });
 const dayFmt = new Intl.DateTimeFormat('pl-PL', { dateStyle: 'long', timeZone: 'UTC' });
 
-function createApp(config, { db = openDatabase(config.databasePath), szoClient } = {}) {
+function createApp(config, { db = openDatabase(config.databasePath), szoClient, mailer = createMailer(config.mail) } = {}) {
   const app = express();
   app.disable('x-powered-by');
   if (config.trustProxy) app.set('trust proxy', 1);
@@ -48,6 +53,9 @@ function createApp(config, { db = openDatabase(config.databasePath), szoClient }
   const office = createOfficeReviewsService(db, { objects, users, snapshots });
   const szo = szoClient || createSzoClient(config.szo);
   const sessions = createSessionService(config);
+  const stats = createStatsService(db, { objects, reports, office, audits });
+  const history = createHistoryService(db);
+  const notifier = createNotifier(db, { config, mailer, users, objects });
 
   /* --- globalne dane widoków --- */
   Object.assign(app.locals, {
@@ -76,11 +84,12 @@ function createApp(config, { db = openDatabase(config.databasePath), szoClient }
   /* --- routing --- */
   app.use(buildRouter({
     config,
-    auth: createAuthController({ config, szo, users, sessions }),
+    auth: createAuthController({ config, szo, users, sessions, notifier }),
     admin: createAdminController({ objects, catalog, users }),
-    auditsCtl: createAuditsController({ audits, objects, users, catalog, attachments, reports }),
+    auditsCtl: createAuditsController({ audits, objects, users, catalog, attachments, reports, history, notifier }),
     reportsCtl: createReportsController({ reports, objects, audits }),
-    officeCtl: createOfficeController({ office, objects, catalog, users }),
+    statsCtl: createStatsController({ stats }),
+    officeCtl: createOfficeController({ office, objects, catalog, users, attachments, history, notifier }),
     attachments,
   }));
 
@@ -100,7 +109,7 @@ function createApp(config, { db = openDatabase(config.databasePath), szoClient }
     return res.status(status).render('error', { title: 'Błąd', status, message });
   });
 
-  return { app, db, services: { users, objects, catalog, audits, attachments, reports, office, snapshots, sessions } };
+  return { app, db, services: { users, objects, catalog, audits, attachments, reports, office, snapshots, sessions, history, notifier, stats } };
 }
 
 module.exports = { createApp };

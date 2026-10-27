@@ -1,0 +1,22 @@
+<%# Historia zmian audytu lub oceny. Parametry: history (wiersze history_events), historyLabels. %>
+<section aria-labelledby="history-h" class="history">
+  <h2 id="history-h">Historia zmian</h2>
+  <% if (!history.length) { %>
+    <p class="muted">Brak zapisanych zdarzeń.</p>
+  <% } else { %>
+    <div class="table-wrap"><table>
+      <caption class="sr-only">Zdarzenia w kolejności chronologicznej</caption>
+      <thead><tr><th scope="col">Kiedy</th><th scope="col">Kto</th><th scope="col">Zdarzenie</th><th scope="col">Szczegóły</th></tr></thead>
+      <tbody>
+        <% for (const e of history) { %>
+          <tr>
+            <td><%= fmtDateTime(e.created_at) %></td>
+            <td><%= e.actor_name || 'System' %></td>
+            <th scope="row"><%= historyLabels[e.action] || e.action %></th>
+            <td><%= e.note || '—' %></td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table></div>
+  <% } %>
+</section>

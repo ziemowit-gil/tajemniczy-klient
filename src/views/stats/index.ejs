@@ -1,0 +1,69 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <h1>Statystyki</h1>
+  <div class="actions">
+    <a class="btn btn-secondary" href="/stats/ranking.csv">Pobierz ranking (CSV)</a>
+    <a class="btn btn-secondary" href="/stats/trend.csv">Pobierz trendy (CSV)</a>
+  </div>
+</div>
+<p class="muted">Wyniki ze <strong>zatwierdzonych</strong> audytów i ocen. Wyniki audytów obiektów i modułu „Dostępność kształcenia” są pokazane obok siebie i nigdy nie są łączone.</p>
+
+<section aria-labelledby="rank-h">
+  <h2 id="rank-h">Ranking obiektów</h2>
+  <% if (!ranking.length) { %><p>Brak danych.</p><% } else { %>
+  <div class="table-wrap"><table>
+    <caption class="sr-only">Ranking według wyniku ogólnego audytów obiektów</caption>
+    <thead><tr>
+      <th scope="col" class="num">Miejsce</th><th scope="col">Obiekt</th><th scope="col" class="num">Audyty</th><th scope="col" class="num">Wynik ogólny</th>
+      <th scope="col" class="num">OZN</th><th scope="col" class="num">Kształcenie</th>
+      <th scope="col" class="num">Oceny: dostępność kształcenia</th><th scope="col" class="num">Wynik: dostępność kształcenia</th>
+    </tr></thead>
+    <tbody>
+    <% for (const r of ranking) { %>
+      <tr>
+        <td class="num"><%= r.rank ?? '—' %></td>
+        <th scope="row"><a href="/reports/objects/<%= r.objectId %>"><%= r.name %></a></th>
+        <td class="num"><%= r.audits.count %></td>
+        <td class="num"><%= fmtPct(r.audits.total) %></td>
+        <td class="num"><%= fmtPct(r.audits.ozn) %></td>
+        <td class="num"><%= fmtPct(r.audits.edu) %></td>
+        <td class="num"><%= r.education.count %></td>
+        <td class="num"><%= fmtPct(r.education.percent) %></td>
+      </tr>
+    <% } %>
+    </tbody>
+  </table></div>
+  <% } %>
+</section>
+
+<section aria-labelledby="trend-h">
+  <h2 id="trend-h">Trendy kwartalne</h2>
+  <p class="muted">Wynik w danym kwartale (według daty zatwierdzenia) i zmiana w punktach procentowych względem poprzedniego kwartału z wynikiem.</p>
+  <% if (!trend.some((o) => o.periods.length)) { %><p>Brak zatwierdzonych audytów i ocen.</p><% } %>
+  <% for (const o of trend) { if (!o.periods.length) continue; %>
+    <div class="table-wrap"><table>
+      <caption><%= o.name %></caption>
+      <thead><tr>
+        <th scope="col">Okres</th><th scope="col" class="num">Audyty</th><th scope="col" class="num">Wynik ogólny</th><th scope="col" class="num">Zmiana (p.p.)</th>
+        <th scope="col" class="num">OZN</th><th scope="col" class="num">Kształcenie</th>
+        <th scope="col" class="num">Oceny: dostępność kształcenia</th><th scope="col" class="num">Wynik</th><th scope="col" class="num">Zmiana (p.p.)</th>
+      </tr></thead>
+      <tbody>
+      <% for (const p of o.periods) { %>
+        <tr>
+          <th scope="row"><%= p.period %></th>
+          <td class="num"><%= p.audits.count %></td>
+          <td class="num"><%= fmtPct(p.audits.total) %></td>
+          <td class="num"><%= signed(p.change.audits) || '—' %></td>
+          <td class="num"><%= fmtPct(p.audits.ozn) %></td>
+          <td class="num"><%= fmtPct(p.audits.edu) %></td>
+          <td class="num"><%= p.education.count %></td>
+          <td class="num"><%= fmtPct(p.education.percent) %></td>
+          <td class="num"><%= signed(p.change.education) || '—' %></td>
+        </tr>
+      <% } %>
+      </tbody>
+    </table></div>
+  <% } %>
+</section>
+<%- include('../partials/footer') %>

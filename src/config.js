@@ -33,6 +33,16 @@ const envSchema = z.object({
   SZO_CLAIM_EMAIL: z.string().default('email'),
   SZO_CLAIM_ROLE: z.string().default('role'),
   SZO_ROLE_MAP: z.string().default('{}'),
+  MAIL_MODE: z.enum(['off', 'log', 'smtp']).default('off'),
+  MAIL_FROM: optional(z.string().max(200)),
+  MAIL_AUTOFLUSH: z.enum(['true', 'false']).default('true'),
+  MAIL_REMINDER_DAYS: z.coerce.number().int().min(1).max(30).default(3),
+  SMTP_HOST: optional(z.string()),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  SMTP_SECURE: z.enum(['true', 'false']).default('false'),
+  SMTP_USER: optional(z.string()),
+  SMTP_PASS: optional(z.string()),
+
   SZO_DEFAULT_ROLE: z.enum(['administrator', 'auditor', 'coordinator']).default('auditor'),
 });
 
@@ -51,6 +61,8 @@ function loadConfig(env = process.env) {
   if (e.SZO_AUTH_MODE === 'jwt' && !e.SZO_JWT_SECRET && !e.SZO_JWT_PUBLIC_KEY) {
     problems.push('Tryb jwt wymaga SZO_JWT_SECRET albo SZO_JWT_PUBLIC_KEY');
   }
+  if (e.MAIL_MODE === 'smtp' && (!e.SMTP_HOST || !e.MAIL_FROM)) problems.push('Tryb smtp wymaga SMTP_HOST i MAIL_FROM');
+  if (e.MAIL_MODE !== 'off' && !e.APP_URL) problems.push('Powiadomienia e-mail wymagają APP_URL (odnośniki w wiadomościach)');
   if (e.SZO_AUTH_MODE === 'api' && !e.SZO_VERIFY_URL) problems.push('Tryb api wymaga SZO_VERIFY_URL');
 
   let roleMap;
@@ -74,6 +86,13 @@ function loadConfig(env = process.env) {
     // Poza produkcją wolno użyć stałego sekretu, aby restart nie wylogowywał developera.
     sessionSecret: e.SESSION_SECRET || 'dev-only-secret-change-me-dev-only-secret',
     sessionTtlSeconds: Math.round(e.SESSION_TTL_HOURS * 3600),
+    mail: {
+      mode: e.MAIL_MODE,
+      from: e.MAIL_FROM,
+      autoFlush: e.MAIL_AUTOFLUSH === 'true',
+      reminderDays: e.MAIL_REMINDER_DAYS,
+      smtp: { host: e.SMTP_HOST, port: e.SMTP_PORT, secure: e.SMTP_SECURE === 'true', user: e.SMTP_USER, pass: e.SMTP_PASS },
+    },
     szo: {
       mode: e.SZO_AUTH_MODE,
       loginUrl: e.SZO_LOGIN_URL,

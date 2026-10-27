@@ -17,7 +17,7 @@
          const links = [['/', 'Pulpit']];
          links.push(['/audits', role === 'auditor' ? 'Moje audyty' : 'Audyty']);
          links.push(['/office', 'Dostępność kształcenia']);
-         if (role === 'administrator' || role === 'coordinator') { links.push(['/objects', 'Obiekty']); links.push(['/reports', 'Raporty']); }
+         if (role === 'administrator' || role === 'coordinator') { links.push(['/objects', 'Obiekty']); links.push(['/reports', 'Raporty']); links.push(['/stats', 'Statystyki']); }
          if (role === 'administrator') { links.push(['/criteria', 'Kryteria']); links.push(['/scenarios', 'Scenariusze']); links.push(['/office/questions', 'Pytania: kształcenie']); links.push(['/users', 'Użytkownicy']); }
          const best = links.filter(([h]) => h === '/' ? currentPath === '/' : (currentPath === h || currentPath.startsWith(h + '/'))).sort((a, b) => b[0].length - a[0].length)[0];
     %>
@@ -29,7 +29,7 @@
       </ul>
     </nav>
     <div class="user-box">
-      <span><%= currentUser.name %> (<%= roleLabels[currentUser.role] %>)</span>
+      <a href="/account" class="account-link"<% if (currentPath === '/account') { %> aria-current="page"<% } %>><%= currentUser.name %> (<%= roleLabels[currentUser.role] %>)</a>
       <form method="post" action="/logout"><button type="submit" class="link-button">Wyloguj</button></form>
     </div>
     <% } %>

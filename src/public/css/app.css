@@ -160,3 +160,6 @@ td.actions form, .actions form { margin: 0; }
 .filter-form .field-inline { display: flex; gap: .4rem; align-items: center; }
 .filter-form label { margin: 0; }
 .inline-form { display: inline; margin: 0; }
+.account-link { color: #fff; }
+.account-link:hover { color: #fff; }
+.account-link[aria-current="page"] { font-weight: 700; }

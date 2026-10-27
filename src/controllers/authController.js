@@ -9,7 +9,7 @@ const devLoginSchema = z.object({
   role: z.enum(Object.values(ROLES), { error: 'Wybierz rolę' }),
 });
 
-function createAuthController({ config, szo, users, sessions }) {
+function createAuthController({ config, szo, users, sessions, notifier }) {
   const ssoEnabled = config.szo.mode !== 'dev';
 
   return {
@@ -51,6 +51,16 @@ function createAuthController({ config, szo, users, sessions }) {
       const user = users.upsertFromIdentity({ externalId: `dev:${slug}`, name: data.name, email: data.email || null, role: data.role });
       await sessions.issue(res, user.id);
       return res.redirect(303, '/');
+    },
+
+    showAccount(req, res) {
+      res.render('account', { title: 'Moje konto', mailEnabled: notifier.enabled, user: users.findById(req.user.id) });
+    },
+
+    updateAccount(req, res) {
+      users.setNotify(req.user.id, req.body.notifyEmail === 'on');
+      res.flash('success', 'Zapisano ustawienia konta.');
+      res.redirect(303, '/account');
     },
 
     logout(req, res) {

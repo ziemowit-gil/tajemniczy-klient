@@ -4,7 +4,7 @@ const { ROLES } = require('../domain/constants');
 
 const { ADMIN, AUDITOR, COORDINATOR } = ROLES;
 
-function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, attachments, config }) {
+function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, attachments, config }) {
   const r = express.Router();
 
   /* --- publiczne --- */
@@ -18,6 +18,8 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, attachment
   r.use(requireAuth);
   r.post('/logout', auth.logout);
   r.get('/', reportsCtl.dashboard);
+  r.get('/account', auth.showAccount);
+  r.post('/account', auth.updateAccount);
 
   /* --- obiekty --- */
   r.get('/objects', requireRole(ADMIN, COORDINATOR), admin.objectsIndex);
@@ -55,14 +57,16 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, attachment
   r.get('/audits/:id', auditsCtl.load, auditsCtl.show);
 
   // Kolejność: uprawnienia → sprawdzenie edycji → dopiero potem zapis plików na dysk.
-  const handleUpload = (req, res, next) => attachments.middleware(req, res, (err) => {
+  const uploadWith = (base) => (req, res, next) => attachments.middleware(req, res, (err) => {
     if (!err) return next();
     const message = err.code === 'LIMIT_FILE_SIZE'
       ? `Plik jest za duży (maks. ${Math.round(config.maxUploadBytes / 1048576)} MB).`
       : err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE' ? 'Za dużo plików w jednym zapisie.' : err.message;
     res.flash('error', `Nie zapisano formularza. ${message}`);
-    return res.redirect(303, `/audits/${req.audit.id}`);
+    return res.redirect(303, `${base}/${(req.audit || req.review).id}`);
   });
+  const handleUpload = uploadWith('/audits');
+  const handleOfficeUpload = uploadWith('/office');
   r.post('/audits/:id', requireRole(AUDITOR), auditsCtl.load, auditsCtl.ensureEditable, handleUpload, auditsCtl.save);
 
   r.post('/audits/:id/approve', requireRole(COORDINATOR, ADMIN), auditsCtl.load, auditsCtl.approve);
@@ -79,6 +83,11 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, attachment
   r.get('/reports/objects/:id/report.csv', requireRole(ADMIN, COORDINATOR), reportsCtl.objectCsv);
   r.get('/reports/objects/:id/report.pdf', requireRole(ADMIN, COORDINATOR), reportsCtl.objectPdf);
 
+  /* --- statystyki: ranking i trendy --- */
+  r.get('/stats', requireRole(ADMIN, COORDINATOR), statsCtl.index);
+  r.get('/stats/ranking.csv', requireRole(ADMIN, COORDINATOR), statsCtl.rankingCsv);
+  r.get('/stats/trend.csv', requireRole(ADMIN, COORDINATOR), statsCtl.trendCsv);
+
   /* --- dostępność kształcenia: ocena przez audytora w roli kandydata --- */
   r.get('/office', officeCtl.index);
   r.get('/office/new', requireRole(AUDITOR, ADMIN), officeCtl.newForm);
@@ -92,7 +101,9 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, attachment
   r.post('/office/questions/:id', requireRole(ADMIN), officeCtl.questionUpdate);
   r.post('/office/questions/:id/delete', requireRole(ADMIN), officeCtl.questionDelete);
   r.get('/office/:id', officeCtl.load, officeCtl.show);
-  r.post('/office/:id', requireRole(AUDITOR), officeCtl.load, officeCtl.ensureEditable, officeCtl.save);
+  r.post('/office/:id', requireRole(AUDITOR), officeCtl.load, officeCtl.ensureEditable, handleOfficeUpload, officeCtl.save);
+  r.get('/office/:id/attachments/:attId', officeCtl.load, officeCtl.download);
+  r.post('/office/:id/attachments/:attId/delete', requireRole(AUDITOR), officeCtl.load, officeCtl.ensureEditable, officeCtl.deleteAttachment);
   r.post('/office/:id/scenarios', requireRole(ADMIN), officeCtl.load, officeCtl.assignScenarios);
   r.post('/office/:id/approve', requireRole(COORDINATOR, ADMIN), officeCtl.load, officeCtl.approve);
   r.post('/office/:id/return', requireRole(COORDINATOR, ADMIN), officeCtl.load, officeCtl.returnForCorrection);

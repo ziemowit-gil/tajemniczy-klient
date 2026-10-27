@@ -28,6 +28,14 @@ function createObjectsService(db) {
     /** id obiektu wraz ze wszystkimi nadrzędnymi. */
     ancestorIds: (id) => ancestorsStmt.all(id).map((r) => r.id),
 
+    /** Id koordynatorów obiektu: z samego obiektu i z obiektów nadrzędnych (np. uczelni). */
+    coordinatorIds(objectId) {
+      const ids = svc.ancestorIds(objectId);
+      if (!ids.length) return [];
+      return db.prepare(`SELECT DISTINCT coordinator_id AS id FROM objects WHERE coordinator_id IS NOT NULL AND id IN (${ids.map(() => '?').join(',')})`)
+        .all(...ids).map((r) => r.id);
+    },
+
     /** Czy użytkownik koordynuje obiekt bezpośrednio albo przez obiekt nadrzędny (np. uczelnię). */
     isCoordinatedBy(objectId, userId) {
       const marks = svc.ancestorIds(objectId);

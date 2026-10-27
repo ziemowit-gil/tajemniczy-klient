@@ -60,7 +60,7 @@
 <% } %>
 
 <h2>Ankieta</h2>
-<% if (canEdit) { %><form id="review-form" method="post" action="/office/<%= review.id %>" novalidate>
+<% if (canEdit) { %><form id="review-form" method="post" action="/office/<%= review.id %>" enctype="multipart/form-data" novalidate>
   <div class="field field-wide">
     <label for="contactNotes">Przebieg kontaktu z biurem</label>
     <p class="hint" id="contactNotes-hint">Z kim i jakim kanałem się kontaktowano, kiedy, jakie padły odpowiedzi.</p>
@@ -90,10 +90,15 @@
           <label for="c-<%= item.id %>">Komentarz<% if (item.answer === 'nd') { %> (wymagane uzasadnienie)<% } %></label>
           <textarea id="c-<%= item.id %>" name="comment_<%= item.id %>"><%= item.comment || '' %></textarea>
         </div>
+        <div class="field field-wide">
+          <label for="f-<%= item.id %>">Dodaj zrzut ekranu, zdjęcie lub plik (JPEG, PNG, WebP, PDF)</label>
+          <input type="file" id="f-<%= item.id %>" name="files_<%= item.id %>" accept="image/jpeg,image/png,image/webp,application/pdf" multiple>
+        </div>
       <% } else { %>
         <p><strong>Odpowiedź:</strong> <%= answerLabel({ answer: item.answer, answerType: item.answer_type }) %></p>
         <% if (item.comment) { %><p><strong>Komentarz:</strong> <%= item.comment %></p><% } %>
       <% } %>
+      <%- include('../partials/attachment-list', { files: item.files, base: `/office/${review.id}`, code: item.code, canEdit }) %>
     </fieldset>
   <% } %>
 <% } %>
@@ -108,7 +113,12 @@
     <button type="submit" name="intent" value="submit" data-confirm="Po złożeniu oceny nie będzie można jej edytować. Złożyć ocenę?">Zapisz i złóż ocenę</button>
   </div>
 </form>
+  <% for (const g of groups) for (const item of g.items) for (const f of item.files) { %>
+    <form id="del-<%= f.id %>" method="post" action="/office/<%= review.id %>/attachments/<%= f.id %>/delete"></form>
+  <% } %>
 <% } else if (review.general_notes) { %>
   <h3>Uwagi ogólne</h3><p><%= review.general_notes %></p>
 <% } %>
+
+<%- include('../partials/history', { history, historyLabels }) %>
 <%- include('../partials/footer') %>

@@ -7,10 +7,10 @@ const {
 } = require('../validation/schemas');
 const { paramId, httpError, collectAnswers, collectDoneSteps } = require('./helpers');
 
-function createAuditsController({ audits, objects, users, catalog, attachments, reports }) {
+function createAuditsController({ audits, objects, users, catalog, attachments, reports, history, notifier }) {
   const viewData = (req, audit, extra = {}) => {
     const items = audits.items(audit.id);
-    const files = attachments.listForAudit(audit.id);
+    const files = attachments.list('audit', audit.id);
     const preview = reports.forAudit(audit);
     const groups = [];
     for (const item of items) {
@@ -27,6 +27,7 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
       canReview: audit.status === STATUS.SUBMITTED && [ROLES.COORDINATOR, ROLES.ADMIN].includes(req.user.role),
       canExport: req.user.role !== ROLES.AUDITOR || audit.auditor_id === req.user.id,
       isAdmin: req.user.role === ROLES.ADMIN,
+      history: history.list('audit', audit.id), historyLabels: history.labels,
       problems: {}, errors: {}, ...extra,
     };
   };
@@ -69,6 +70,8 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
       if (!ok) return res.status(422).render('audits/new', newFormData({ errors, values: req.body }));
       try {
         const audit = audits.create(data, req.user.id);
+        history.log('audit', audit.id, req.user, 'assigned', `Audytor: ${audit.auditor_name}. Scenariusze: ${audit.scenario_title}.${audit.due_date ? ` Termin: ${audit.due_date}.` : ''}`);
+        notifier.auditAssigned(audit);
         res.flash('success', `Przydzielono audyt obiektu „${audit.object_name}” audytorowi ${audit.auditor_name}.`);
         return res.redirect(303, `/audits/${audit.id}`);
       } catch (err) {
@@ -91,6 +94,7 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
       }
       try {
         audits.saveAnswers(audit, data);
+        if (audit.status === STATUS.ASSIGNED) history.log('audit', audit.id, req.user, 'started');
         audits.saveSteps(audit.id, collectDoneSteps(req.body));
       } catch (err) {
         await attachments.discard(req.files);
@@ -98,11 +102,14 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
         res.flash('error', err.message);
         return res.redirect(303, back);
       }
-      const { rejected } = await attachments.register(req.files, { auditId: audit.id, userId: req.user.id });
+      const { rejected, accepted } = await attachments.register(req.files, { ownerId: audit.id, userId: req.user.id, kind: 'audit' });
+      if (accepted.length) history.log('audit', audit.id, req.user, 'attachment_added', accepted.join(', '));
 
       if (req.body.intent === 'submit') {
         try {
-          audits.submit(audits.get(audit.id), req.user);
+          const submitted = audits.submit(audits.get(audit.id), req.user);
+          history.log('audit', audit.id, req.user, 'submitted');
+          notifier.auditSubmitted(submitted);
           res.flash('success', 'Audyt został złożony i oczekuje na weryfikację koordynatora.');
           return res.redirect(303, back);
         } catch (err) {
@@ -121,7 +128,9 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
     approve(req, res) {
       const { data } = parseForm(reviewSchema, req.body);
       try {
-        audits.approve(req.audit, req.user, data?.comment ?? null);
+        const approved = audits.approve(req.audit, req.user, data?.comment ?? null);
+        history.log('audit', approved.id, req.user, 'approved', data?.comment ?? null);
+        notifier.auditApproved(approved, data?.comment ?? null);
         res.flash('success', 'Audyt został zatwierdzony.');
       } catch (err) {
         if (!(err instanceof DomainError)) throw err;
@@ -134,7 +143,9 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
       const { ok, data, errors } = parseForm(returnSchema, req.body);
       if (!ok) { res.flash('error', errors.comment); return res.redirect(303, `/audits/${req.audit.id}`); }
       try {
-        audits.returnForCorrection(req.audit, req.user, data.comment);
+        const returned = audits.returnForCorrection(req.audit, req.user, data.comment);
+        history.log('audit', returned.id, req.user, 'returned', data.comment);
+        notifier.auditReturned(returned, data.comment);
         res.flash('success', 'Audyt został zwrócony audytorowi do poprawy.');
       } catch (err) {
         if (!(err instanceof DomainError)) throw err;
@@ -156,16 +167,17 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
     },
 
     download(req, res) {
-      const att = attachments.getForAudit(paramId(req, 'attId'), req.audit.id);
+      const att = attachments.get('audit', paramId(req, 'attId'), req.audit.id);
       if (!att) throw httpError(404, 'Nie znaleziono załącznika.');
       res.setHeader('Content-Type', att.mime);
       res.download(attachments.filePath(att), att.original_name);
     },
 
     async deleteAttachment(req, res) {
-      const att = attachments.getForAudit(paramId(req, 'attId'), req.audit.id);
+      const att = attachments.get('audit', paramId(req, 'attId'), req.audit.id);
       if (!att) throw httpError(404, 'Nie znaleziono załącznika.');
-      await attachments.remove(att);
+      await attachments.remove('audit', att);
+      history.log('audit', req.audit.id, req.user, 'attachment_removed', att.original_name);
       res.flash('success', `Usunięto załącznik ${att.original_name}.`);
       res.redirect(303, `/audits/${req.audit.id}`);
     },

@@ -12,8 +12,19 @@ const ALLOWED = {
 
 const MAX_FILES_PER_REQUEST = 20;
 
+/** Rodzaje załączników: audyty obiektów (kryterium) i oceny „Dostępność kształcenia” (pytanie). */
+const KINDS = {
+  audit: { table: 'attachments', fk: 'audit_item_id', items: 'audit_items', owner: 'audit_id' },
+  review: { table: 'office_attachments', fk: 'review_item_id', items: 'office_review_items', owner: 'review_id' },
+};
+
 function createAttachmentsService(db, cfg) {
   fs.mkdirSync(cfg.uploadDir, { recursive: true });
+  const kind = (k) => {
+    const c = KINDS[k];
+    if (!c) throw new Error(`Nieznany rodzaj załączników: ${k}`);
+    return c;
+  };
 
   const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, cfg.uploadDir),
@@ -36,15 +47,19 @@ function createAttachmentsService(db, cfg) {
   const safeUnlink = (file) => fs.promises.unlink(path.join(cfg.uploadDir, file)).catch(() => {});
 
   const svc = {
-    /** Middleware multer dla formularza audytu: pola plików nazywają się `files_<id kryterium w audycie>`. */
+    /** Middleware multer dla formularzy: pola plików nazywają się `files_<id pozycji>`. */
     middleware: upload.any(),
 
-    /** Zapisuje metadane wgranych plików po sprawdzeniu sygnatury (magic bytes); niepoprawne usuwa z dysku. */
-    async register(files, { auditId, userId }) {
+    /**
+     * Zapisuje metadane wgranych plików po sprawdzeniu sygnatury (magic bytes); niepoprawne usuwa z dysku.
+     * Zwraca nazwy przyjętych i odrzuconych plików.
+     */
+    async register(files, { ownerId, userId, kind: k = 'audit' }) {
+      const c = kind(k);
       const rejected = [];
-      const valid = db.prepare('SELECT id FROM audit_items WHERE audit_id = ?').all(auditId).map((r) => String(r.id));
-      const insert = db.prepare(`INSERT INTO attachments (audit_item_id, original_name, stored_name, mime, size, uploaded_by)
-        VALUES (?, ?, ?, ?, ?, ?)`);
+      const accepted = [];
+      const valid = db.prepare(`SELECT id FROM ${c.items} WHERE ${c.owner} = ?`).all(ownerId).map((r) => String(r.id));
+      const insert = db.prepare(`INSERT INTO ${c.table} (${c.fk}, original_name, stored_name, mime, size, uploaded_by) VALUES (?, ?, ?, ?, ?, ?)`);
 
       for (const file of files || []) {
         const m = /^files_(\d+)$/.exec(file.fieldname);
@@ -62,29 +77,46 @@ function createAttachmentsService(db, cfg) {
         }
         const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8').slice(0, 200);
         insert.run(Number(m[1]), originalName, file.filename, file.mimetype, file.size, userId);
+        accepted.push(originalName);
       }
-      return { rejected };
+      return { rejected, accepted };
     },
 
     discard: (files) => Promise.all((files || []).map((f) => safeUnlink(f.filename))),
 
-    listForAudit(auditId) {
-      const rows = db.prepare(`SELECT att.* FROM attachments att JOIN audit_items i ON i.id = att.audit_item_id
-        WHERE i.audit_id = ? ORDER BY att.id`).all(auditId);
+    /** Załączniki właściciela (audytu lub oceny) pogrupowane wg pozycji formularza. */
+    list(k, ownerId) {
+      const c = kind(k);
+      const rows = db.prepare(`SELECT att.*, att.${c.fk} AS item_id FROM ${c.table} att JOIN ${c.items} i ON i.id = att.${c.fk}
+        WHERE i.${c.owner} = ? ORDER BY att.id`).all(ownerId);
       const byItem = new Map();
-      for (const r of rows) byItem.set(r.audit_item_id, [...(byItem.get(r.audit_item_id) || []), r]);
+      for (const r of rows) byItem.set(r.item_id, [...(byItem.get(r.item_id) || []), r]);
       return byItem;
     },
 
-    getForAudit: (id, auditId) => db.prepare(`SELECT att.* FROM attachments att JOIN audit_items i ON i.id = att.audit_item_id
-      WHERE att.id = ? AND i.audit_id = ?`).get(id, auditId),
+    get(k, id, ownerId) {
+      const c = kind(k);
+      return db.prepare(`SELECT att.* FROM ${c.table} att JOIN ${c.items} i ON i.id = att.${c.fk}
+        WHERE att.id = ? AND i.${c.owner} = ?`).get(id, ownerId);
+    },
 
     filePath: (att) => path.join(cfg.uploadDir, path.basename(att.stored_name)),
 
-    async remove(att) {
-      db.prepare('DELETE FROM attachments WHERE id = ?').run(att.id);
+    async remove(k, att) {
+      db.prepare(`DELETE FROM ${kind(k).table} WHERE id = ?`).run(att.id);
       await safeUnlink(att.stored_name);
     },
+
+    /** Usuwa z dysku pliki załączników należących do właściciela (przed skasowaniem audytu lub oceny). */
+    async purge(k, ownerId) {
+      const c = kind(k);
+      const rows = db.prepare(`SELECT att.stored_name FROM ${c.table} att JOIN ${c.items} i ON i.id = att.${c.fk} WHERE i.${c.owner} = ?`).all(ownerId);
+      await Promise.all(rows.map((r) => safeUnlink(r.stored_name)));
+    },
+
+    // Zgodność wsteczna dla audytów
+    listForAudit: (auditId) => svc.list('audit', auditId),
+    getForAudit: (id, auditId) => svc.get('audit', id, auditId),
   };
   return svc;
 }

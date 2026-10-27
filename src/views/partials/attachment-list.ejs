@@ -1,0 +1,15 @@
+<%#
+  Lista załączników do pozycji formularza (kryterium lub pytania).
+  Parametry: files, base (np. /audits/12), code, canEdit. Przyciski usuwania używają atrybutu form="del-<id>".
+%>
+<% if (files.length) { %>
+  <ul class="files" aria-label="Załączniki do pozycji <%= code %>">
+    <% for (const f of files) { %>
+      <li>
+        <a href="<%= base %>/attachments/<%= f.id %>"><%= f.original_name %></a>
+        <span class="muted">(<%= Math.max(1, Math.round(f.size / 1024)) %> KB)</span>
+        <% if (canEdit) { %><button type="submit" form="del-<%= f.id %>" class="btn btn-danger btn-small" data-confirm="Usunąć załącznik?">Usuń<span class="sr-only"> załącznik <%= f.original_name %></span></button><% } %>
+      </li>
+    <% } %>
+  </ul>
+<% } %>

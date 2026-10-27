@@ -38,6 +38,8 @@ function createUsersService(db, { defaultRole }) {
       return byId.get(id);
     },
 
+    setNotify: (id, enabled) => db.prepare('UPDATE users SET notify_email = ? WHERE id = ?').run(enabled ? 1 : 0, id),
+
     countActiveAdmins: () => db.prepare(`SELECT COUNT(*) AS n FROM users WHERE role = ? AND active = 1`).get(ROLES.ADMIN).n,
   };
 }

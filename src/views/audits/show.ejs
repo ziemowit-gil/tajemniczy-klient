@@ -88,16 +88,7 @@
             <% if (item.comment) { %><p><strong>Komentarz:</strong> <%= item.comment %></p><% } %>
           <% } %>
 
-          <% if (item.files.length) { %>
-            <ul class="files" aria-label="Załączniki do kryterium <%= item.code %>">
-              <% for (const f of item.files) { %>
-                <li>
-                  <a href="/audits/<%= audit.id %>/attachments/<%= f.id %>"><%= f.original_name %></a>
-                  <% if (canEdit) { %><button type="submit" form="del-<%= f.id %>" class="btn btn-danger btn-small" data-confirm="Usunąć załącznik?">Usuń<span class="sr-only"> załącznik <%= f.original_name %></span></button><% } %>
-                </li>
-              <% } %>
-            </ul>
-          <% } %>
+          <%- include('../partials/attachment-list', { files: item.files, base: `/audits/${audit.id}`, code: item.code, canEdit }) %>
         </fieldset>
       <% } %>
     <% } %>
@@ -120,4 +111,5 @@
 <% } else if (audit.general_notes) { %>
   <h3>Uwagi ogólne</h3><p><%= audit.general_notes %></p>
 <% } %>
+<%- include('../partials/history', { history, historyLabels }) %>
 <%- include('../partials/footer') %>
