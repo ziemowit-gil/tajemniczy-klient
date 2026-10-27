@@ -1,0 +1,9 @@
+<%# score: wynik z domain/scoring.scoreItems %>
+<% const rows = [['Wynik ogólny', score.total], [areaLabels.OZN, score.areas.OZN], [areaLabels.KSZTALCENIE, score.areas.KSZTALCENIE]]; %>
+<% for (const [label, s] of rows) { if (s.items === 0) continue; %>
+  <div class="score-row">
+    <div class="label"><span><%= label %></span><span><%= fmtPct(s.percent) %></span></div>
+    <meter min="0" max="100" value="<%= s.percent || 0 %>" aria-label="<%= label %>: <%= fmtPct(s.percent) %>"><%= fmtPct(s.percent) %></meter>
+    <% if (s.rating) { %><div class="muted"><%= s.rating.label %> · uzupełniono <%= fmtPct(s.completeness) %> kryteriów</div><% } %>
+  </div>
+<% } %>

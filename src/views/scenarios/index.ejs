@@ -1,0 +1,22 @@
+<%- include('../partials/header') %>
+<div class="page-head"><h1>Scenariusze „Tajemniczego Klienta”</h1><a class="btn" href="/scenarios/new">Dodaj scenariusz</a></div>
+<% if (!scenarios.length) { %><p>Brak scenariuszy.</p><% } else { %>
+<div class="table-wrap"><table>
+  <caption class="sr-only">Lista scenariuszy</caption>
+  <thead><tr><th scope="col">Tytuł</th><th scope="col">Zakres</th><th scope="col">Opis</th><th scope="col">Aktywny</th><th scope="col">Akcje</th></tr></thead>
+  <tbody>
+  <% for (const s of scenarios) { %>
+    <tr>
+      <th scope="row"><%= s.title %></th><td><%= areaLabels[s.areas] %></td><td><%= s.description || '—' %></td><td><%= s.active ? 'Tak' : 'Nie' %></td>
+      <td class="actions">
+        <a href="/scenarios/<%= s.id %>/edit">Edytuj<span class="sr-only">: <%= s.title %></span></a>
+        <form method="post" action="/scenarios/<%= s.id %>/delete" data-confirm="Usunąć scenariusz „<%= s.title %>”?">
+          <button type="submit" class="btn btn-danger btn-small">Usuń<span class="sr-only">: <%= s.title %></span></button>
+        </form>
+      </td>
+    </tr>
+  <% } %>
+  </tbody>
+</table></div>
+<% } %>
+<%- include('../partials/footer') %>

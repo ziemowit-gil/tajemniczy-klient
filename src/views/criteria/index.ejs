@@ -1,0 +1,27 @@
+<%- include('../partials/header') %>
+<div class="page-head"><h1>Kryteria audytu</h1><a class="btn" href="/criteria/new">Dodaj kryterium</a></div>
+<p class="muted">Zmiana kryterium nie wpływa na audyty już przydzielone – każdy audyt ma własną kopię kryteriów.</p>
+<% for (const area of ['OZN', 'KSZTALCENIE']) { const rows = criteria.filter((c) => c.area === area); %>
+  <h2><%= areaLabels[area] %></h2>
+  <% if (!rows.length) { %><p>Brak kryteriów.</p><% } else { %>
+  <div class="table-wrap"><table>
+    <caption class="sr-only"><%= areaLabels[area] %></caption>
+    <thead><tr><th scope="col">Kod</th><th scope="col">Kategoria</th><th scope="col">Kryterium</th><th scope="col" class="num">Waga</th><th scope="col">Ocena</th><th scope="col">Aktywne</th><th scope="col">Akcje</th></tr></thead>
+    <tbody>
+    <% for (const c of rows) { %>
+      <tr>
+        <th scope="row"><%= c.code %></th><td><%= c.category %></td><td><%= c.text %></td>
+        <td class="num"><%= c.weight %></td><td><%= typeLabels[c.answer_type] %></td><td><%= c.active ? 'Tak' : 'Nie' %></td>
+        <td class="actions">
+          <a href="/criteria/<%= c.id %>/edit">Edytuj<span class="sr-only"> kryterium <%= c.code %></span></a>
+          <form method="post" action="/criteria/<%= c.id %>/delete" data-confirm="Usunąć kryterium <%= c.code %>?">
+            <button type="submit" class="btn btn-danger btn-small">Usuń<span class="sr-only"> kryterium <%= c.code %></span></button>
+          </form>
+        </td>
+      </tr>
+    <% } %>
+    </tbody>
+  </table></div>
+  <% } %>
+<% } %>
+<%- include('../partials/footer') %>

@@ -1,0 +1,36 @@
+<%- include('../partials/header') %>
+<% const isAdmin = currentUser.role === 'administrator'; %>
+<div class="page-head">
+  <h1>Obiekty i uczelnie</h1>
+  <% if (isAdmin) { %><a class="btn" href="/objects/new">Dodaj obiekt</a><% } %>
+</div>
+<% if (!objects.length) { %>
+  <p>Brak obiektów<%= isAdmin ? '.' : ' w Twoim zakresie.' %></p>
+<% } else { %>
+<div class="table-wrap"><table>
+  <caption class="sr-only">Lista obiektów</caption>
+  <thead><tr><th scope="col">Nazwa</th><th scope="col">Typ</th><th scope="col">Adres</th><th scope="col">Koordynator</th><th scope="col">Status audytu</th><th scope="col">Akcje</th></tr></thead>
+  <tbody>
+  <% for (const o of objects) { %>
+    <tr>
+      <th scope="row"><%= o.name %><% if (o.parent_name) { %><br><span class="muted">w: <%= o.parent_name %></span><% } %></th>
+      <td><%= objectTypes[o.type] %></td>
+      <td><%= o.address || '—' %></td>
+      <td><%= o.coordinator_name || '—' %></td>
+      <td><% if (o.audit_status) { %><span class="status status-<%= o.audit_status %>"><%= statusLabels[o.audit_status] %></span><% } else { %>Brak audytu<% } %></td>
+      <td class="actions">
+        <a href="/reports/objects/<%= o.id %>">Raport<span class="sr-only">: <%= o.name %></span></a>
+        <% if (isAdmin) { %>
+          <a href="/audits/new?objectId=<%= o.id %>">Przydziel audyt<span class="sr-only">: <%= o.name %></span></a>
+          <a href="/objects/<%= o.id %>/edit">Edytuj<span class="sr-only">: <%= o.name %></span></a>
+          <form method="post" action="/objects/<%= o.id %>/delete" data-confirm="Usunąć obiekt „<%= o.name %>”?">
+            <button type="submit" class="btn btn-danger btn-small">Usuń<span class="sr-only">: <%= o.name %></span></button>
+          </form>
+        <% } %>
+      </td>
+    </tr>
+  <% } %>
+  </tbody>
+</table></div>
+<% } %>
+<%- include('../partials/footer') %>

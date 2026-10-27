@@ -1,0 +1,13 @@
+<%- include('../partials/header') %>
+<h1><%= title %></h1>
+<% if (Object.keys(errors).length) { %><div class="error-summary" role="alert">Formularz zawiera błędy. Popraw zaznaczone pola.</div><% } %>
+<form method="post" action="<%= object ? `/objects/${object.id}` : '/objects' %>" novalidate>
+  <%- include('../partials/field', { name: 'name', label: 'Nazwa', kind: 'input', value: values.name, errors, required: true }) %>
+  <%- include('../partials/field', { name: 'type', label: 'Typ obiektu', kind: 'select', value: values.type, errors, required: true, options: Object.entries(objectTypes) }) %>
+  <%- include('../partials/field', { name: 'parentId', label: 'Należy do', kind: 'select', value: values.parentId, errors, hint: 'Np. wydział należy do uczelni, budynek do kampusu.', blank: '— brak (obiekt najwyższego poziomu) —', options: parents.map((p) => [p.id, `${p.name} (${objectTypes[p.type]})`]) }) %>
+  <%- include('../partials/field', { name: 'address', label: 'Adres', kind: 'input', value: values.address, errors }) %>
+  <%- include('../partials/field', { name: 'coordinatorId', label: 'Koordynator', kind: 'select', value: values.coordinatorId, errors, blank: '— nie przypisano —', hint: 'Koordynator widzi i zatwierdza audyty tego obiektu oraz obiektów podrzędnych.', options: coordinators.map((c) => [c.id, c.name]) }) %>
+  <%- include('../partials/field', { name: 'notes', label: 'Uwagi', kind: 'textarea', value: values.notes, errors }) %>
+  <div class="actions"><button type="submit">Zapisz</button><a class="btn btn-secondary" href="/objects">Anuluj</a></div>
+</form>
+<%- include('../partials/footer') %>

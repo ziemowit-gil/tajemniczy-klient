@@ -1,0 +1,48 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <h1><%= report.object.name %></h1>
+  <div class="actions">
+    <a class="btn btn-secondary" href="/reports/objects/<%= report.object.id %>/report.pdf">Pobierz PDF</a>
+    <a class="btn btn-secondary" href="/reports/objects/<%= report.object.id %>/report.csv">Pobierz CSV</a>
+  </div>
+</div>
+<p class="muted">Zatwierdzone audyty: <%= report.audits.length %><% if (report.pendingAudits) { %>. Nie wliczono audytów w toku lub oczekujących na zatwierdzenie: <%= report.pendingAudits %><% } %>.</p>
+
+<h2>Podsumowanie</h2>
+<% for (const line of report.summary.lines) { %><p><%= line %></p><% } %>
+<%- include('../partials/scores', { score: report.summary.score }) %>
+
+<% if (report.summary.score.categories.length) { %>
+<h2>Wyniki według kategorii</h2>
+<div class="table-wrap"><table>
+  <caption class="sr-only">Wyniki według kategorii kryteriów</caption>
+  <thead><tr><th scope="col">Obszar</th><th scope="col">Kategoria</th><th scope="col" class="num">Wynik</th><th scope="col" class="num">Ocenione kryteria</th></tr></thead>
+  <tbody>
+  <% for (const c of report.summary.score.categories) { %>
+    <tr><td><%= areaLabels[c.area] %></td><th scope="row"><%= c.category %></th><td class="num"><%= fmtPct(c.percent) %></td><td class="num"><%= c.answered %> / <%= c.items %></td></tr>
+  <% } %>
+  </tbody>
+</table></div>
+<% } %>
+
+<% if (report.summary.gaps.length) { %>
+<h2>Najważniejsze braki</h2>
+<ul><% for (const g of report.summary.gaps) { %><li>[waga <%= g.weight %>] <%= g.text %></li><% } %></ul>
+<% } %>
+
+<h2>Audyty składowe</h2>
+<% if (!report.audits.length) { %><p>Brak zatwierdzonych audytów.</p><% } else { %>
+<div class="table-wrap"><table>
+  <caption class="sr-only">Zatwierdzone audyty</caption>
+  <thead><tr><th scope="col">Obiekt</th><th scope="col">Scenariusz</th><th scope="col">Audytor</th><th scope="col">Zatwierdzono</th><th scope="col" class="num">Ogółem</th><th scope="col" class="num">OZN</th><th scope="col" class="num">Kształcenie</th></tr></thead>
+  <tbody>
+  <% for (const a of report.audits) { %>
+    <tr>
+      <th scope="row"><a href="/audits/<%= a.id %>"><%= a.object_name %></a></th><td><%= a.scenario_title %></td><td><%= a.auditor_name %></td><td><%= fmtDateTime(a.approved_at) %></td>
+      <td class="num"><%= fmtPct(a.score.total.percent) %></td><td class="num"><%= fmtPct(a.score.areas.OZN.percent) %></td><td class="num"><%= fmtPct(a.score.areas.KSZTALCENIE.percent) %></td>
+    </tr>
+  <% } %>
+  </tbody>
+</table></div>
+<% } %>
+<%- include('../partials/footer') %>

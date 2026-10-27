@@ -1,0 +1,29 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <h1>Ocena biura ds. OZN</h1>
+  <div class="actions">
+    <% if (currentUser.role === 'auditor') { %><a class="btn" href="/office/new">Nowa ocena</a><% } %>
+    <% if (currentUser.role !== 'auditor') { %><a class="btn btn-secondary" href="/office/report">Raport zbiorczy</a><% } %>
+  </div>
+</div>
+<p class="muted">Audytor wciela się w kandydata na wybrany kierunek i ocenia, jak uczelnia wspiera go przez biuro ds. osób z niepełnosprawnościami. Wyniki są raportowane osobno od audytów obiektów.</p>
+
+<% if (!reviews.length) { %><p>Brak ocen.</p><% } else { %>
+<div class="table-wrap"><table>
+  <caption class="sr-only">Lista ocen biur ds. OZN</caption>
+  <thead><tr><th scope="col">Uczelnia</th><th scope="col">Kierunek</th><th scope="col">Kandydat (audytor)</th><th scope="col">Niepełnosprawność</th><th scope="col">Status</th><th scope="col" class="num">Postęp</th></tr></thead>
+  <tbody>
+  <% for (const r of reviews) { %>
+    <tr>
+      <th scope="row"><a href="/office/<%= r.id %>"><%= r.object_name %></a></th>
+      <td><%= r.programme %><br><span class="muted"><%= levels[r.study_level] %>, <%= modes[r.study_mode].toLowerCase() %></span></td>
+      <td><%= r.auditor_name %></td>
+      <td><%= disabilities[r.disability] %></td>
+      <td><span class="status status-<%= r.status %>"><%= statusLabels[r.status] %></span></td>
+      <td class="num"><%= r.answered_count %> / <%= r.item_count %></td>
+    </tr>
+  <% } %>
+  </tbody>
+</table></div>
+<% } %>
+<%- include('../partials/footer') %>

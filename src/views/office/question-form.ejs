@@ -1,0 +1,15 @@
+<%- include('../partials/header') %>
+<h1><%= title %></h1>
+<% if (Object.keys(errors).length) { %><div class="error-summary" role="alert">Formularz zawiera błędy. Popraw zaznaczone pola.</div><% } %>
+<form method="post" action="<%= question ? `/office/questions/${question.id}` : '/office/questions' %>" novalidate>
+  <%- include('../partials/field', { name: 'code', label: 'Kod', kind: 'input', value: values.code, errors, required: true, hint: 'Unikalny, np. BOZN-15.' }) %>
+  <%- include('../partials/field', { name: 'category', label: 'Kategoria', kind: 'input', value: values.category, errors, required: true }) %>
+  <%- include('../partials/field', { name: 'text', label: 'Treść pytania', kind: 'textarea', value: values.text, errors, required: true }) %>
+  <%- include('../partials/field', { name: 'hint', label: 'Podpowiedź dla audytora', kind: 'textarea', value: values.hint, errors }) %>
+  <%- include('../partials/field', { name: 'weight', label: 'Waga (1–5)', kind: 'input', type: 'number', value: values.weight, errors, required: true }) %>
+  <%- include('../partials/field', { name: 'answerType', label: 'Sposób oceny', kind: 'select', value: values.answerType, errors, required: true, options: Object.entries(typeLabels) }) %>
+  <%- include('../partials/field', { name: 'position', label: 'Kolejność', kind: 'input', type: 'number', value: values.position, errors }) %>
+  <div class="field check"><input type="checkbox" id="active" name="active"<% if (values.active) { %> checked<% } %>><label for="active">Aktywne (uwzględniane w nowych ocenach)</label></div>
+  <div class="actions"><button type="submit">Zapisz</button><a class="btn btn-secondary" href="/office/questions">Anuluj</a></div>
+</form>
+<%- include('../partials/footer') %>

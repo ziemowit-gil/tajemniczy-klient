@@ -1,0 +1,101 @@
+const express = require('express');
+const { requireAuth, requireRole } = require('../middleware/auth');
+const { ROLES } = require('../domain/constants');
+
+const { ADMIN, AUDITOR, COORDINATOR } = ROLES;
+
+function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, attachments, config }) {
+  const r = express.Router();
+
+  /* --- publiczne --- */
+  r.get('/healthz', (req, res) => res.json({ status: 'ok' }));
+  r.get('/login', auth.showLogin);
+  r.get('/auth/callback', auth.szoCallback);
+  r.post('/auth/callback', auth.szoCallback);
+  if (config.szo.mode === 'dev' && !config.isProd) r.post('/auth/dev', auth.devLogin);
+
+  /* --- wszystko poniżej wymaga zalogowania --- */
+  r.use(requireAuth);
+  r.post('/logout', auth.logout);
+  r.get('/', reportsCtl.dashboard);
+
+  /* --- obiekty --- */
+  r.get('/objects', requireRole(ADMIN, COORDINATOR), admin.objectsIndex);
+  r.get('/objects/new', requireRole(ADMIN), admin.objectNew);
+  r.post('/objects', requireRole(ADMIN), admin.objectCreate);
+  r.get('/objects/:id/edit', requireRole(ADMIN), admin.objectEdit);
+  r.post('/objects/:id', requireRole(ADMIN), admin.objectUpdate);
+  r.post('/objects/:id/delete', requireRole(ADMIN), admin.objectDelete);
+
+  /* --- kryteria i scenariusze --- */
+  r.get('/criteria', requireRole(ADMIN), admin.criteriaIndex);
+  r.get('/criteria/new', requireRole(ADMIN), admin.criterionNew);
+  r.post('/criteria', requireRole(ADMIN), admin.criterionCreate);
+  r.get('/criteria/:id/edit', requireRole(ADMIN), admin.criterionEdit);
+  r.post('/criteria/:id', requireRole(ADMIN), admin.criterionUpdate);
+  r.post('/criteria/:id/delete', requireRole(ADMIN), admin.criterionDelete);
+
+  r.get('/scenarios', requireRole(ADMIN), admin.scenariosIndex);
+  r.get('/scenarios/new', requireRole(ADMIN), admin.scenarioNew);
+  r.post('/scenarios', requireRole(ADMIN), admin.scenarioCreate);
+  r.get('/scenarios/:id/edit', requireRole(ADMIN), admin.scenarioEdit);
+  r.post('/scenarios/:id', requireRole(ADMIN), admin.scenarioUpdate);
+  r.post('/scenarios/:id/delete', requireRole(ADMIN), admin.scenarioDelete);
+
+  /* --- użytkownicy --- */
+  r.get('/users', requireRole(ADMIN), admin.usersIndex);
+  r.post('/users/:id', requireRole(ADMIN), admin.userUpdate);
+
+  /* --- audyty --- */
+  r.get('/audits', auditsCtl.index);
+  r.get('/audits/new', requireRole(ADMIN), auditsCtl.newForm);
+  r.post('/audits', requireRole(ADMIN), auditsCtl.create);
+  r.get('/audits/:id', auditsCtl.load, auditsCtl.show);
+
+  // Kolejność: uprawnienia → sprawdzenie edycji → dopiero potem zapis plików na dysk.
+  const handleUpload = (req, res, next) => attachments.middleware(req, res, (err) => {
+    if (!err) return next();
+    const message = err.code === 'LIMIT_FILE_SIZE'
+      ? `Plik jest za duży (maks. ${Math.round(config.maxUploadBytes / 1048576)} MB).`
+      : err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE' ? 'Za dużo plików w jednym zapisie.' : err.message;
+    res.flash('error', `Nie zapisano formularza. ${message}`);
+    return res.redirect(303, `/audits/${req.audit.id}`);
+  });
+  r.post('/audits/:id', requireRole(AUDITOR), auditsCtl.load, auditsCtl.ensureEditable, handleUpload, auditsCtl.save);
+
+  r.post('/audits/:id/approve', requireRole(COORDINATOR, ADMIN), auditsCtl.load, auditsCtl.approve);
+  r.post('/audits/:id/return', requireRole(COORDINATOR, ADMIN), auditsCtl.load, auditsCtl.returnForCorrection);
+  r.post('/audits/:id/delete', requireRole(ADMIN), auditsCtl.load, auditsCtl.remove);
+  r.get('/audits/:id/attachments/:attId', auditsCtl.load, auditsCtl.download);
+  r.post('/audits/:id/attachments/:attId/delete', requireRole(AUDITOR), auditsCtl.load, auditsCtl.ensureEditable, auditsCtl.deleteAttachment);
+  r.get('/audits/:id/report.csv', auditsCtl.load, reportsCtl.auditCsv);
+  r.get('/audits/:id/report.pdf', auditsCtl.load, reportsCtl.auditPdf);
+
+  /* --- raporty zbiorcze --- */
+  r.get('/reports', requireRole(ADMIN, COORDINATOR), reportsCtl.index);
+  r.get('/reports/objects/:id', requireRole(ADMIN, COORDINATOR), reportsCtl.object);
+  r.get('/reports/objects/:id/report.csv', requireRole(ADMIN, COORDINATOR), reportsCtl.objectCsv);
+  r.get('/reports/objects/:id/report.pdf', requireRole(ADMIN, COORDINATOR), reportsCtl.objectPdf);
+
+  /* --- biuro ds. OZN: ocena przez audytora w roli kandydata --- */
+  r.get('/office', officeCtl.index);
+  r.get('/office/new', requireRole(AUDITOR), officeCtl.newForm);
+  r.post('/office', requireRole(AUDITOR), officeCtl.create);
+  r.get('/office/report', requireRole(ADMIN, COORDINATOR), officeCtl.report);
+  r.get('/office/report.csv', requireRole(ADMIN, COORDINATOR), officeCtl.reportCsv);
+  r.get('/office/questions', requireRole(ADMIN), officeCtl.questionsIndex);
+  r.get('/office/questions/new', requireRole(ADMIN), officeCtl.questionNew);
+  r.post('/office/questions', requireRole(ADMIN), officeCtl.questionCreate);
+  r.get('/office/questions/:id/edit', requireRole(ADMIN), officeCtl.questionEdit);
+  r.post('/office/questions/:id', requireRole(ADMIN), officeCtl.questionUpdate);
+  r.post('/office/questions/:id/delete', requireRole(ADMIN), officeCtl.questionDelete);
+  r.get('/office/:id', officeCtl.load, officeCtl.show);
+  r.post('/office/:id', requireRole(AUDITOR), officeCtl.load, officeCtl.ensureEditable, officeCtl.save);
+  r.post('/office/:id/approve', requireRole(COORDINATOR, ADMIN), officeCtl.load, officeCtl.approve);
+  r.post('/office/:id/return', requireRole(COORDINATOR, ADMIN), officeCtl.load, officeCtl.returnForCorrection);
+  r.post('/office/:id/delete', officeCtl.load, officeCtl.remove);
+
+  return r;
+}
+
+module.exports = { buildRouter };

@@ -1,0 +1,24 @@
+<%- include('../partials/header') %>
+<h1>Użytkownicy</h1>
+<p class="muted">Konta powstają automatycznie przy pierwszym logowaniu przez SZO. Jeśli SZO przekazuje rolę w tokenie, ma ona pierwszeństwo przy każdym logowaniu; w przeciwnym razie obowiązuje rola ustawiona tutaj.</p>
+<div class="table-wrap"><table>
+  <caption class="sr-only">Lista użytkowników</caption>
+  <thead><tr><th scope="col">Użytkownik</th><th scope="col">E-mail</th><th scope="col">Rola</th><th scope="col">Aktywny</th><th scope="col">Ostatnie logowanie</th><th scope="col">Zapis</th></tr></thead>
+  <tbody>
+  <% for (const u of users) { %>
+    <tr>
+      <th scope="row"><%= u.name %></th><td><%= u.email || '—' %></td>
+      <td>
+        <label class="sr-only" for="role-<%= u.id %>">Rola: <%= u.name %></label>
+        <select id="role-<%= u.id %>" name="role" form="user-<%= u.id %>">
+          <% for (const [v, l] of Object.entries(roleLabels)) { %><option value="<%= v %>"<% if (u.role === v) { %> selected<% } %>><%= l %></option><% } %>
+        </select>
+      </td>
+      <td class="check"><input type="checkbox" id="active-<%= u.id %>" name="active" form="user-<%= u.id %>"<% if (u.active) { %> checked<% } %>><label for="active-<%= u.id %>">Aktywny<span class="sr-only">: <%= u.name %></span></label></td>
+      <td><%= fmtDateTime(u.last_login_at) %></td>
+      <td><form id="user-<%= u.id %>" method="post" action="/users/<%= u.id %>"><button type="submit" class="btn-small">Zapisz<span class="sr-only">: <%= u.name %></span></button></form></td>
+    </tr>
+  <% } %>
+  </tbody>
+</table></div>
+<%- include('../partials/footer') %>

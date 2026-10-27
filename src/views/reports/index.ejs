@@ -1,0 +1,25 @@
+<%- include('../partials/header') %>
+<h1>Raporty</h1>
+<p class="muted">Wyniki obejmują wyłącznie audyty zatwierdzone przez koordynatora.</p>
+<% if (!rows.length) { %><p>Brak obiektów w Twoim zakresie.</p><% } else { %>
+<div class="table-wrap"><table>
+  <caption class="sr-only">Wyniki dostępności według obiektów najwyższego poziomu</caption>
+  <thead><tr>
+    <th scope="col">Obiekt</th><th scope="col" class="num">Wynik ogólny</th><th scope="col" class="num">Dostępność dla OZN</th>
+    <th scope="col" class="num">Proces kształcenia</th><th scope="col" class="num">Zatwierdzone audyty</th><th scope="col" class="num">Oczekujące</th>
+  </tr></thead>
+  <tbody>
+  <% for (const r of rows) { %>
+    <tr>
+      <th scope="row"><a href="/reports/objects/<%= r.object.id %>"><%= r.object.name %></a></th>
+      <td class="num"><%= fmtPct(r.score.total.percent) %></td>
+      <td class="num"><%= fmtPct(r.score.areas.OZN.percent) %></td>
+      <td class="num"><%= fmtPct(r.score.areas.KSZTALCENIE.percent) %></td>
+      <td class="num"><%= r.approvedAudits %></td>
+      <td class="num"><%= r.pendingAudits %></td>
+    </tr>
+  <% } %>
+  </tbody>
+</table></div>
+<% } %>
+<%- include('../partials/footer') %>

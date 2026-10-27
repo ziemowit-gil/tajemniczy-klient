@@ -1,0 +1,54 @@
+<%- include('partials/header') %>
+<div class="login-box">
+  <h1>Logowanie</h1>
+  <% if (authError) { %><div class="error-summary" role="alert"><%= authError %></div><% } %>
+
+  <% if (mode === 'dev') { %>
+    <p class="note-box">Tryb deweloperski: logowanie testowe bez SZO. W produkcji jest niedostępne.</p>
+    <% const demoUsers = locals.demoUsers || []; if (demoUsers.length) { %>
+      <h2>Konta demonstracyjne</h2>
+      <ul class="demo-users">
+        <% for (const u of demoUsers) { %>
+          <li>
+            <form method="post" action="/auth/dev">
+              <input type="hidden" name="name" value="<%= u.name %>">
+              <input type="hidden" name="email" value="<%= u.email %>">
+              <input type="hidden" name="role" value="<%= u.role %>">
+              <button type="submit" class="btn-secondary">Zaloguj jako <%= u.name %> <span class="muted">(<%= roleLabels[u.role] %>)</span></button>
+            </form>
+          </li>
+        <% } %>
+      </ul>
+      <h2>Własne konto testowe</h2>
+    <% } %>
+    <form method="post" action="/auth/dev" novalidate>
+      <div class="field">
+        <label for="name">Imię i nazwisko</label>
+        <input type="text" id="name" name="name" value="<%= values.name || '' %>" required autocomplete="name"<% if (errors.name) { %> aria-invalid="true" aria-describedby="name-err"<% } %>>
+        <% if (errors.name) { %><p class="field-error" id="name-err"><%= errors.name %></p><% } %>
+      </div>
+      <div class="field">
+        <label for="email">E-mail (opcjonalnie)</label>
+        <input type="email" id="email" name="email" value="<%= values.email || '' %>" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="role">Rola</label>
+        <select id="role" name="role" required<% if (errors.role) { %> aria-invalid="true" aria-describedby="role-err"<% } %>>
+          <% for (const [value, label] of Object.entries(roleLabels)) { %>
+            <option value="<%= value %>"<% if (values.role === value) { %> selected<% } %>><%= label %></option>
+          <% } %>
+        </select>
+        <% if (errors.role) { %><p class="field-error" id="role-err"><%= errors.role %></p><% } %>
+      </div>
+      <button type="submit">Zaloguj (test)</button>
+    </form>
+  <% } else { %>
+    <p>Aplikacja korzysta z konta w systemie SZO. Zaloguj się w SZO – po powrocie zostaniesz automatycznie zalogowany.</p>
+    <% if (loginUrl) { %>
+      <a class="btn" href="<%= loginUrl %>">Zaloguj przez SZO</a>
+    <% } else { %>
+      <p class="muted">Adres logowania SZO nie jest skonfigurowany (SZO_LOGIN_URL). Skontaktuj się z administratorem.</p>
+    <% } %>
+  <% } %>
+</div>
+<%- include('partials/footer') %>

@@ -1,0 +1,33 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <h1><%= title %></h1>
+  <% if (currentUser.role === 'administrator') { %><a class="btn" href="/audits/new">Przydziel audyt</a><% } %>
+</div>
+
+<form method="get" action="/audits" class="actions filter-form">
+  <label for="status">Status</label>
+  <select id="status" name="status">
+    <option value="">Wszystkie</option>
+    <% for (const [v, l] of Object.entries(statusLabels)) { %><option value="<%= v %>"<% if (filter === v) { %> selected<% } %>><%= l %></option><% } %>
+  </select>
+  <button type="submit" class="btn-secondary">Filtruj</button>
+</form>
+
+<% if (!audits.length) { %><p>Brak audytów.</p><% } else { %>
+<div class="table-wrap"><table>
+  <caption class="sr-only">Lista audytów</caption>
+  <thead><tr><th scope="col">Obiekt</th><th scope="col">Scenariusz</th><th scope="col">Audytor</th><th scope="col">Status</th><th scope="col" class="num">Postęp</th><th scope="col">Termin</th></tr></thead>
+  <tbody>
+  <% for (const a of audits) { %>
+    <tr>
+      <th scope="row"><a href="/audits/<%= a.id %>"><%= a.object_name %></a></th>
+      <td><%= a.scenario_title %></td><td><%= a.auditor_name %></td>
+      <td><span class="status status-<%= a.status %>"><%= statusLabels[a.status] %></span></td>
+      <td class="num"><%= a.answered_count %> / <%= a.item_count %></td>
+      <td><%= a.due_date ? fmtDate(a.due_date) : '—' %></td>
+    </tr>
+  <% } %>
+  </tbody>
+</table></div>
+<% } %>
+<%- include('../partials/footer') %>

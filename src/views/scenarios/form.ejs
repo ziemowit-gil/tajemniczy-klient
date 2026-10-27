@@ -1,0 +1,11 @@
+<%- include('../partials/header') %>
+<h1><%= title %></h1>
+<% if (Object.keys(errors).length) { %><div class="error-summary" role="alert">Formularz zawiera błędy. Popraw zaznaczone pola.</div><% } %>
+<form method="post" action="<%= scenario ? `/scenarios/${scenario.id}` : '/scenarios' %>" novalidate>
+  <%- include('../partials/field', { name: 'title', label: 'Tytuł', kind: 'input', value: values.title, errors, required: true }) %>
+  <%- include('../partials/field', { name: 'description', label: 'Opis scenariusza (instrukcja dla audytora)', kind: 'textarea', value: values.description, errors }) %>
+  <%- include('../partials/field', { name: 'areas', label: 'Zakres oceny', kind: 'select', value: values.areas, errors, required: true, hint: 'Decyduje, które kryteria trafią do audytu.', options: Object.entries(areaLabels) }) %>
+  <div class="field check"><input type="checkbox" id="active" name="active"<% if (values.active) { %> checked<% } %>><label for="active">Aktywny (można go przydzielać)</label></div>
+  <div class="actions"><button type="submit">Zapisz</button><a class="btn btn-secondary" href="/scenarios">Anuluj</a></div>
+</form>
+<%- include('../partials/footer') %>

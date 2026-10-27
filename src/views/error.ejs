@@ -1,0 +1,5 @@
+<%- include('partials/header') %>
+<h1><%= status === 404 ? 'Nie znaleziono strony' : status === 403 ? 'Brak dostępu' : 'Wystąpił błąd' %></h1>
+<p><%= message %></p>
+<p><a href="/">Wróć na pulpit</a></p>
+<%- include('partials/footer') %>

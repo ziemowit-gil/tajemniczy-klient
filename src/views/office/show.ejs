@@ -1,0 +1,101 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <h1><%= review.object_name %></h1>
+  <% if (canDelete) { %>
+    <form method="post" action="/office/<%= review.id %>/delete" data-confirm="Usunąć tę ocenę?"><button type="submit" class="btn btn-danger">Usuń ocenę</button></form>
+  <% } %>
+</div>
+
+<dl class="audit-meta">
+  <div><dt>Kierunek</dt><dd><%= review.programme %></dd></div>
+  <div><dt>Studia</dt><dd><%= levels[review.study_level] %>, <%= modes[review.study_mode].toLowerCase() %></dd></div>
+  <div><dt>Wcielenie w osobę z</dt><dd><%= disabilities[review.disability] %></dd></div>
+  <div><dt>Kandydat (audytor)</dt><dd><%= review.auditor_name %></dd></div>
+  <div><dt>Status</dt><dd><span class="status status-<%= review.status %>"><%= statusLabels[review.status] %></span></dd></div>
+  <% if (review.approved_at) { %><div><dt>Zatwierdzono</dt><dd><%= fmtDateTime(review.approved_at) %><%= review.reviewer_name ? `, ${review.reviewer_name}` : '' %></dd></div><% } %>
+</dl>
+
+<% if (review.review_comment && review.status !== 'submitted') { %>
+  <div class="note-box"><strong>Komentarz koordynatora:</strong> <%= review.review_comment %></div>
+<% } %>
+<% if (errors._form) { %><div class="error-summary" role="alert"><%= errors._form %></div><% } %>
+
+<section aria-labelledby="summary-h">
+  <h2 id="summary-h">Wstępne podsumowanie</h2>
+  <% for (const line of lines) { %><p><%= line %></p><% } %>
+  <div class="score-row">
+    <div class="label"><span>Wynik biura ds. OZN</span><span><%= fmtPct(score.total.percent) %></span></div>
+    <meter min="0" max="100" value="<%= score.total.percent || 0 %>" aria-label="Wynik biura ds. OZN: <%= fmtPct(score.total.percent) %>"><%= fmtPct(score.total.percent) %></meter>
+    <% if (score.total.rating) { %><div class="muted"><%= score.total.rating.label %> · uzupełniono <%= fmtPct(score.total.completeness) %> pytań</div><% } %>
+  </div>
+</section>
+
+<% if (canReview) { %>
+<section aria-labelledby="review-h">
+  <h2 id="review-h">Weryfikacja koordynatora</h2>
+  <form method="post" action="/office/<%= review.id %>/approve">
+    <div class="field">
+      <label for="review-comment">Komentarz (wymagany przy zwrocie do poprawy)</label>
+      <textarea id="review-comment" name="comment"></textarea>
+    </div>
+    <div class="actions">
+      <button type="submit">Zatwierdź ocenę</button>
+      <button type="submit" class="btn-secondary" formaction="/office/<%= review.id %>/return">Zwróć do poprawy</button>
+    </div>
+  </form>
+</section>
+<% } %>
+
+<h2>Ankieta</h2>
+<% if (canEdit) { %><form method="post" action="/office/<%= review.id %>" novalidate>
+  <div class="field field-wide">
+    <label for="contactNotes">Przebieg kontaktu z biurem</label>
+    <p class="hint" id="contactNotes-hint">Z kim i jakim kanałem się kontaktowano, kiedy, jakie padły odpowiedzi.</p>
+    <textarea id="contactNotes" name="contactNotes" aria-describedby="contactNotes-hint"><%= review.contact_notes || '' %></textarea>
+  </div>
+<% } else if (review.contact_notes) { %>
+  <h3>Przebieg kontaktu z biurem</h3><p><%= review.contact_notes %></p>
+<% } %>
+
+<% for (const cat of groups) { %>
+  <h3><%= cat.name %></h3>
+  <% for (const item of cat.items) { const problem = problems[item.id]; %>
+    <fieldset class="criterion<%= problem ? ' has-problem' : '' %>"<% if (problem) { %> aria-describedby="problem-<%= item.id %>"<% } %>>
+      <legend><span class="code"><%= item.code %> · waga <%= item.weight %></span><br><%= item.text %></legend>
+      <% if (item.hint) { %><p class="hint"><%= item.hint %></p><% } %>
+      <% if (problem) { %><p class="field-error" id="problem-<%= item.id %>"><%= problem %></p><% } %>
+      <% if (canEdit) { %>
+        <div class="options">
+          <% for (const opt of answerOptions[item.answer_type].concat([{ value: 'nd', label: 'Nie dotyczy' }])) { %>
+            <div class="check">
+              <input type="radio" id="a-<%= item.id %>-<%= opt.value %>" name="answer_<%= item.id %>" value="<%= opt.value %>"<% if (item.answer === opt.value) { %> checked<% } %>>
+              <label for="a-<%= item.id %>-<%= opt.value %>"><%= opt.label %></label>
+            </div>
+          <% } %>
+        </div>
+        <div class="field field-wide">
+          <label for="c-<%= item.id %>">Komentarz<% if (item.answer === 'nd') { %> (wymagane uzasadnienie)<% } %></label>
+          <textarea id="c-<%= item.id %>" name="comment_<%= item.id %>"><%= item.comment || '' %></textarea>
+        </div>
+      <% } else { %>
+        <p><strong>Odpowiedź:</strong> <%= answerLabel({ answer: item.answer, answerType: item.answer_type }) %></p>
+        <% if (item.comment) { %><p><strong>Komentarz:</strong> <%= item.comment %></p><% } %>
+      <% } %>
+    </fieldset>
+  <% } %>
+<% } %>
+
+<% if (canEdit) { %>
+  <div class="field field-wide">
+    <label for="generalNotes">Uwagi ogólne</label>
+    <textarea id="generalNotes" name="generalNotes"><%= review.general_notes || '' %></textarea>
+  </div>
+  <div class="actions">
+    <button type="submit" name="intent" value="save" class="btn-secondary">Zapisz</button>
+    <button type="submit" name="intent" value="submit" data-confirm="Po złożeniu oceny nie będzie można jej edytować. Złożyć ocenę?">Zapisz i złóż ocenę</button>
+  </div>
+</form>
+<% } else if (review.general_notes) { %>
+  <h3>Uwagi ogólne</h3><p><%= review.general_notes %></p>
+<% } %>
+<%- include('../partials/footer') %>

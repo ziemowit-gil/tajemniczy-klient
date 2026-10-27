@@ -1,0 +1,95 @@
+const path = require('node:path');
+const { z } = require('zod');
+
+const emptyToUndefined = (v) => (v === '' ? undefined : v);
+const optional = (schema) => z.preprocess(emptyToUndefined, schema.optional());
+
+const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  APP_URL: optional(z.url()),
+  TRUST_PROXY: z.enum(['true', 'false']).default('false'),
+
+  DATABASE_PATH: z.string().default('./data/tajemniczy-klient.sqlite'),
+  UPLOAD_DIR: z.string().default('./data/uploads'),
+  MAX_UPLOAD_MB: z.coerce.number().positive().default(8),
+
+  SESSION_SECRET: optional(z.string().min(32, 'SESSION_SECRET musi mieć min. 32 znaki')),
+  SESSION_TTL_HOURS: z.coerce.number().positive().default(8),
+
+  SZO_AUTH_MODE: z.enum(['jwt', 'api', 'dev']).default('jwt'),
+  SZO_LOGIN_URL: optional(z.url()),
+  SZO_JWT_SECRET: optional(z.string().min(16)),
+  SZO_JWT_PUBLIC_KEY: optional(z.string()),
+  SZO_JWT_ALGORITHMS: z.string().default('HS256'),
+  SZO_JWT_ISSUER: optional(z.string()),
+  SZO_JWT_AUDIENCE: optional(z.string()),
+  SZO_VERIFY_URL: optional(z.url()),
+  SZO_API_KEY: optional(z.string()),
+  SZO_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
+
+  SZO_CLAIM_ID: z.string().default('sub'),
+  SZO_CLAIM_NAME: z.string().default('name'),
+  SZO_CLAIM_EMAIL: z.string().default('email'),
+  SZO_CLAIM_ROLE: z.string().default('role'),
+  SZO_ROLE_MAP: z.string().default('{}'),
+  SZO_DEFAULT_ROLE: z.enum(['administrator', 'auditor', 'coordinator']).default('auditor'),
+});
+
+function loadConfig(env = process.env) {
+  const parsed = envSchema.safeParse(env);
+  if (!parsed.success) {
+    const details = parsed.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
+    throw new Error(`Nieprawidłowa konfiguracja (.env):\n${details}`);
+  }
+  const e = parsed.data;
+  const isProd = e.NODE_ENV === 'production';
+  const problems = [];
+
+  if (isProd && !e.SESSION_SECRET) problems.push('SESSION_SECRET jest wymagany w produkcji');
+  if (isProd && e.SZO_AUTH_MODE === 'dev') problems.push('SZO_AUTH_MODE=dev jest zabroniony w produkcji');
+  if (e.SZO_AUTH_MODE === 'jwt' && !e.SZO_JWT_SECRET && !e.SZO_JWT_PUBLIC_KEY) {
+    problems.push('Tryb jwt wymaga SZO_JWT_SECRET albo SZO_JWT_PUBLIC_KEY');
+  }
+  if (e.SZO_AUTH_MODE === 'api' && !e.SZO_VERIFY_URL) problems.push('Tryb api wymaga SZO_VERIFY_URL');
+
+  let roleMap;
+  try {
+    roleMap = JSON.parse(e.SZO_ROLE_MAP);
+    if (typeof roleMap !== 'object' || roleMap === null || Array.isArray(roleMap)) throw new Error();
+  } catch {
+    problems.push('SZO_ROLE_MAP musi być obiektem JSON, np. {"admin":"administrator"}');
+  }
+  if (problems.length) throw new Error(`Nieprawidłowa konfiguracja (.env):\n  - ${problems.join('\n  - ')}`);
+
+  return {
+    env: e.NODE_ENV,
+    isProd,
+    port: e.PORT,
+    appUrl: e.APP_URL,
+    trustProxy: e.TRUST_PROXY === 'true',
+    databasePath: e.DATABASE_PATH === ':memory:' ? e.DATABASE_PATH : path.resolve(e.DATABASE_PATH),
+    uploadDir: path.resolve(e.UPLOAD_DIR),
+    maxUploadBytes: Math.round(e.MAX_UPLOAD_MB * 1024 * 1024),
+    // Poza produkcją wolno użyć stałego sekretu, aby restart nie wylogowywał developera.
+    sessionSecret: e.SESSION_SECRET || 'dev-only-secret-change-me-dev-only-secret',
+    sessionTtlSeconds: Math.round(e.SESSION_TTL_HOURS * 3600),
+    szo: {
+      mode: e.SZO_AUTH_MODE,
+      loginUrl: e.SZO_LOGIN_URL,
+      jwtSecret: e.SZO_JWT_SECRET,
+      jwtPublicKey: e.SZO_JWT_PUBLIC_KEY ? e.SZO_JWT_PUBLIC_KEY.replace(/\\n/g, '\n') : undefined,
+      jwtAlgorithms: e.SZO_JWT_ALGORITHMS.split(',').map((a) => a.trim()).filter(Boolean),
+      issuer: e.SZO_JWT_ISSUER,
+      audience: e.SZO_JWT_AUDIENCE,
+      verifyUrl: e.SZO_VERIFY_URL,
+      apiKey: e.SZO_API_KEY,
+      timeoutMs: e.SZO_TIMEOUT_MS,
+      claims: { id: e.SZO_CLAIM_ID, name: e.SZO_CLAIM_NAME, email: e.SZO_CLAIM_EMAIL, role: e.SZO_CLAIM_ROLE },
+      roleMap,
+      defaultRole: e.SZO_DEFAULT_ROLE,
+    },
+  };
+}
+
+module.exports = { loadConfig };

@@ -1,0 +1,32 @@
+<%- include('partials/header') %>
+<h1>Pulpit</h1>
+<p>Witaj, <%= currentUser.name %>.</p>
+
+<h2>Audyty według statusu</h2>
+<div class="cards">
+  <% for (const [status, label] of Object.entries(statusLabels)) { %>
+    <a class="card" href="/audits?status=<%= status %>">
+      <span class="big"><%= counts[status] %></span><%= label %>
+    </a>
+  <% } %>
+</div>
+
+<h2><%= todoHeading %></h2>
+<% if (!todo.length) { %>
+  <p>Brak pozycji.</p>
+<% } else { %>
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Obiekt</th><th scope="col">Scenariusz</th><th scope="col">Audytor</th><th scope="col">Status</th><th scope="col">Termin</th></tr></thead>
+    <tbody>
+    <% for (const a of todo) { %>
+      <tr>
+        <th scope="row"><a href="/audits/<%= a.id %>"><%= a.object_name %></a></th>
+        <td><%= a.scenario_title %></td><td><%= a.auditor_name %></td>
+        <td><span class="status status-<%= a.status %>"><%= statusLabels[a.status] %></span></td>
+        <td><%= a.due_date ? fmtDate(a.due_date) : '—' %></td>
+      </tr>
+    <% } %>
+    </tbody>
+  </table></div>
+<% } %>
+<%- include('partials/footer') %>

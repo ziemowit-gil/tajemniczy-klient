@@ -1,0 +1,24 @@
+<%- include('../partials/header') %>
+<div class="page-head"><h1>Pytania ankiety biura ds. OZN</h1><a class="btn" href="/office/questions/new">Dodaj pytanie</a></div>
+<p class="muted">Zmiana pytania nie wpływa na już rozpoczęte oceny – każda ocena ma własną kopię pytań.</p>
+<% if (!questions.length) { %><p>Brak pytań.</p><% } else { %>
+<div class="table-wrap"><table>
+  <caption class="sr-only">Pytania ankiety</caption>
+  <thead><tr><th scope="col">Kod</th><th scope="col">Kategoria</th><th scope="col">Pytanie</th><th scope="col" class="num">Waga</th><th scope="col">Ocena</th><th scope="col">Aktywne</th><th scope="col">Akcje</th></tr></thead>
+  <tbody>
+  <% for (const q of questions) { %>
+    <tr>
+      <th scope="row"><%= q.code %></th><td><%= q.category %></td><td><%= q.text %></td><td class="num"><%= q.weight %></td>
+      <td><%= typeLabels[q.answer_type] %></td><td><%= q.active ? 'Tak' : 'Nie' %></td>
+      <td class="actions">
+        <a href="/office/questions/<%= q.id %>/edit">Edytuj<span class="sr-only"> pytanie <%= q.code %></span></a>
+        <form method="post" action="/office/questions/<%= q.id %>/delete" data-confirm="Usunąć pytanie <%= q.code %>?">
+          <button type="submit" class="btn btn-danger btn-small">Usuń<span class="sr-only"> pytanie <%= q.code %></span></button>
+        </form>
+      </td>
+    </tr>
+  <% } %>
+  </tbody>
+</table></div>
+<% } %>
+<%- include('../partials/footer') %>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %> – Tajemniczy Klient</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <script src="/js/app.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Przejdź do treści</a>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="/">Tajemniczy Klient</a>
+    <% if (currentUser) {
+         const role = currentUser.role;
+         const links = [['/', 'Pulpit']];
+         links.push(['/audits', role === 'auditor' ? 'Moje audyty' : 'Audyty']);
+         links.push(['/office', 'Biuro ds. OZN']);
+         if (role === 'administrator' || role === 'coordinator') { links.push(['/objects', 'Obiekty']); links.push(['/reports', 'Raporty']); }
+         if (role === 'administrator') { links.push(['/criteria', 'Kryteria']); links.push(['/scenarios', 'Scenariusze']); links.push(['/office/questions', 'Pytania biura OZN']); links.push(['/users', 'Użytkownicy']); }
+         const best = links.filter(([h]) => h === '/' ? currentPath === '/' : (currentPath === h || currentPath.startsWith(h + '/'))).sort((a, b) => b[0].length - a[0].length)[0];
+    %>
+    <nav aria-label="Główna">
+      <ul>
+        <% for (const [href, label] of links) { const here = best && best[0] === href; %>
+          <li><a href="<%= href %>"<% if (here) { %> aria-current="page"<% } %>><%= label %></a></li>
+        <% } %>
+      </ul>
+    </nav>
+    <div class="user-box">
+      <span><%= currentUser.name %> (<%= roleLabels[currentUser.role] %>)</span>
+      <form method="post" action="/logout"><button type="submit" class="link-button">Wyloguj</button></form>
+    </div>
+    <% } %>
+  </div>
+</header>
+<main id="main" tabindex="-1">
+<% if (flash) { %>
+  <div class="flash flash-<%= flash.type === 'error' ? 'error' : flash.type === 'success' ? 'success' : 'info' %>" role="<%= flash.type === 'error' ? 'alert' : 'status' %>"><%= flash.message %></div>
+<% } %>
