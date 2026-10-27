@@ -1,16 +1,21 @@
 <%- include('../partials/header') %>
 <h1>Nowa ocena dostępności kształcenia</h1>
-<p>Wybierz uczelnię i kierunek, na który „chcesz pójść”, oraz rodzaj niepełnosprawności, w którą wcielasz się w trakcie kontaktu z biurem.</p>
+<p><%= isAdmin ? 'Wskaż audytora, który wciela się w kandydata, oraz uczelnię' : 'Wybierz uczelnię' %> i kierunek, na który „chcesz pójść”, oraz rodzaj niepełnosprawności, w którą wcielasz się w trakcie kontaktu z biurem.</p>
 <% if (errors._form) { %><div class="error-summary" role="alert"><%= errors._form %></div>
 <% } else if (Object.keys(errors).length) { %><div class="error-summary" role="alert">Formularz zawiera błędy. Popraw zaznaczone pola.</div><% } %>
 <% if (!universities.length) { %><p class="note-box">Brak uczelni w bazie. Poproś administratora o dodanie obiektu typu „Uczelnia”.</p><% } %>
 <form method="post" action="/office" novalidate>
+  <% if (isAdmin) { %>
+    <%- include('../partials/field', { name: 'auditorId', label: 'Audytor / kandydat', kind: 'select', value: values.auditorId, errors, required: true, blank: '— wybierz —', options: auditors.map((a) => [a.id, a.name]) }) %>
+  <% } %>
   <%- include('../partials/field', { name: 'objectId', label: 'Uczelnia', kind: 'select', value: values.objectId, errors, required: true, blank: '— wybierz —', options: universities.map((u) => [u.id, u.name]) }) %>
   <%- include('../partials/field', { name: 'programme', label: 'Kierunek studiów', kind: 'input', value: values.programme, errors, required: true, hint: 'Np. Psychologia, Informatyka.' }) %>
   <%- include('../partials/field', { name: 'studyLevel', label: 'Poziom studiów', kind: 'select', value: values.studyLevel, errors, required: true, blank: '— wybierz —', options: Object.entries(levels) }) %>
   <%- include('../partials/field', { name: 'studyMode', label: 'Tryb studiów', kind: 'select', value: values.studyMode, errors, required: true, blank: '— wybierz —', options: Object.entries(modes) }) %>
   <%- include('../partials/field', { name: 'disability', label: 'Wcielam się w osobę z', kind: 'select', value: values.disability, errors, required: true, blank: '— wybierz —', options: Object.entries(disabilities) }) %>
-  <%- include('../partials/checkgroup', { name: 'scenarioIds', label: 'Scenariusze kontaktu (opcjonalnie)', errors, selected: selectedScenarios, hint: 'Wybierz sposoby kontaktu z biurem, które zamierzasz sprawdzić. Opis każdego zobaczysz przy ocenie.', options: scenarios.map((s) => ({ id: s.id, title: s.title, description: s.description })) }) %>
-  <div class="actions"><button type="submit">Rozpocznij ocenę</button><a class="btn btn-secondary" href="/office">Anuluj</a></div>
+  <% if (isAdmin) { %>
+    <%- include('../partials/checkgroup', { name: 'scenarioIds', label: 'Scenariusze (opcjonalnie)', errors, selected: selectedScenarios, hint: 'Scenariusze nadaje administrator. Audytor zobaczy ich opisy jako instrukcję przy ocenie.', options: scenarios.map((s) => ({ id: s.id, title: s.title, description: s.description })) }) %>
+  <% } %>
+  <div class="actions"><button type="submit"><%= isAdmin ? 'Przydziel ocenę' : 'Rozpocznij ocenę' %></button><a class="btn btn-secondary" href="/office">Anuluj</a></div>
 </form>
 <%- include('../partials/footer') %>

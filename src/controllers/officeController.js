@@ -6,20 +6,23 @@ const { ANSWER_OPTIONS } = require('../domain/scoring');
 const { DomainError } = require('../services/audits');
 const exporters = require('../services/exporters');
 const {
-  officeReviewSchema, officeDetailsSchema, officeQuestionSchema, reviewSchema, returnSchema, parseForm,
+  officeReviewSchema, scenarioAssignSchema, officeDetailsSchema, officeQuestionSchema, reviewSchema, returnSchema, parseForm,
 } = require('../validation/schemas');
 const { paramId, httpError, collectAnswers } = require('./helpers');
 
 const labels = { levels: STUDY_LEVELS, modes: STUDY_MODES, disabilities: DISABILITIES, statusLabels: STATUS_LABELS };
 
-function createOfficeController({ office, objects, catalog }) {
+function createOfficeController({ office, objects, catalog, users }) {
   const universities = () => objects.list().filter((o) => o.type === 'uczelnia');
-  const newFormData = (extra = {}) => {
+  const educationScenarios = () => catalog.scenarios.list({ onlyActive: true, usage: 'education' });
+  const newFormData = (req, extra = {}) => {
     const values = extra.values || {};
+    const isAdmin = req.user.role === ROLES.ADMIN;
     return {
       title: 'Nowa ocena dostępności kształcenia', errors: {}, values: {}, universities: universities(),
-      scenarios: catalog.scenarios.list({ onlyActive: true, usage: 'education' }),
-      selectedScenarios: [].concat(values.scenarioIds ?? []), ...labels, ...extra,
+      isAdmin, auditors: isAdmin ? users.listByRole(ROLES.AUDITOR) : [],
+      scenarios: isAdmin ? educationScenarios() : [], selectedScenarios: [].concat(values.scenarioIds ?? []),
+      ...labels, ...extra,
     };
   };
 
@@ -38,6 +41,8 @@ function createOfficeController({ office, objects, catalog }) {
       canEdit: office.canEdit(req.user, review),
       canReview: review.status === STATUS.SUBMITTED && [ROLES.COORDINATOR, ROLES.ADMIN].includes(req.user.role),
       canDelete: office.canDelete(req.user, review),
+      canAssignScenarios: req.user.role === ROLES.ADMIN && review.status !== STATUS.APPROVED,
+      allScenarios: req.user.role === ROLES.ADMIN ? educationScenarios() : [],
       problems: {}, errors: {}, ...extra,
     };
   };
@@ -57,19 +62,38 @@ function createOfficeController({ office, objects, catalog }) {
       res.render('office/index', { title: 'Dostępność kształcenia', reviews: office.list(req.user), ...labels });
     },
 
-    newForm: (req, res) => res.render('office/new', newFormData()),
+    newForm: (req, res) => res.render('office/new', newFormData(req)),
 
+    /** Audytor zakłada ocenę dla siebie (bez scenariuszy); administrator – dla wskazanego audytora, ze scenariuszami. */
     create(req, res) {
       const { ok, data, errors } = parseForm(officeReviewSchema, req.body);
-      if (!ok) return res.status(422).render('office/new', newFormData({ errors, values: req.body }));
+      const isAdmin = req.user.role === ROLES.ADMIN;
+      if (ok && isAdmin && !data.auditorId) errors.auditorId = 'Audytor: wybierz wartość';
+      if (!ok || errors.auditorId) return res.status(422).render('office/new', newFormData(req, { errors, values: req.body }));
       try {
-        const review = office.create(data, req.user.id);
-        res.flash('success', 'Rozpoczęto ocenę dostępności kształcenia. Odpowiedzi możesz zapisywać etapami.');
+        const review = office.create(
+          { ...data, scenarioIds: isAdmin ? data.scenarioIds : [] },
+          isAdmin ? data.auditorId : req.user.id,
+        );
+        res.flash('success', isAdmin ? 'Przydzielono ocenę dostępności kształcenia audytorowi.' : 'Rozpoczęto ocenę dostępności kształcenia. Odpowiedzi możesz zapisywać etapami.');
         return res.redirect(303, `/office/${review.id}`);
       } catch (err) {
         if (!(err instanceof DomainError)) throw err;
-        return res.status(422).render('office/new', newFormData({ errors: { _form: err.message }, values: req.body }));
+        return res.status(422).render('office/new', newFormData(req, { errors: { _form: err.message }, values: req.body }));
       }
+    },
+
+    /** Administrator ustawia scenariusze oceny. */
+    assignScenarios(req, res) {
+      const { data } = parseForm(scenarioAssignSchema, req.body);
+      try {
+        office.setScenarios(req.review, data?.scenarioIds ?? []);
+        res.flash('success', 'Zapisano scenariusze oceny.');
+      } catch (err) {
+        if (!(err instanceof DomainError)) throw err;
+        res.flash('error', err.message);
+      }
+      res.redirect(303, `/office/${req.review.id}`);
     },
 
     show: (req, res) => res.render('office/show', viewData(req, req.review)),

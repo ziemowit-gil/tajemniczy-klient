@@ -109,7 +109,7 @@ test('callback z błędnym tokenem nie tworzy sesji', async () => {
 
 test('role: audytor nie wejdzie do panelu administratora', async () => {
   const c = await auditor();
-  for (const url of ['/criteria', '/users', '/objects/new', '/audits/new', '/reports']) {
+  for (const url of ['/criteria', '/scenarios', '/scenarios/new', '/users', '/objects/new', '/audits/new', '/reports']) {
     assert.equal((await c.get(url)).status, 403, url);
   }
 });

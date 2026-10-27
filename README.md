@@ -63,7 +63,7 @@ Cudze audyty zwracają 404, a nie 403, żeby nie ujawniać ich istnienia.
 
 ## Scenariusze
 
-Wspólny słownik (panel **Scenariusze**). Pole „Dotyczy” określa, gdzie scenariusz można wybrać: *Audyty obiektów*, *Dostępność kształcenia* albo *Oba moduły*. „Zakres kryteriów” (OZN / kształcenie / oba) decyduje o kryteriach audytu i nie ma znaczenia dla scenariuszy używanych tylko w ocenach kształcenia. Scenariusza użytego w audycie lub ocenie nie da się usunąć, można go tylko wyłączyć.
+Wspólny słownik, który prowadzi wyłącznie administrator (panel **Scenariusze**); scenariusze do audytów i ocen też przypisuje tylko on. Pole „Dotyczy” określa, gdzie scenariusz można wybrać: *Audyty obiektów*, *Dostępność kształcenia* albo *Oba moduły*. „Zakres kryteriów” (OZN / kształcenie / oba) decyduje o kryteriach audytu i nie ma znaczenia dla scenariuszy używanych tylko w ocenach kształcenia. Scenariusza użytego w audycie lub ocenie nie da się usunąć, można go tylko wyłączyć.
 
 ## Przepływ audytu
 
@@ -78,7 +78,7 @@ Wspólny słownik (panel **Scenariusze**). Pole „Dotyczy” określa, gdzie sc
 Audytor wciela się w **kandydata na wybrany kierunek** (uczelnia, kierunek, poziom i tryb studiów, rodzaj niepełnosprawności) i ocenia **biuro ds. osób z niepełnosprawnościami**: znalezienie i kontakt, doradztwo przed rekrutacją, wsparcie na kierunku, dostępność biura i wrażenie ogólne (14 pytań, edytowalnych przez administratora w „Pytania: kształcenie”).
 
 - Przepływ jak w audytach: W trakcie → Złożony → Zatwierdzony (koordynator zatwierdza lub zwraca z uzasadnieniem). Pytania są kopiowane do oceny przy jej rozpoczęciu.
-- Ocena może mieć **scenariusze kontaktu** (opcjonalnie, kilka naraz), np. zapytanie e-mailowe, telefon, wizyta; ich opisy są instrukcją dla audytora. Scenariusze nie zmieniają zestawu pytań.
+- Ocenę zakłada audytor (dla siebie) albo administrator (przydziela ją wskazanemu audytorowi). **Scenariusze kontaktu** (kilka naraz, opcjonalnie), np. zapytanie e-mailowe, telefon, wizyta, nadaje wyłącznie administrator: przy przydziale lub później na stronie oceny (do zatwierdzenia). Ich opisy są instrukcją dla audytora; scenariusze nie zmieniają zestawu pytań.
 - Wyniki są **raportowane osobno** (`/office/report`, CSV): per uczelnia i kierunek, z wynikami według kategorii. Nie wchodzą do raportów zbiorczych audytów ani do punktacji obszaru kształcenia.
 - Audytor widzi swoje oceny, koordynator oceny uczelni, które koordynuje, administrator wszystkie.
 - Moduł nie ma załączników ani eksportu PDF; przebieg kontaktu opisuje się w polu tekstowym.

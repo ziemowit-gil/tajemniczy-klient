@@ -40,6 +40,16 @@
   </div>
 </section>
 
+<% if (canAssignScenarios) { %>
+<section aria-labelledby="assign-h">
+  <h2 id="assign-h">Scenariusze (administrator)</h2>
+  <form method="post" action="/office/<%= review.id %>/scenarios">
+    <%- include('../partials/checkgroup', { name: 'scenarioIds', label: 'Scenariusze tej oceny', errors: {}, selected: scenarios.map((s) => s.id), options: allScenarios.map((s) => ({ id: s.id, title: s.title, description: s.description })) }) %>
+    <button type="submit" class="btn-secondary">Zapisz scenariusze</button>
+  </form>
+</section>
+<% } %>
+
 <% if (canReview) { %>
 <section aria-labelledby="review-h">
   <h2 id="review-h">Weryfikacja koordynatora</h2>

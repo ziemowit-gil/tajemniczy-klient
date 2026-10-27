@@ -107,32 +107,65 @@ test('audyt: brak scenariusza, scenariusz kształcenia i nieistniejący są odrz
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM audits').get().n, before);
 });
 
-test('ocena kształcenia: scenariusze opcjonalne, tylko z modułu kształcenia', async () => {
+test('scenariusze dodaje tylko administrator: słownik, audyty i oceny kształcenia', async () => {
+  const aud = await new Client().login('aud', 'u');
+  for (const url of ['/scenarios', '/scenarios/new']) assert.equal((await aud.get(url)).status, 403, url);
+  assert.equal((await aud.post('/scenarios', [['title', 'X'], ['areas', 'BOTH'], ['usage', 'audit']])).status, 403);
+  assert.equal(db.prepare(`SELECT COUNT(*) AS n FROM scenarios WHERE title = 'X'`).get().n, 0);
+});
+
+test('ocena kształcenia: audytor zakłada ocenę bez scenariuszy, administrator nadaje je przy przydziale i później', async () => {
   const cand = await new Client().login('aud', 'u');
+  const adm = await new Client().login('adm', 'a');
   const uni = services.objects.create({ name: 'Uczelnia Scen', type: 'uczelnia', parentId: null, address: null, coordinatorId: null, notes: null });
   const base2 = [['objectId', uni.id], ['programme', 'Psychologia'], ['studyLevel', 'I'], ['studyMode', 'stacjonarne'], ['disability', 'sluchu']];
-  const eduScenarios = services.catalog.scenarios.list({ usage: 'education' }).slice(0, 2);
+  const [e1, e2, e3] = services.catalog.scenarios.list({ usage: 'education' });
 
-  // bez scenariuszy też działa
-  let res = await cand.post('/office', base2);
+  // audytor: pole scenariuszy jest ignorowane, formularz go nie pokazuje
+  assert.doesNotMatch(await (await cand.get('/office/new')).text(), /name="scenarioIds"/);
+  let res = await cand.post('/office', [...base2, ['scenarioIds', e1.id]]);
   assert.equal(res.status, 303);
   const r0 = Number(/\/office\/(\d+)/.exec(res.headers.get('location'))[1]);
   assert.deepEqual(services.office.scenarios(r0), []);
+  assert.equal(services.office.get(r0).auditor_name, 'aud');
 
-  // z dwoma scenariuszami
-  res = await cand.post('/office', [...base2, ...eduScenarios.map((s) => ['scenarioIds', s.id])]);
-  assert.equal(res.status, 303);
-  const r1 = Number(/\/office\/(\d+)/.exec(res.headers.get('location'))[1]);
-  assert.equal(services.office.scenarios(r1).length, 2);
-  const html = await (await cand.get(`/office/${r1}`)).text();
+  // audytor nie może nadać scenariuszy
+  assert.equal((await cand.post(`/office/${r0}/scenarios`, [['scenarioIds', e1.id]])).status, 403);
+  assert.doesNotMatch(await (await cand.get(`/office/${r0}`)).text(), /Scenariusze \(administrator\)/);
+
+  // administrator nadaje scenariusze istniejącej ocenie, a potem je zmienia
+  assert.match(await (await adm.get(`/office/${r0}`)).text(), /Scenariusze \(administrator\)/);
+  assert.equal((await adm.post(`/office/${r0}/scenarios`, [['scenarioIds', e1.id], ['scenarioIds', e2.id]])).status, 303);
+  assert.deepEqual(services.office.scenarios(r0).map((s) => s.id).sort(), [e1.id, e2.id].sort());
+  const html = await (await cand.get(`/office/${r0}`)).text();
   assert.match(html, /Scenariusze do wykonania/);
-  assert.match(html, new RegExp(eduScenarios[0].title.slice(0, 20)));
-  assert.match(await (await cand.get('/office')).text(), new RegExp(eduScenarios[1].title.slice(0, 20)));
+  assert.match(html, new RegExp(e1.title.slice(0, 20)));
+  await adm.post(`/office/${r0}/scenarios`, [['scenarioIds', e3.id]]);
+  assert.deepEqual(services.office.scenarios(r0).map((s) => s.id), [e3.id]);
 
   // scenariusz audytowy nie jest dozwolony w kształceniu
   const auditOnly = db.prepare(`SELECT id FROM scenarios WHERE usage = 'audit' LIMIT 1`).get().id;
-  res = await cand.post('/office', [...base2, ['scenarioIds', auditOnly]]);
-  assert.equal(res.status, 422);
+  await adm.post(`/office/${r0}/scenarios`, [['scenarioIds', auditOnly]]);
+  assert.deepEqual(services.office.scenarios(r0).map((s) => s.id), [e3.id], 'bez zmian po odrzuceniu');
+
+  // administrator przydziela ocenę audytorowi od razu ze scenariuszami
+  res = await adm.post('/office', [...base2, ['auditorId', uid('aud')], ['scenarioIds', e1.id], ['scenarioIds', e2.id]]);
+  assert.equal(res.status, 303);
+  const r1 = Number(/\/office\/(\d+)/.exec(res.headers.get('location'))[1]);
+  assert.equal(services.office.get(r1).auditor_id, uid('aud'));
+  assert.equal(services.office.scenarios(r1).length, 2);
+  assert.match(await (await cand.get('/office')).text(), new RegExp(e2.title.slice(0, 20)));
+
+  // administrator musi wskazać audytora będącego audytorem
+  assert.equal((await adm.post('/office', base2)).status, 422);
+  assert.equal((await adm.post('/office', [...base2, ['auditorId', uid('adm')]])).status, 422);
+
+  // zatwierdzonej oceny nie można już zmieniać
+  services.office.items(r1).forEach((it) => db.prepare('UPDATE office_review_items SET answer = ? WHERE id = ?').run(it.answer_type === 'scale' ? '3' : 'tak', it.id));
+  db.prepare(`UPDATE office_reviews SET status = 'approved' WHERE id = ?`).run(r1);
+  await adm.post(`/office/${r1}/scenarios`, [['scenarioIds', e3.id]]);
+  assert.equal(services.office.scenarios(r1).length, 2);
+  assert.doesNotMatch(await (await adm.get(`/office/${r1}`)).text(), /Scenariusze \(administrator\)/);
 });
 
 test('słownik: scenariusz użyty w audycie lub ocenie nie może być usunięty; użycie jest edytowalne', async () => {

@@ -43,7 +43,7 @@ function createApp(config, { db = openDatabase(config.databasePath), szoClient }
   const audits = createAuditsService(db, { objects, users });
   const attachments = createAttachmentsService(db, config);
   const reports = createReportsService(db, { objects, audits });
-  const office = createOfficeReviewsService(db, { objects });
+  const office = createOfficeReviewsService(db, { objects, users });
   const szo = szoClient || createSzoClient(config.szo);
   const sessions = createSessionService(config);
 
@@ -78,7 +78,7 @@ function createApp(config, { db = openDatabase(config.databasePath), szoClient }
     admin: createAdminController({ objects, catalog, users }),
     auditsCtl: createAuditsController({ audits, objects, users, catalog, attachments, reports }),
     reportsCtl: createReportsController({ reports, objects, audits }),
-    officeCtl: createOfficeController({ office, objects, catalog }),
+    officeCtl: createOfficeController({ office, objects, catalog, users }),
     attachments,
   }));
 

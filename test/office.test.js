@@ -56,8 +56,8 @@ test('moduł „Dostępność kształcenia”: pełny przepływ kandydata, izola
   const uniId = db.prepare(`SELECT id FROM objects WHERE name = 'Uczelnia Alfa'`).get().id;
   const bldId = db.prepare(`SELECT id FROM objects WHERE name = 'Budynek Alfa'`).get().id;
 
-  // tylko audytor tworzy oceny; tylko uczelnia może być oceniana
-  assert.equal((await adm.get('/office/new')).status, 403);
+  // oceny zakłada audytor (dla siebie) lub administrator (dla audytora); koordynator nie; tylko uczelnia może być oceniana
+  assert.equal((await coord.get('/office/new')).status, 403);
   assert.equal((await cand.post('/office', { objectId: uniId, programme: '', studyLevel: 'I', studyMode: 'stacjonarne', disability: 'wzroku' })).status, 422);
   assert.equal((await cand.post('/office', { objectId: bldId, programme: 'Psychologia', studyLevel: 'I', studyMode: 'stacjonarne', disability: 'wzroku' })).status, 422);
 

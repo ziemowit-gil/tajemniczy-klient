@@ -18,7 +18,18 @@ const toScoringItem = (row) => ({
 
 const fmt = (p) => (p === null ? 'brak danych' : `${String(p).replace('.', ',')}%`);
 
-function createOfficeReviewsService(db, { objects }) {
+function createOfficeReviewsService(db, { objects, users }) {
+  /** Unikalne id scenariuszy; muszą być aktywne i przeznaczone dla modułu kształcenia. */
+  const validScenarioIds = (input) => {
+    const ids = [...new Set(input || [])];
+    if (ids.length) {
+      const found = db.prepare(`SELECT COUNT(*) AS n FROM scenarios WHERE active = 1 AND usage IN ('education', 'both')
+        AND id IN (${ids.map(() => '?').join(',')})`).get(...ids).n;
+      if (found !== ids.length) throw new DomainError('Wybrany scenariusz nie istnieje, jest nieaktywny albo nie dotyczy dostępności kształcenia.');
+    }
+    return ids;
+  };
+
   const select = `
     SELECT r.*, o.name AS object_name, au.name AS auditor_name, rv.name AS reviewer_name,
       (SELECT GROUP_CONCAT(title, '; ') FROM (SELECT s.title FROM office_review_scenarios x JOIN scenarios s ON s.id = x.scenario_id
@@ -84,12 +95,9 @@ function createOfficeReviewsService(db, { objects }) {
     create(d, auditorId) {
       const object = objects.get(d.objectId);
       if (!object || object.type !== 'uczelnia') throw new DomainError('Wybierz uczelnię z listy obiektów.');
-      const ids = [...new Set(d.scenarioIds || [])];
-      if (ids.length) {
-        const found = db.prepare(`SELECT COUNT(*) AS n FROM scenarios WHERE active = 1 AND usage IN ('education', 'both')
-          AND id IN (${ids.map(() => '?').join(',')})`).get(...ids).n;
-        if (found !== ids.length) throw new DomainError('Wybrany scenariusz nie istnieje, jest nieaktywny albo nie dotyczy dostępności kształcenia.');
-      }
+      const auditor = users.findById(auditorId);
+      if (!auditor || !auditor.active || auditor.role !== ROLES.AUDITOR) throw new DomainError('Wybrany użytkownik nie jest aktywnym audytorem.');
+      const ids = validScenarioIds(d.scenarioIds);
       const active = questions.list({ onlyActive: true });
       if (!active.length) throw new DomainError('Brak aktywnych pytań w ankiecie dostępności kształcenia.');
       return transaction(db, () => {
@@ -102,6 +110,18 @@ function createOfficeReviewsService(db, { objects }) {
         for (const q of active) insert.run(info.lastInsertRowid, q.id, q.code, q.category, q.text, q.hint, q.weight, q.answer_type, q.position);
         return svc.get(info.lastInsertRowid);
       });
+    },
+
+    /** Scenariusze nadaje wyłącznie administrator (kontrola w trasach); zmiana możliwa do zatwierdzenia oceny. */
+    setScenarios(review, scenarioIds) {
+      if (review.status === STATUS.APPROVED) throw new DomainError('Zatwierdzonej oceny nie można zmieniać.', 409);
+      const ids = validScenarioIds(scenarioIds);
+      transaction(db, () => {
+        db.prepare('DELETE FROM office_review_scenarios WHERE review_id = ?').run(review.id);
+        const link = db.prepare('INSERT INTO office_review_scenarios (review_id, scenario_id) VALUES (?, ?)');
+        for (const id of ids) link.run(review.id, id);
+      });
+      return svc.get(review.id);
     },
 
     save(review, { answers, contactNotes, generalNotes }) {

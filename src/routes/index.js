@@ -79,8 +79,8 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, attachment
 
   /* --- dostępność kształcenia: ocena przez audytora w roli kandydata --- */
   r.get('/office', officeCtl.index);
-  r.get('/office/new', requireRole(AUDITOR), officeCtl.newForm);
-  r.post('/office', requireRole(AUDITOR), officeCtl.create);
+  r.get('/office/new', requireRole(AUDITOR, ADMIN), officeCtl.newForm);
+  r.post('/office', requireRole(AUDITOR, ADMIN), officeCtl.create);
   r.get('/office/report', requireRole(ADMIN, COORDINATOR), officeCtl.report);
   r.get('/office/report.csv', requireRole(ADMIN, COORDINATOR), officeCtl.reportCsv);
   r.get('/office/questions', requireRole(ADMIN), officeCtl.questionsIndex);
@@ -91,6 +91,7 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, attachment
   r.post('/office/questions/:id/delete', requireRole(ADMIN), officeCtl.questionDelete);
   r.get('/office/:id', officeCtl.load, officeCtl.show);
   r.post('/office/:id', requireRole(AUDITOR), officeCtl.load, officeCtl.ensureEditable, officeCtl.save);
+  r.post('/office/:id/scenarios', requireRole(ADMIN), officeCtl.load, officeCtl.assignScenarios);
   r.post('/office/:id/approve', requireRole(COORDINATOR, ADMIN), officeCtl.load, officeCtl.approve);
   r.post('/office/:id/return', requireRole(COORDINATOR, ADMIN), officeCtl.load, officeCtl.returnForCorrection);
   r.post('/office/:id/delete', officeCtl.load, officeCtl.remove);

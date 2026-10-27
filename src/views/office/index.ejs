@@ -2,7 +2,7 @@
 <div class="page-head">
   <h1>Dostępność kształcenia</h1>
   <div class="actions">
-    <% if (currentUser.role === 'auditor') { %><a class="btn" href="/office/new">Nowa ocena</a><% } %>
+    <% if (currentUser.role === 'auditor' || currentUser.role === 'administrator') { %><a class="btn" href="/office/new"><%= currentUser.role === 'administrator' ? 'Przydziel ocenę' : 'Nowa ocena' %></a><% } %>
     <% if (currentUser.role !== 'auditor') { %><a class="btn btn-secondary" href="/office/report">Raport zbiorczy</a><% } %>
   </div>
 </div>

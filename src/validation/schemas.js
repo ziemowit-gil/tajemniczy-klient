@@ -88,8 +88,11 @@ const officeReviewSchema = z.object({
   studyLevel: z.enum(Object.keys(STUDY_LEVELS), { error: 'Poziom studiów: wybierz wartość' }),
   studyMode: z.enum(Object.keys(STUDY_MODES), { error: 'Tryb studiów: wybierz wartość' }),
   disability: z.enum(Object.keys(DISABILITIES), { error: 'Rodzaj niepełnosprawności: wybierz wartość' }),
+  auditorId: idOrNull,
   scenarioIds: idList,
 });
+
+const scenarioAssignSchema = z.object({ scenarioIds: idList });
 
 const officeDetailsSchema = z.object({
   contactNotes: optionalText(3000),
@@ -115,5 +118,5 @@ function parseForm(schema, body) {
 
 module.exports = {
   objectSchema, criterionSchema, scenarioSchema, auditCreateSchema, answersSchema,
-  reviewSchema, returnSchema, userUpdateSchema, officeReviewSchema, officeDetailsSchema, officeQuestionSchema, idParam, parseForm,
+  reviewSchema, returnSchema, userUpdateSchema, officeReviewSchema, scenarioAssignSchema, officeDetailsSchema, officeQuestionSchema, idParam, parseForm,
 };
