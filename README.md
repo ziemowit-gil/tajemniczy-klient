@@ -41,6 +41,7 @@ Aplikacja nie przechowuje haseł. Tożsamość pochodzi z SZO, a po weryfikacji 
 
 | `SZO_AUTH_MODE` | Działanie |
 |---|---|
+| `szo` | **Zalecany dla SZO FEER.** OAuth 2.0 Authorization Code + PKCE: przekierowanie do `SZO_BASE_URL`, wymiana kodu na token, sprawdzenie scope'u `SZO_SCOPE` (domyślnie `audytor:access`) i natychmiastowe unieważnienie tokenu SZO. Aplikacja zapisuje tylko tożsamość (id, imię i nazwisko, e-mail). |
 | `jwt` | SZO wystawia JWT. Aplikacja weryfikuje podpis lokalnie: sekret (`SZO_JWT_SECRET`, HS256) albo klucz publiczny (`SZO_JWT_PUBLIC_KEY`, RS/ES), a także `iss`, `aud`, `exp`. |
 | `api` | Aplikacja wysyła token do `SZO_VERIFY_URL` (`Authorization: Bearer`, opcjonalnie `X-Api-Key`). Oczekuje JSON z użytkownikiem (płasko lub w polu `user`); `active:false` odrzuca token. |
 | `dev` | Logowanie testowe bez SZO. Aplikacja **odmawia startu** z tym trybem przy `NODE_ENV=production`. |
@@ -156,6 +157,19 @@ scripts/               seed.js, demo.js
 - Walidacja wejścia w Zod, zapytania SQL tylko parametryzowane.
 - Interfejs: semantyczny HTML, link „Przejdź do treści”, etykiety i komunikaty błędów powiązane `aria-describedby`, kontrast tekstu ≥ 4,5:1, widoczny fokus, status zawsze także tekstem.
 
-## Wdrożenie
+## Wdrożenie na MyDevil (audytor.feer.org.pl)
 
-Ustaw `NODE_ENV=production`, `SESSION_SECRET` (≥ 32 znaki), tryb `jwt` lub `api`, `TRUST_PROXY=true` za reverse proxy i HTTPS. Kopię zapasową wykonuj dla `DATABASE_PATH` (tryb WAL: razem z plikami `-wal`/`-shm`) i `UPLOAD_DIR`. Aplikacja nie ma ograniczania liczby prób logowania; w razie potrzeby dodaj je na proxy.
+Aplikacja działa pod Phusion Passenger (punkt wejścia: `app.js`, ustawienia z pliku `.env`). Wszystkie zależności są czystym JavaScriptem, więc nie ma kompilacji. Testy przechodzą na FreeBSD z Node 22 i 24; strona używa Node 24.
+
+1. **DNS:** rekord `A audytor.feer.org.pl → 212.91.26.67` w strefie `feer.org.pl` (Cloudflare), najlepiej bez proxy („tylko DNS”), żeby MyDevil mógł wystawić certyfikat.
+2. **Strona:** `devil www add audytor.feer.org.pl nodejs /usr/local/bin/node24 production`, potem usuń domyślną stronę `rm ~/domains/audytor.feer.org.pl/public_nodejs/public/index.html`.
+3. **Konfiguracja:** skopiuj `.env.production.example` jako `~/domains/audytor.feer.org.pl/public_nodejs/.env` (`chmod 600`), wpisz `SESSION_SECRET` i utwórz katalog danych `~/domains/audytor.feer.org.pl/data`. Baza i załączniki leżą poza katalogiem aplikacji i przetrwają wdrożenia.
+4. **Kod:** `deploy/deploy-mydevil.sh` (testy lokalne → rsync → `npm ci --omit=dev` → `devil www restart`). Nie nadpisuje `.env`, `data/` ani `node_modules`.
+5. **HTTPS:** po propagacji DNS wystaw certyfikat Let's Encrypt dla `audytor.feer.org.pl` (panel DevilWEB lub `devil ssl www`).
+6. **Logowanie przez SZO** (tryb `szo`, OAuth + PKCE, jak w `msues.feer.org.pl`) wymaga w SZO jednorazowej zmiany: zastosuj `deploy/szo-patch.diff` (nowy moduł uprawnień `audytor` i scope `audytor:access`), dopisz w Ustawieniach organizacji do `desktop_allowed_redirects` adres `https://audytor.feer.org.pl/auth/szo/callback`, a potem nadaj użytkownikom uprawnienie „Tajemniczy Klient” (odczyt). Pierwszy administrator pochodzi z `ADMIN_EMAILS`; pozostałe role nadaje się w panelu **Użytkownicy**.
+7. **Powiadomienia:** ustaw SMTP w `.env` i `MAIL_MODE=smtp`, a w cronie dodaj `*/5 * * * * cd ~/domains/audytor.feer.org.pl/public_nodejs && node scripts/notify.js >> ~/audytor_notify.log 2>&1`. Aplikacja usypia się po 24 h bez ruchu, więc to cron gwarantuje przypomnienia i ponawianie wysyłki.
+8. **Logi:** `~/domains/audytor.feer.org.pl/logs/error.log`.
+
+## Inne wdrożenia
+
+Ustaw `NODE_ENV=production`, `SESSION_SECRET` (≥ 32 znaki), tryb `szo`, `jwt` lub `api`, `TRUST_PROXY=true` za reverse proxy i HTTPS. Kopię zapasową wykonuj dla `DATABASE_PATH` (tryb WAL: razem z plikami `-wal`/`-shm`) i `UPLOAD_DIR`. Aplikacja nie ma ograniczania liczby prób logowania; w razie potrzeby dodaj je na proxy.

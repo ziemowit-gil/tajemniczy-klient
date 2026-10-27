@@ -9,8 +9,8 @@ const devLoginSchema = z.object({
   role: z.enum(Object.values(ROLES), { error: 'Wybierz rolę' }),
 });
 
-function createAuthController({ config, szo, users, sessions, notifier }) {
-  const ssoEnabled = config.szo.mode !== 'dev';
+function createAuthController({ config, szo, szoPkce, users, sessions, notifier }) {
+  const ssoEnabled = config.szo.mode === 'jwt' || config.szo.mode === 'api';
 
   return {
     showLogin(req, res) {
@@ -22,7 +22,9 @@ function createAuthController({ config, szo, users, sessions, notifier }) {
         errors: {},
         values: {},
         demoUsers: config.szo.mode === 'dev' ? users.list().filter((u) => u.active && u.external_id.startsWith('dev:')) : [],
-        authError: req.query.error ? 'Logowanie przez SZO nie powiodło się. Spróbuj ponownie.' : null,
+        authError: req.query.error === 'denied'
+          ? 'Twoje konto nie ma dostępu do aplikacji. Poproś administratora SZO o nadanie uprawnienia „Tajemniczy Klient”.'
+          : req.query.error ? 'Logowanie przez SZO nie powiodło się. Spróbuj ponownie.' : null,
       });
     },
 
@@ -39,6 +41,27 @@ function createAuthController({ config, szo, users, sessions, notifier }) {
       } catch (err) {
         if (!(err instanceof AuthError)) throw err;
         return res.redirect(303, '/login?error=1');
+      }
+    },
+
+    /** Tryb szo: przekierowanie do SZO (OAuth + PKCE). */
+    async szoStart(req, res) {
+      if (config.szo.mode !== 'szo') return res.redirect(303, '/login');
+      return res.redirect(303, await szoPkce.start(res));
+    },
+
+    /** Tryb szo: powrót z SZO. Konto nowego użytkownika dostaje rolę domyślną; role nadaje administrator. */
+    async szoReturn(req, res) {
+      if (config.szo.mode !== 'szo') return res.redirect(303, '/login');
+      try {
+        const identity = await szoPkce.finish(req, res);
+        const user = users.upsertFromIdentity(identity);
+        if (!user.active) throw new AuthError('Konto jest wyłączone.', { status: 403 });
+        await sessions.issue(res, user.id);
+        return res.redirect(303, '/');
+      } catch (err) {
+        if (!(err instanceof AuthError)) throw err;
+        return res.redirect(303, `/login?error=${err.status === 403 ? 'denied' : '1'}`);
       }
     },
 

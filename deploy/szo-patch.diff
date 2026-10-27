@@ -1,0 +1,50 @@
+--- a/includes/permissions.php
++++ b/includes/permissions.php
+@@ -35,6 +35,7 @@
+     'analityka'     => 'Analityka TI (KPI i raporty zarządcze)',
+     'slowniki'      => 'Słownik Centralny (słowniki systemu)',
+     'msues_wdrozenie' => 'Wdrożenie MSUES (aplikacja zewnętrzna, SSO)',
++    'audytor'       => 'Tajemniczy Klient — audyty dostępności (aplikacja zewnętrzna, SSO)',
+     'admin'         => 'Administracja',
+ ];
+ 
+@@ -150,10 +151,10 @@
+             if ($mod !== 'admin') {
+                 // EZD: dostęp tylko per-konto (user_permissions) albo rola ezd_user;
+                 // editor i viewer nie dostają EZD przez rolę.
+-                if (!in_array($mod, ['ezd', 'msues_wdrozenie'], true)) {   // tylko admin i konta nadawane ręcznie
++                if (!in_array($mod, ['ezd', 'msues_wdrozenie', 'audytor'], true)) {   // tylko admin i konta nadawane ręcznie
+                     $ins->execute([$editor_id, $mod, 1, 1, 0]);
+                 }
+-                $ins->execute([$viewer_id, $mod, in_array($mod, ['ezd', 'analityka', 'msues_wdrozenie'], true) ? 0 : 1, 0, 0]);   // EZD i Analityka TI tylko na wniosek
++                $ins->execute([$viewer_id, $mod, in_array($mod, ['ezd', 'analityka', 'msues_wdrozenie', 'audytor'], true) ? 0 : 1, 0, 0]);   // EZD i Analityka TI tylko na wniosek
+             }
+         }
+         // crm_user: tylko crm read+write
+--- a/includes/desktop_auth.php
++++ b/includes/desktop_auth.php
+@@ -47,7 +47,7 @@
+ 
+ /** Wszystkie scope'y, o które może prosić aplikacja zewnętrzna. */
+ function desktop_known_scopes(): array {
+-    return ['ezd:read', 'ezd:upload', 'ezd:write', 'crm:read', 'crm:write', 'msues:read', 'msues:write'];
++    return ['ezd:read', 'ezd:upload', 'ezd:write', 'crm:read', 'crm:write', 'msues:read', 'msues:write', 'audytor:access'];
+ }
+ 
+ /**
+@@ -75,6 +75,7 @@
+ function desktop_known_apps(): array {
+     return [
+         'msues.feer.org.pl' => ['name' => 'Wdrożenie MSUES', 'scopes' => ['msues:read', 'msues:write']],
++        'audytor.feer.org.pl' => ['name' => 'Tajemniczy Klient', 'scopes' => ['audytor:access']],
+     ];
+ }
+ 
+@@ -106,6 +107,7 @@
+     if ($has('crm', 'can_write')) $scopes[] = 'crm:write';
+     if ($has('msues_wdrozenie', 'can_read'))  $scopes[] = 'msues:read';
+     if ($has('msues_wdrozenie', 'can_write')) $scopes[] = 'msues:write';
++    if ($has('audytor', 'can_read'))          $scopes[] = 'audytor:access';
+     return $scopes;
+ }
+ 

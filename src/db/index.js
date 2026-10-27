@@ -21,16 +21,19 @@ function migrate(db) {
   for (const file of files) {
     if (applied.has(file)) continue;
     const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8');
+    // BEGIN IMMEDIATE blokuje zapis dla innych procesów; po zdobyciu blokady sprawdzamy ponownie, czy migracji
+    // nie wykonał w międzyczasie równoległy proces (Passenger może uruchomić kilka procesów naraz).
     transaction(db, () => {
+      if (db.prepare('SELECT 1 FROM schema_migrations WHERE name = ?').get(file)) return;
       db.exec(sql);
       db.prepare('INSERT INTO schema_migrations (name) VALUES (?)').run(file);
-    });
+    }, { immediate: true });
   }
 }
 
 /** Wykonuje fn w transakcji; przy wyjątku wycofuje zmiany. */
-function transaction(db, fn) {
-  db.exec('BEGIN');
+function transaction(db, fn, { immediate = false } = {}) {
+  db.exec(immediate ? 'BEGIN IMMEDIATE' : 'BEGIN');
   try {
     const result = fn();
     db.exec('COMMIT');

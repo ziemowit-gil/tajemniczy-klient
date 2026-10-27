@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 
 const { openDatabase } = require('./db');
 const { createSzoClient } = require('./services/szoAuth');
+const { createSzoPkceClient } = require('./services/szoPkce');
 const { createSessionService } = require('./services/session');
 const { createUsersService } = require('./services/users');
 const { createObjectsService } = require('./services/objects');
@@ -35,7 +36,7 @@ const { pct, answerLabel } = require('./services/exporters');
 const dateFmt = new Intl.DateTimeFormat('pl-PL', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Warsaw' });
 const dayFmt = new Intl.DateTimeFormat('pl-PL', { dateStyle: 'long', timeZone: 'UTC' });
 
-function createApp(config, { db = openDatabase(config.databasePath), szoClient, mailer = createMailer(config.mail) } = {}) {
+function createApp(config, { db = openDatabase(config.databasePath), szoClient, mailer = createMailer(config.mail), fetchImpl } = {}) {
   const app = express();
   app.disable('x-powered-by');
   if (config.trustProxy) app.set('trust proxy', 1);
@@ -52,6 +53,7 @@ function createApp(config, { db = openDatabase(config.databasePath), szoClient, 
   const reports = createReportsService(db, { objects, audits, snapshots });
   const office = createOfficeReviewsService(db, { objects, users, snapshots });
   const szo = szoClient || createSzoClient(config.szo);
+  const szoPkce = createSzoPkceClient(config, { fetchImpl });
   const sessions = createSessionService(config);
   const stats = createStatsService(db, { objects, reports, office, audits });
   const history = createHistoryService(db);
@@ -84,7 +86,7 @@ function createApp(config, { db = openDatabase(config.databasePath), szoClient, 
   /* --- routing --- */
   app.use(buildRouter({
     config,
-    auth: createAuthController({ config, szo, users, sessions, notifier }),
+    auth: createAuthController({ config, szo, szoPkce, users, sessions, notifier }),
     admin: createAdminController({ objects, catalog, users }),
     auditsCtl: createAuditsController({ audits, objects, users, catalog, attachments, reports, history, notifier }),
     reportsCtl: createReportsController({ reports, objects, audits }),

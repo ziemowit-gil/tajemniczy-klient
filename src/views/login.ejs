@@ -44,7 +44,10 @@
     </form>
   <% } else { %>
     <p>Aplikacja korzysta z konta w systemie SZO. Zaloguj się w SZO – po powrocie zostaniesz automatycznie zalogowany.</p>
-    <% if (loginUrl) { %>
+    <% if (mode === 'szo') { %>
+      <a class="btn" href="/auth/szo/start">Zaloguj przez SZO</a>
+      <p class="muted">Zalogujesz się kontem Microsoft 365 w systemie SZO i potwierdzisz dostęp aplikacji.</p>
+    <% } else if (loginUrl) { %>
       <a class="btn" href="<%= loginUrl %>">Zaloguj przez SZO</a>
     <% } else { %>
       <p class="muted">Adres logowania SZO nie jest skonfigurowany (SZO_LOGIN_URL). Skontaktuj się z administratorem.</p>

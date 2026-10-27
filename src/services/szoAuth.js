@@ -102,7 +102,7 @@ function createSzoClient(cfg, { fetchImpl = globalThis.fetch } = {}) {
       if (!token || typeof token !== 'string') throw new AuthError('Brak tokena.');
       if (cfg.mode === 'jwt') return verifyJwt(token);
       if (cfg.mode === 'api') return verifyViaApi(token);
-      throw new AuthError('Weryfikacja tokenów SZO jest wyłączona (tryb dev).');
+      throw new AuthError('Weryfikacja tokenów Bearer jest w tym trybie wyłączona.');
     },
   };
 }

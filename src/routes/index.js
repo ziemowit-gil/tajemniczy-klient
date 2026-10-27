@@ -11,6 +11,8 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, 
   r.get('/healthz', (req, res) => res.json({ status: 'ok' }));
   r.get('/login', auth.showLogin);
   r.get('/auth/callback', auth.szoCallback);
+  r.get('/auth/szo/start', auth.szoStart);
+  r.get('/auth/szo/callback', auth.szoReturn);
   r.post('/auth/callback', auth.szoCallback);
   if (config.szo.mode === 'dev' && !config.isProd) r.post('/auth/dev', auth.devLogin);
 

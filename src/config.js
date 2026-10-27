@@ -17,7 +17,10 @@ const envSchema = z.object({
   SESSION_SECRET: optional(z.string().min(32, 'SESSION_SECRET musi mieć min. 32 znaki')),
   SESSION_TTL_HOURS: z.coerce.number().positive().default(8),
 
-  SZO_AUTH_MODE: z.enum(['jwt', 'api', 'dev']).default('jwt'),
+  SZO_AUTH_MODE: z.enum(['jwt', 'api', 'szo', 'dev']).default('jwt'),
+  SZO_BASE_URL: optional(z.url()),
+  SZO_SCOPE: z.string().regex(/^[a-z0-9:_-]+$/).default('audytor:access'),
+  ADMIN_EMAILS: z.string().default(''),
   SZO_LOGIN_URL: optional(z.url()),
   SZO_JWT_SECRET: optional(z.string().min(16)),
   SZO_JWT_PUBLIC_KEY: optional(z.string()),
@@ -63,6 +66,8 @@ function loadConfig(env = process.env) {
   }
   if (e.MAIL_MODE === 'smtp' && (!e.SMTP_HOST || !e.MAIL_FROM)) problems.push('Tryb smtp wymaga SMTP_HOST i MAIL_FROM');
   if (e.MAIL_MODE !== 'off' && !e.APP_URL) problems.push('Powiadomienia e-mail wymagają APP_URL (odnośniki w wiadomościach)');
+  if (e.SZO_AUTH_MODE === 'szo' && !e.SZO_BASE_URL) problems.push('Tryb szo wymaga SZO_BASE_URL (np. https://szo.feer.org.pl)');
+  if (e.SZO_AUTH_MODE === 'szo' && !e.APP_URL) problems.push('Tryb szo wymaga APP_URL (adres powrotu z SZO)');
   if (e.SZO_AUTH_MODE === 'api' && !e.SZO_VERIFY_URL) problems.push('Tryb api wymaga SZO_VERIFY_URL');
 
   let roleMap;
@@ -96,6 +101,9 @@ function loadConfig(env = process.env) {
     szo: {
       mode: e.SZO_AUTH_MODE,
       loginUrl: e.SZO_LOGIN_URL,
+      baseUrl: e.SZO_BASE_URL,
+      scope: e.SZO_SCOPE,
+      adminEmails: e.ADMIN_EMAILS.split(',').map((x) => x.trim().toLowerCase()).filter(Boolean),
       jwtSecret: e.SZO_JWT_SECRET,
       jwtPublicKey: e.SZO_JWT_PUBLIC_KEY ? e.SZO_JWT_PUBLIC_KEY.replace(/\\n/g, '\n') : undefined,
       jwtAlgorithms: e.SZO_JWT_ALGORITHMS.split(',').map((a) => a.trim()).filter(Boolean),
