@@ -34,7 +34,9 @@ function createAuthController({ config, szo, szoPkce, users, sessions, notifier 
       const token = req.body?.token || req.query.token;
       try {
         const identity = await szo.verify(token);
+        const existed = users.exists(identity.externalId);
         const user = users.upsertFromIdentity(identity);
+        if (!existed && user.role === ROLES.AUDITOR) notifier.roleAssignedAuditor(user);
         if (!user.active) throw new AuthError('Konto jest wyłączone.', { status: 403 });
         await sessions.issue(res, user.id);
         return res.redirect(303, '/');
@@ -55,7 +57,9 @@ function createAuthController({ config, szo, szoPkce, users, sessions, notifier 
       if (config.szo.mode !== 'szo') return res.redirect(303, '/login');
       try {
         const identity = await szoPkce.finish(req, res);
+        const existed = users.exists(identity.externalId);
         const user = users.upsertFromIdentity(identity);
+        if (!existed && user.role === ROLES.AUDITOR) notifier.roleAssignedAuditor(user);
         if (!user.active) throw new AuthError('Konto jest wyłączone.', { status: 403 });
         await sessions.issue(res, user.id);
         return res.redirect(303, '/');

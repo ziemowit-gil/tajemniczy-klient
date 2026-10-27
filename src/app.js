@@ -89,7 +89,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
   app.use(buildRouter({
     config,
     auth: createAuthController({ config, szo, szoPkce, users, sessions, notifier }),
-    admin: createAdminController({ objects, catalog, users, szoDirectory }),
+    admin: createAdminController({ objects, catalog, users, szoDirectory, notifier }),
     auditsCtl: createAuditsController({ audits, objects, users, catalog, attachments, reports, history, notifier }),
     reportsCtl: createReportsController({ reports, objects, audits }),
     statsCtl: createStatsController({ stats }),

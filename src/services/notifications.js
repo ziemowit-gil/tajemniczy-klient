@@ -24,6 +24,12 @@ function createNotifier(db, { config, mailer, users, objects }) {
   const insert = db.prepare(`INSERT OR IGNORE INTO notifications (user_id, to_email, subject, body, event, dedupe_key)
     VALUES (?, ?, ?, ?, ?, ?)`);
 
+  /** Wiadomość z własnym, kompletnym tekstem (bez imiennego powitania i stopki) i dokładnie wskazanym tematem. */
+  function enqueueRaw(user, event, subject, body, dedupeKey = null) {
+    if (!enabled || !user || !user.active || !user.email || !user.notify_email) return false;
+    return insert.run(user.id, user.email, singleLine(subject), body, event, dedupeKey).changes > 0;
+  }
+
   const footer = `\n--\nWiadomość wysłana automatycznie przez aplikację Tajemniczy Klient.\nPowiadomienia możesz wyłączyć w ustawieniach konta: ${link('/account')}\n`;
 
   /** Dodaje wiadomość do kolejki, jeśli odbiorca ma e-mail, jest aktywny i nie wyłączył powiadomień. */
@@ -52,6 +58,36 @@ function createNotifier(db, { config, mailer, users, objects }) {
 
   const svc = {
     enabled,
+
+    /**
+     * Informacja o przydzieleniu roli Audytora dostępności / Tajemniczego klienta. Wysyłana po nadaniu roli
+     * (import z SZO, zmiana roli w panelu, pierwsze logowanie przez SZO). Klucz dedupe: jedna wiadomość na osobę dziennie.
+     */
+    roleAssignedAuditor(user, now = new Date()) {
+      const panel = base || 'https://audytor.feer.org.pl';
+      const body = [
+        'Dzień dobry,',
+        '',
+        'Informujemy, że w systemie została Ci przydzielona rola Audytora dostępności / Tajemniczego klienta.',
+        '',
+        'Dostęp do panelu audytora uzyskasz po zalogowaniu na stronie:',
+        panel,
+        '',
+        'Zaloguj się przyciskiem „Zaloguj przez SZO”, kontem Microsoft 365, którego używasz w SZO.',
+        '',
+        'Przyznana rola uprawnia do realizowania przydzielonych audytów dostępności, wprowadzania formularzy z obserwacji (metodą tajemniczego klienta) oraz weryfikacji wymogów i standardów dostępności w wyznaczonym zakresie.',
+        '',
+        'W razie pytań lub problemów z logowaniem prosimy o kontakt z zespołem technicznym.',
+        '',
+        'Z poważaniem,',
+        '',
+        'Fundacja Edukacji Empatii Rozwoju „FEER”',
+        '',
+      ].join('\n');
+      const queued = enqueueRaw(user, 'role_assigned_auditor', 'Przydzielenie roli: Audytor dostępności (Tajemniczy klient)', body, `role_auditor:${user?.id}:${warsawDate(now)}`);
+      if (queued) flushSoon();
+      return queued;
+    },
 
     /* ----- zdarzenia audytów obiektów ----- */
     auditAssigned(audit) {

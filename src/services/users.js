@@ -40,6 +40,7 @@ function createUsersService(db, { defaultRole }) {
 
     setNotify: (id, enabled) => db.prepare('UPDATE users SET notify_email = ? WHERE id = ?').run(enabled ? 1 : 0, id),
 
+    exists: (externalId) => byExternal.get(externalId) !== undefined,
     existingExternalIds: () => new Set(db.prepare('SELECT external_id FROM users').all().map((r) => r.external_id)),
 
     countActiveAdmins: () => db.prepare(`SELECT COUNT(*) AS n FROM users WHERE role = ? AND active = 1`).get(ROLES.ADMIN).n,

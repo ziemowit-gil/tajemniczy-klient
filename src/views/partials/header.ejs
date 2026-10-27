@@ -14,17 +14,34 @@
     <a class="brand" href="/">Tajemniczy Klient</a>
     <% if (currentUser) {
          const role = currentUser.role;
+         // Praca na co dzień (główne menu) oraz zarządzanie słownikami (grupa „Administracja”, tylko administrator).
          const links = [['/', 'Pulpit']];
          links.push(['/audits', role === 'auditor' ? 'Moje audyty' : 'Audyty']);
          links.push(['/office', 'Dostępność kształcenia']);
          if (role === 'administrator' || role === 'coordinator') { links.push(['/objects', 'Obiekty']); links.push(['/reports', 'Raporty']); links.push(['/stats', 'Statystyki']); }
-         if (role === 'administrator') { links.push(['/criteria', 'Kryteria']); links.push(['/scenarios', 'Scenariusze']); links.push(['/office/questions', 'Pytania: kształcenie']); links.push(['/users', 'Użytkownicy']); }
-         const best = links.filter(([h]) => h === '/' ? currentPath === '/' : (currentPath === h || currentPath.startsWith(h + '/'))).sort((a, b) => b[0].length - a[0].length)[0];
+         const adminLinks = role === 'administrator'
+           ? [['/criteria', 'Kryteria audytu'], ['/scenarios', 'Scenariusze'], ['/office/questions', 'Pytania: kształcenie'], ['/users', 'Użytkownicy']]
+           : [];
+         const all = links.concat(adminLinks);
+         const best = all.filter(([h]) => h === '/' ? currentPath === '/' : (currentPath === h || currentPath.startsWith(h + '/'))).sort((a, b) => b[0].length - a[0].length)[0];
+         const adminCurrent = Boolean(best && adminLinks.some(([h]) => h === best[0]));
     %>
     <nav aria-label="Główna">
       <ul>
         <% for (const [href, label] of links) { const here = best && best[0] === href; %>
           <li><a href="<%= href %>"<% if (here) { %> aria-current="page"<% } %>><%= label %></a></li>
+        <% } %>
+        <% if (adminLinks.length) { %>
+          <li class="nav-group-item">
+            <details class="nav-group<%= adminCurrent ? ' is-current' : '' %>">
+              <summary>Administracja<% if (adminCurrent) { %><span class="sr-only"> (bieżąca sekcja)</span><% } %></summary>
+              <ul>
+                <% for (const [href, label] of adminLinks) { const here = best && best[0] === href; %>
+                  <li><a href="<%= href %>"<% if (here) { %> aria-current="page"<% } %>><%= label %></a></li>
+                <% } %>
+              </ul>
+            </details>
+          </li>
         <% } %>
       </ul>
     </nav>

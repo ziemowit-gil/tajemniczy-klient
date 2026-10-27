@@ -18,3 +18,15 @@ document.addEventListener('change', (event) => {
   if (!master) return;
   for (const box of document.querySelectorAll(`input[type="checkbox"][data-group="${master.dataset.selectAll}"]:not(:disabled)`)) box.checked = master.checked;
 });
+
+// Menu „Administracja”: Esc zamyka grupę i wraca fokusem na jej nagłówek, kliknięcie poza grupą także ją zamyka.
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  const open = document.querySelector('.nav-group[open]');
+  if (!open) return;
+  open.removeAttribute('open');
+  open.querySelector('summary')?.focus();
+});
+document.addEventListener('click', (event) => {
+  for (const group of document.querySelectorAll('.nav-group[open]')) if (!group.contains(event.target)) group.removeAttribute('open');
+});

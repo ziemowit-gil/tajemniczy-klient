@@ -163,3 +163,22 @@ td.actions form, .actions form { margin: 0; }
 .account-link { color: #fff; }
 .account-link:hover { color: #fff; }
 .account-link[aria-current="page"] { font-weight: 700; }
+
+/* Grupa „Administracja” w menu: natywny <details>, bez zależności od JavaScriptu. */
+.nav-group-item { position: relative; }
+.nav-group > summary {
+  list-style: none; cursor: pointer; color: #fff; padding: .45rem .75rem; border-radius: var(--radius); display: inline-block;
+}
+.nav-group > summary::-webkit-details-marker { display: none; }
+.nav-group > summary::after { content: ""; display: inline-block; margin-left: .5rem; width: .45rem; height: .45rem; border: solid currentColor; border-width: 0 2px 2px 0; transform: translateY(-2px) rotate(45deg); }
+.nav-group[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
+.nav-group > summary:hover { background: #3a3a35; }
+.nav-group.is-current > summary { background: #fff; color: var(--text); font-weight: 600; }
+.nav-group > ul {
+  position: absolute; z-index: 20; left: 0; top: 100%; min-width: 15rem; margin: .25rem 0 0; padding: .35rem; list-style: none;
+  background: var(--text); border: 2px solid #fff; border-radius: var(--radius); display: block;
+}
+.nav-group > ul a { display: block; padding: .5rem .75rem; white-space: nowrap; }
+@media (max-width: 40rem) {
+  .nav-group > ul { position: static; border-width: 0; padding: 0 0 0 .75rem; margin: 0; min-width: 0; }
+}

@@ -9,7 +9,7 @@ const { STATUS_LABELS } = require('../domain/workflow');
 const { DirectoryError } = require('../services/szoDirectory');
 const { paramId, httpError } = require('./helpers');
 
-function createAdminController({ objects, catalog, users, szoDirectory }) {
+function createAdminController({ objects, catalog, users, szoDirectory, notifier }) {
   const objectFormData = (extra = {}) => ({
     title: 'Obiekt', objectTypes: OBJECT_TYPES, errors: {}, values: {}, object: null,
     coordinators: users.listByRole(ROLES.COORDINATOR, ROLES.ADMIN), parents: objects.parentOptions(), ...extra,
@@ -215,7 +215,8 @@ function createAdminController({ objects, catalog, users, szoDirectory }) {
         if (!picked.has(person.id)) continue;
         if (existing.has(`szo:${person.id}`)) { skipped += 1; continue; }
         const role = Object.values(ROLES).includes(req.body[`role_${person.id}`]) ? req.body[`role_${person.id}`] : ROLES.AUDITOR;
-        users.upsertFromIdentity({ externalId: `szo:${person.id}`, name: person.name, email: person.email, role });
+        const imported = users.upsertFromIdentity({ externalId: `szo:${person.id}`, name: person.name, email: person.email, role });
+        if (role === ROLES.AUDITOR) notifier.roleAssignedAuditor(imported);
         created += 1;
       }
       const missing = [...picked].filter((id) => !people.some((p) => p.id === id)).length;
@@ -235,7 +236,8 @@ function createAdminController({ objects, catalog, users, szoDirectory }) {
         res.flash('error', 'Nie można odebrać uprawnień ostatniemu aktywnemu administratorowi.');
         return res.redirect(303, '/users');
       }
-      users.update(id, data);
+      const updated = users.update(id, data);
+      if (updated.active && updated.role === ROLES.AUDITOR && (target.role !== ROLES.AUDITOR || !target.active)) notifier.roleAssignedAuditor(updated);
       res.flash('success', `Zapisano użytkownika ${target.name}. Rola przekazywana w tokenie SZO nadpisuje to ustawienie przy kolejnym logowaniu.`);
       res.redirect(303, '/users');
     },
