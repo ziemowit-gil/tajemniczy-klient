@@ -1,0 +1,54 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <h1><%= scenario.title %></h1>
+  <div class="actions">
+    <a class="btn" href="/scenarios/<%= scenario.id %>/edit">Edytuj</a>
+    <form method="post" action="/scenarios/<%= scenario.id %>/duplicate"><button type="submit" class="btn btn-secondary">Duplikuj</button></form>
+    <a class="btn btn-secondary" href="/scenarios">Wróć do listy</a>
+  </div>
+</div>
+
+<dl class="audit-meta">
+  <div><dt>Dotyczy</dt><dd><%= usageLabels[scenario.usage] %></dd></div>
+  <% if (scenario.usage !== 'education') { %><div><dt>Zakres kryteriów</dt><dd><%= areaLabels[scenario.areas] %></dd></div><% } %>
+  <div><dt>Wersja</dt><dd><%= scenario.version %></dd></div>
+  <div><dt>Aktywny</dt><dd><%= scenario.active ? 'Tak' : 'Nie' %></dd></div>
+  <% if (scenario.persona) { %><div><dt>Persona</dt><dd><%= personaLabels[scenario.persona] %></dd></div><% } %>
+  <% if (scenario.estimated_minutes) { %><div><dt>Szacowany czas</dt><dd><%= scenario.estimated_minutes %> min</dd></div><% } %>
+</dl>
+
+<% if (scenario.goal) { %><h2>Cel</h2><p><%= scenario.goal %></p><% } %>
+<% if (scenario.description) { %><h2>Opis i instrukcja dla audytora</h2><p><%= scenario.description %></p><% } %>
+<% if (steps.length) { %>
+  <h2>Kroki</h2>
+  <ol class="step-list"><% for (const st of steps) { %><li><%= st.text %></li><% } %></ol>
+<% } else { %><p class="muted">Scenariusz nie ma jeszcze kroków.</p><% } %>
+<% if (scenario.expected_result) { %><h2>Oczekiwany rezultat</h2><p><%= scenario.expected_result %></p><% } %>
+
+<h2>Użycie scenariusza</h2>
+<% if (!usageOf.audits.length && !usageOf.reviews.length) { %>
+  <p>Scenariusz nie został jeszcze przypisany do żadnego audytu ani oceny. Można go usunąć.</p>
+<% } else { %>
+  <p>Przypisany do: audytów obiektów – <%= usageOf.audits.length %>, ocen dostępności kształcenia – <%= usageOf.reviews.length %>. Wersja przy przypisaniu pokazuje, której treści używa dany audyt lub ocena.</p>
+  <% if (usageOf.audits.length) { %>
+  <div class="table-wrap"><table>
+    <caption>Audyty obiektów</caption>
+    <thead><tr><th scope="col">Obiekt</th><th scope="col">Audytor</th><th scope="col">Status</th><th scope="col" class="num">Wersja scenariusza</th></tr></thead>
+    <tbody><% for (const a of usageOf.audits) { %>
+      <tr><th scope="row"><a href="/audits/<%= a.id %>"><%= a.object_name %></a></th><td><%= a.auditor_name %></td>
+        <td><span class="status status-<%= a.status %>"><%= statusLabels[a.status] %></span></td><td class="num"><%= a.version %></td></tr>
+    <% } %></tbody>
+  </table></div>
+  <% } %>
+  <% if (usageOf.reviews.length) { %>
+  <div class="table-wrap"><table>
+    <caption>Oceny dostępności kształcenia</caption>
+    <thead><tr><th scope="col">Uczelnia i kierunek</th><th scope="col">Audytor</th><th scope="col">Status</th><th scope="col" class="num">Wersja scenariusza</th></tr></thead>
+    <tbody><% for (const r of usageOf.reviews) { %>
+      <tr><th scope="row"><a href="/office/<%= r.id %>"><%= r.object_name %>, <%= r.programme %></a></th><td><%= r.auditor_name %></td>
+        <td><span class="status status-<%= r.status %>"><%= statusLabels[r.status] %></span></td><td class="num"><%= r.version %></td></tr>
+    <% } %></tbody>
+  </table></div>
+  <% } %>
+<% } %>
+<%- include('../partials/footer') %>

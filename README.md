@@ -63,7 +63,16 @@ Cudze audyty zwracają 404, a nie 403, żeby nie ujawniać ich istnienia.
 
 ## Scenariusze
 
-Wspólny słownik, który prowadzi wyłącznie administrator (panel **Scenariusze**); scenariusze do audytów i ocen też przypisuje tylko on. Pole „Dotyczy” określa, gdzie scenariusz można wybrać: *Audyty obiektów*, *Dostępność kształcenia* albo *Oba moduły*. „Zakres kryteriów” (OZN / kształcenie / oba) decyduje o kryteriach audytu i nie ma znaczenia dla scenariuszy używanych tylko w ocenach kształcenia. Scenariusza użytego w audycie lub ocenie nie da się usunąć, można go tylko wyłączyć.
+Wspólny słownik, który prowadzi wyłącznie administrator (panel **Scenariusze**); scenariusze do audytów i ocen też przypisuje tylko on.
+
+Scenariusz ma: tytuł, **cel**, **personę** (rodzaj niepełnosprawności, w którą wciela się audytor), opis i instrukcję, **numerowane kroki** (jeden w wierszu), oczekiwany rezultat i szacowany czas. Pole „Dotyczy” określa moduł (*Audyty obiektów*, *Dostępność kształcenia* albo *Oba moduły*). „Zakres kryteriów” (OZN / kształcenie / oba) decyduje o kryteriach audytu i nie ma znaczenia dla scenariuszy używanych tylko w ocenach kształcenia.
+
+- **Wersje:** zmiana treści (tytuł, opisy, persona, czas, zakres, kroki) podnosi numer wersji; zmiana samej aktywności nie.
+- **Migawki:** przy przypisaniu audyt lub ocena dostaje kopię scenariusza z krokami i numerem wersji. Edycja słownika nie zmienia prowadzonych ani zatwierdzonych audytów; strona audytu pokazuje, że w słowniku jest nowsza wersja.
+- **Odhaczanie kroków:** audytor zaznacza wykonane kroki w formularzu audytu lub oceny (zapis razem z odpowiedziami). Stan kroków jest w CSV i PDF audytu. Kroki nie blokują złożenia.
+- **Duplikowanie:** „Duplikuj” tworzy nieaktywny szkic w wersji 1 z kopią kroków.
+- **Podgląd** (`/scenarios/:id`): pełna treść oraz lista audytów i ocen używających scenariusza, z wersją użytą przy przypisaniu. Lista scenariuszy ma filtry (moduł, aktywność) i liczniki kroków oraz użyć.
+- Scenariusza użytego w audycie lub ocenie nie da się usunąć, można go tylko wyłączyć.
 
 ## Przepływ audytu
 

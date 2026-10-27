@@ -21,14 +21,7 @@
   <% if (audit.approved_at) { %><div><dt>Zatwierdzono</dt><dd><%= fmtDateTime(audit.approved_at) %><%= audit.reviewer_name ? `, ${audit.reviewer_name}` : '' %></dd></div><% } %>
 </dl>
 
-<% if (scenarios.some((s) => s.description)) { %>
-<section aria-labelledby="scen-h">
-  <h2 id="scen-h">Scenariusze do wykonania</h2>
-  <ul class="scenario-list">
-    <% for (const s of scenarios) { %><li><strong><%= s.title %></strong><% if (s.description) { %><br><%= s.description %><% } %></li><% } %>
-  </ul>
-</section>
-<% } %>
+<%- include('../partials/scenario-steps', { scenarios, editable: canEdit, formId: 'audit-form', personaLabels: disabilityLabels }) %>
 
 <% if (audit.review_comment && audit.status !== 'submitted') { %>
   <div class="note-box"><strong>Komentarz koordynatora:</strong> <%= audit.review_comment %></div>
@@ -59,7 +52,7 @@
 
 <h2>Formularz oceny</h2>
 <% if (canEdit) { %>
-<form method="post" action="/audits/<%= audit.id %>" enctype="multipart/form-data" novalidate>
+<form id="audit-form" method="post" action="/audits/<%= audit.id %>" enctype="multipart/form-data" novalidate>
 <% } %>
 
 <% for (const g of groups) { %>

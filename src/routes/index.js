@@ -38,7 +38,9 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, attachment
   r.get('/scenarios', requireRole(ADMIN), admin.scenariosIndex);
   r.get('/scenarios/new', requireRole(ADMIN), admin.scenarioNew);
   r.post('/scenarios', requireRole(ADMIN), admin.scenarioCreate);
+  r.get('/scenarios/:id', requireRole(ADMIN), admin.scenarioShow);
   r.get('/scenarios/:id/edit', requireRole(ADMIN), admin.scenarioEdit);
+  r.post('/scenarios/:id/duplicate', requireRole(ADMIN), admin.scenarioDuplicate);
   r.post('/scenarios/:id', requireRole(ADMIN), admin.scenarioUpdate);
   r.post('/scenarios/:id/delete', requireRole(ADMIN), admin.scenarioDelete);
 

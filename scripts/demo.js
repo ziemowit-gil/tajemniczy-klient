@@ -100,6 +100,9 @@ audits.saveAnswers(audits.get(a.id), {
   generalNotes: null,
 });
 
+const firstSteps = audits.scenarios(a.id)[0]?.steps ?? [];
+audits.saveSteps(a.id, firstSteps.slice(0, 2).map((st) => st.id)); // dwa pierwsze kroki scenariusza odhaczone
+
 // 5) przypisany – jeszcze nie rozpoczęty
 audits.create({ objectId: faculty.id, auditorId: aud1.id, scenarioIds: [byTitle('Kandydat na studia z niepełnosprawnością ruchową'), byTitle('Student niewidomy lub słabowidzący')], dueDate: '2026-12-20' }, admin.id);
 

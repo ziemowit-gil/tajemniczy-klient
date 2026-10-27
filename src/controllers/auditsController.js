@@ -1,11 +1,11 @@
-const { AREA_LABELS, ROLES } = require('../domain/constants');
+const { AREA_LABELS, ROLES, DISABILITIES } = require('../domain/constants');
 const { STATUS, STATUS_LABELS, isEditable } = require('../domain/workflow');
 const { ANSWER_OPTIONS } = require('../domain/scoring');
 const { DomainError } = require('../services/audits');
 const {
   auditCreateSchema, answersSchema, reviewSchema, returnSchema, parseForm,
 } = require('../validation/schemas');
-const { paramId, httpError, collectAnswers } = require('./helpers');
+const { paramId, httpError, collectAnswers, collectDoneSteps } = require('./helpers');
 
 function createAuditsController({ audits, objects, users, catalog, attachments, reports }) {
   const viewData = (req, audit, extra = {}) => {
@@ -22,7 +22,7 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
     }
     return {
       title: `Audyt: ${audit.object_name}`,
-      audit, groups, scenarios: audits.scenarios(audit.id), summary: preview.summary, statusLabels: STATUS_LABELS, answerOptions: ANSWER_OPTIONS,
+      audit, groups, scenarios: audits.scenarios(audit.id), disabilityLabels: DISABILITIES, summary: preview.summary, statusLabels: STATUS_LABELS, answerOptions: ANSWER_OPTIONS,
       canEdit: audits.canEdit(req.user, audit),
       canReview: audit.status === STATUS.SUBMITTED && [ROLES.COORDINATOR, ROLES.ADMIN].includes(req.user.role),
       canExport: req.user.role !== ROLES.AUDITOR || audit.auditor_id === req.user.id,
@@ -91,6 +91,7 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
       }
       try {
         audits.saveAnswers(audit, data);
+        audits.saveSteps(audit.id, collectDoneSteps(req.body));
       } catch (err) {
         await attachments.discard(req.files);
         if (!(err instanceof DomainError)) throw err;

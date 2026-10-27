@@ -16,14 +16,7 @@
   <% if (review.approved_at) { %><div><dt>Zatwierdzono</dt><dd><%= fmtDateTime(review.approved_at) %><%= review.reviewer_name ? `, ${review.reviewer_name}` : '' %></dd></div><% } %>
 </dl>
 
-<% if (scenarios.some((s) => s.description)) { %>
-<section aria-labelledby="scen-h">
-  <h2 id="scen-h">Scenariusze do wykonania</h2>
-  <ul class="scenario-list">
-    <% for (const s of scenarios) { %><li><strong><%= s.title %></strong><% if (s.description) { %><br><%= s.description %><% } %></li><% } %>
-  </ul>
-</section>
-<% } %>
+<%- include('../partials/scenario-steps', { scenarios, editable: canEdit, formId: 'review-form', personaLabels: disabilities }) %>
 
 <% if (review.review_comment && review.status !== 'submitted') { %>
   <div class="note-box"><strong>Komentarz koordynatora:</strong> <%= review.review_comment %></div>
@@ -67,7 +60,7 @@
 <% } %>
 
 <h2>Ankieta</h2>
-<% if (canEdit) { %><form method="post" action="/office/<%= review.id %>" novalidate>
+<% if (canEdit) { %><form id="review-form" method="post" action="/office/<%= review.id %>" novalidate>
   <div class="field field-wide">
     <label for="contactNotes">Przebieg kontaktu z biurem</label>
     <p class="hint" id="contactNotes-hint">Z kim i jakim kanałem się kontaktowano, kiedy, jakie padły odpowiedzi.</p>

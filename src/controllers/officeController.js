@@ -8,7 +8,7 @@ const exporters = require('../services/exporters');
 const {
   officeReviewSchema, scenarioAssignSchema, officeDetailsSchema, officeQuestionSchema, reviewSchema, returnSchema, parseForm,
 } = require('../validation/schemas');
-const { paramId, httpError, collectAnswers } = require('./helpers');
+const { paramId, httpError, collectAnswers, collectDoneSteps } = require('./helpers');
 
 const labels = { levels: STUDY_LEVELS, modes: STUDY_MODES, disabilities: DISABILITIES, statusLabels: STATUS_LABELS };
 
@@ -114,6 +114,7 @@ function createOfficeController({ office, objects, catalog, users }) {
       if (!ok) { res.flash('error', `Formularz zawiera błędy: ${Object.values(errors)[0]}`); return res.redirect(303, back); }
       try {
         office.save(review, data);
+        office.saveSteps(review.id, collectDoneSteps(req.body));
       } catch (err) {
         if (!(err instanceof DomainError)) throw err;
         res.flash('error', err.message);

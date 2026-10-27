@@ -42,6 +42,11 @@ function auditCsv(report) {
     [AREA_LABELS.OZN, pct(score.areas.OZN.percent)],
     [AREA_LABELS.KSZTALCENIE, pct(score.areas.KSZTALCENIE.percent)],
     [],
+    ...(report.scenarios || []).flatMap((sc) => [
+      ['Scenariusz', `${sc.title} (wersja ${sc.version || 1})`, sc.goal ? `Cel: ${sc.goal}` : ''],
+      ...sc.steps.map((st) => ['Krok', `${st.position}. ${st.text}`, st.done ? 'wykonano' : 'nie odhaczono']),
+    ]),
+    [],
     ['Obszar', 'Kategoria', 'Kod', 'Kryterium', 'Waga', 'Odpowiedź', 'Komentarz', 'Załączniki'],
     ...items.map((i) => [
       AREA_LABELS[i.area], i.category, i.code, i.text, i.weight, answerLabel(i), i.comment || '', (files.get(i.id) || []).join(', '),
@@ -163,6 +168,17 @@ function auditPdf(report) {
   if (audit.approved_at) doc.text(`Zatwierdzono: ${audit.approved_at} UTC${audit.reviewer_name ? ` (${audit.reviewer_name})` : ''}`);
 
   summaryBlock(doc, summary);
+
+  if (report.scenarios?.length) {
+    heading(doc, 'Scenariusze');
+    for (const sc of report.scenarios) {
+      ensureSpace(doc, 40);
+      doc.font('bold').text(`${sc.title} (wersja ${sc.version || 1})`).font('regular');
+      if (sc.goal) doc.fillColor(COLORS.muted).text(`Cel: ${sc.goal}`).fillColor(COLORS.text);
+      for (const st of sc.steps) doc.text(`${st.done ? '[x]' : '[ ]'} ${st.position}. ${st.text}`, { paragraphGap: 2 });
+      doc.moveDown(0.4);
+    }
+  }
 
   if (summary.gaps.length) {
     heading(doc, 'Najważniejsze braki');

@@ -12,6 +12,7 @@ const { createCatalogService } = require('./services/catalog');
 const { createAuditsService } = require('./services/audits');
 const { createAttachmentsService } = require('./services/attachments');
 const { createReportsService } = require('./services/reports');
+const { createScenarioSnapshots } = require('./services/scenarioSnapshots');
 const { createOfficeReviewsService } = require('./services/officeReviews');
 
 const { attachUser, sameOriginOnly } = require('./middleware/auth');
@@ -40,10 +41,11 @@ function createApp(config, { db = openDatabase(config.databasePath), szoClient }
   const users = createUsersService(db, { defaultRole: config.szo.defaultRole });
   const objects = createObjectsService(db);
   const catalog = createCatalogService(db);
-  const audits = createAuditsService(db, { objects, users });
+  const snapshots = createScenarioSnapshots(db);
+  const audits = createAuditsService(db, { objects, users, snapshots });
   const attachments = createAttachmentsService(db, config);
-  const reports = createReportsService(db, { objects, audits });
-  const office = createOfficeReviewsService(db, { objects, users });
+  const reports = createReportsService(db, { objects, audits, snapshots });
+  const office = createOfficeReviewsService(db, { objects, users, snapshots });
   const szo = szoClient || createSzoClient(config.szo);
   const sessions = createSessionService(config);
 
@@ -98,7 +100,7 @@ function createApp(config, { db = openDatabase(config.databasePath), szoClient }
     return res.status(status).render('error', { title: 'Błąd', status, message });
   });
 
-  return { app, db, services: { users, objects, catalog, audits, attachments, reports, office, sessions } };
+  return { app, db, services: { users, objects, catalog, audits, attachments, reports, office, snapshots, sessions } };
 }
 
 module.exports = { createApp };

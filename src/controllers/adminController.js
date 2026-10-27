@@ -1,10 +1,11 @@
 /** Zarządzanie słownikami administratora: obiekty, kryteria, scenariusze, użytkownicy. */
 const {
-  OBJECT_TYPES, AREA_LABELS, SCENARIO_AREAS, SCENARIO_USAGE, ANSWER_TYPE_LABELS, ROLES, ROLE_LABELS,
+  OBJECT_TYPES, AREA_LABELS, SCENARIO_AREAS, SCENARIO_USAGE, DISABILITIES, ANSWER_TYPE_LABELS, ROLES, ROLE_LABELS,
 } = require('../domain/constants');
 const {
   objectSchema, criterionSchema, scenarioSchema, userUpdateSchema, parseForm,
 } = require('../validation/schemas');
+const { STATUS_LABELS } = require('../domain/workflow');
 const { paramId, httpError } = require('./helpers');
 
 function createAdminController({ objects, catalog, users }) {
@@ -12,6 +13,9 @@ function createAdminController({ objects, catalog, users }) {
     title: 'Obiekt', objectTypes: OBJECT_TYPES, errors: {}, values: {}, object: null,
     coordinators: users.listByRole(ROLES.COORDINATOR, ROLES.ADMIN), parents: objects.parentOptions(), ...extra,
   });
+
+  const scenarioLabels = { areaLabels: SCENARIO_AREAS, usageLabels: SCENARIO_USAGE, personaLabels: DISABILITIES };
+  const scenarioForm = (extra = {}) => ({ scenario: null, errors: {}, values: {}, ...scenarioLabels, ...extra });
 
   const checkboxValues = (body) => ({ ...body, active: body.active === 'on' });
 
@@ -101,29 +105,57 @@ function createAdminController({ objects, catalog, users }) {
     },
 
     /* ---------- Scenariusze ---------- */
-    scenariosIndex: (req, res) => res.render('scenarios/index', { title: 'Scenariusze', scenarios: catalog.scenarios.list(), areaLabels: SCENARIO_AREAS, usageLabels: SCENARIO_USAGE }),
-    scenarioNew: (req, res) => res.render('scenarios/form', { title: 'Nowy scenariusz', scenario: null, errors: {}, values: { areas: 'BOTH', usage: 'audit', active: true }, areaLabels: SCENARIO_AREAS, usageLabels: SCENARIO_USAGE }),
+    scenariosIndex(req, res) {
+      const usage = Object.hasOwn(SCENARIO_USAGE, req.query.usage) ? req.query.usage : '';
+      const active = ['0', '1'].includes(req.query.active) ? req.query.active : '';
+      const list = catalog.scenarios.list()
+        .filter((s) => !usage || s.usage === usage)
+        .filter((s) => active === '' || String(s.active) === active);
+      res.render('scenarios/index', { title: 'Scenariusze', scenarios: list, filter: { usage, active }, ...scenarioLabels });
+    },
+    scenarioShow(req, res) {
+      const s = catalog.scenarios.get(paramId(req));
+      if (!s) throw httpError(404, 'Nie znaleziono scenariusza.');
+      res.render('scenarios/show', { title: `Scenariusz: ${s.title}`, scenario: s, steps: catalog.scenarios.steps(s.id), usageOf: catalog.scenarios.usageOf(s.id), statusLabels: STATUS_LABELS, ...scenarioLabels });
+    },
+    scenarioNew: (req, res) => res.render('scenarios/form', scenarioForm({ title: 'Nowy scenariusz', values: { areas: 'BOTH', usage: 'audit', active: true } })),
     scenarioCreate(req, res) {
       const { ok, data, errors } = parseForm(scenarioSchema, req.body);
-      if (!ok) return res.status(422).render('scenarios/form', { title: 'Nowy scenariusz', scenario: null, errors, values: checkboxValues(req.body), areaLabels: SCENARIO_AREAS, usageLabels: SCENARIO_USAGE });
-      catalog.scenarios.create(data);
+      if (!ok) return res.status(422).render('scenarios/form', scenarioForm({ title: 'Nowy scenariusz', errors, values: checkboxValues(req.body) }));
+      const created = catalog.scenarios.create(data);
       res.flash('success', `Dodano scenariusz „${data.title}”.`);
-      res.redirect(303, '/scenarios');
+      res.redirect(303, `/scenarios/${created.id}`);
     },
     scenarioEdit(req, res) {
       const s = catalog.scenarios.get(paramId(req));
       if (!s) throw httpError(404, 'Nie znaleziono scenariusza.');
-      res.render('scenarios/form', { title: 'Edycja scenariusza', scenario: s, errors: {}, areaLabels: SCENARIO_AREAS, usageLabels: SCENARIO_USAGE, values: { title: s.title, description: s.description, areas: s.areas, usage: s.usage, active: Boolean(s.active) } });
+      res.render('scenarios/form', scenarioForm({
+        title: 'Edycja scenariusza', scenario: s,
+        values: {
+          title: s.title, description: s.description, goal: s.goal, persona: s.persona, expectedResult: s.expected_result,
+          estimatedMinutes: s.estimated_minutes, steps: catalog.scenarios.steps(s.id).map((x) => x.text).join('\n'),
+          areas: s.areas, usage: s.usage, active: Boolean(s.active),
+        },
+      }));
     },
     scenarioUpdate(req, res) {
       const id = paramId(req);
       const s = catalog.scenarios.get(id);
       if (!s) throw httpError(404, 'Nie znaleziono scenariusza.');
       const { ok, data, errors } = parseForm(scenarioSchema, req.body);
-      if (!ok) return res.status(422).render('scenarios/form', { title: 'Edycja scenariusza', scenario: s, errors, values: checkboxValues(req.body), areaLabels: SCENARIO_AREAS, usageLabels: SCENARIO_USAGE });
-      catalog.scenarios.update(id, data);
-      res.flash('success', `Zapisano scenariusz „${data.title}”.`);
-      res.redirect(303, '/scenarios');
+      if (!ok) return res.status(422).render('scenarios/form', scenarioForm({ title: 'Edycja scenariusza', scenario: s, errors, values: checkboxValues(req.body) }));
+      const updated = catalog.scenarios.update(id, data);
+      res.flash('success', updated.version > s.version
+        ? `Zapisano scenariusz „${data.title}” jako wersję ${updated.version}. Audyty i oceny już przydzielone zachowują dotychczasową treść.`
+        : `Zapisano scenariusz „${data.title}”.`);
+      res.redirect(303, `/scenarios/${id}`);
+    },
+    scenarioDuplicate(req, res) {
+      const id = paramId(req);
+      if (!catalog.scenarios.get(id)) throw httpError(404, 'Nie znaleziono scenariusza.');
+      const copy = catalog.scenarios.duplicate(id);
+      res.flash('success', 'Utworzono kopię scenariusza jako nieaktywny szkic. Zmień jej treść i włącz, gdy będzie gotowa.');
+      res.redirect(303, `/scenarios/${copy.id}/edit`);
     },
     scenarioDelete(req, res) {
       const id = paramId(req);

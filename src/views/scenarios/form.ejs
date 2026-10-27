@@ -1,12 +1,18 @@
 <%- include('../partials/header') %>
 <h1><%= title %></h1>
+<% if (scenario) { %><p class="muted">Wersja <%= scenario.version %>. Zmiana treści (tytuł, opisy, persona, czas, zakres, kroki) tworzy nową wersję; audyty i oceny już przydzielone zachowują dotychczasową treść.</p><% } %>
 <% if (Object.keys(errors).length) { %><div class="error-summary" role="alert">Formularz zawiera błędy. Popraw zaznaczone pola.</div><% } %>
 <form method="post" action="<%= scenario ? `/scenarios/${scenario.id}` : '/scenarios' %>" novalidate>
   <%- include('../partials/field', { name: 'title', label: 'Tytuł', kind: 'input', value: values.title, errors, required: true }) %>
-  <%- include('../partials/field', { name: 'description', label: 'Opis scenariusza (instrukcja dla audytora)', kind: 'textarea', value: values.description, errors }) %>
   <%- include('../partials/field', { name: 'usage', label: 'Dotyczy', kind: 'select', value: values.usage, errors, required: true, hint: 'W którym module można wybrać ten scenariusz.', options: Object.entries(usageLabels) }) %>
+  <%- include('../partials/field', { name: 'goal', label: 'Cel scenariusza', kind: 'textarea', value: values.goal, errors, hint: 'Co ma ustalić audytor, np. „Sprawdzić, czy osoba na wózku samodzielnie dotrze do dziekanatu”.' }) %>
+  <%- include('../partials/field', { name: 'persona', label: 'Persona (w kogo wciela się audytor)', kind: 'select', value: values.persona, errors, blank: '— nie dotyczy —', options: Object.entries(personaLabels) }) %>
+  <%- include('../partials/field', { name: 'description', label: 'Opis i instrukcja dla audytora', kind: 'textarea', value: values.description, errors }) %>
+  <%- include('../partials/field', { name: 'steps', label: 'Kroki do wykonania', kind: 'textarea', value: values.steps, errors, hint: 'Jeden krok w wierszu, maksymalnie 30. Numeracja jest nadawana automatycznie. Audytor odhacza wykonane kroki.' }) %>
+  <%- include('../partials/field', { name: 'expectedResult', label: 'Oczekiwany rezultat', kind: 'textarea', value: values.expectedResult, errors, hint: 'Co audytor ma przynieść po wykonaniu scenariusza, np. wykaz barier ze zdjęciami.' }) %>
+  <%- include('../partials/field', { name: 'estimatedMinutes', label: 'Szacowany czas (minuty)', kind: 'input', type: 'number', value: values.estimatedMinutes, errors }) %>
   <%- include('../partials/field', { name: 'areas', label: 'Zakres kryteriów (audyty obiektów)', kind: 'select', value: values.areas, errors, required: true, hint: 'Decyduje, które kryteria trafią do audytu. Dla scenariuszy wyłącznie z modułu „Dostępność kształcenia” nie ma znaczenia.', options: Object.entries(areaLabels) }) %>
   <div class="field check"><input type="checkbox" id="active" name="active"<% if (values.active) { %> checked<% } %>><label for="active">Aktywny (można go przydzielać)</label></div>
-  <div class="actions"><button type="submit">Zapisz</button><a class="btn btn-secondary" href="/scenarios">Anuluj</a></div>
+  <div class="actions"><button type="submit">Zapisz</button><a class="btn btn-secondary" href="<%= scenario ? `/scenarios/${scenario.id}` : '/scenarios' %>">Anuluj</a></div>
 </form>
 <%- include('../partials/footer') %>

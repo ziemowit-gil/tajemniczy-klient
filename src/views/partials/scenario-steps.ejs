@@ -1,0 +1,41 @@
+<%#
+  Scenariusze przypisane do audytu / oceny (migawki) z listą kroków.
+  Parametry: scenarios (z scenarioSnapshots.list), editable (czy audytor może odhaczać kroki), formId (id głównego formularza),
+  personaLabels (opcjonalnie)
+%>
+<% const personas = locals.personaLabels || {}; %>
+<% if (scenarios.length) { %>
+<section aria-labelledby="scen-h">
+  <h2 id="scen-h">Scenariusze do wykonania</h2>
+  <% for (const s of scenarios) { %>
+    <article class="scenario-card" aria-labelledby="sc-<%= s.id %>">
+      <h3 id="sc-<%= s.id %>"><%= s.title %> <span class="muted version">(wersja <%= s.version || 1 %>)</span></h3>
+      <% if (s.outdated) { %><p class="note-box">W słowniku jest już nowsza wersja tego scenariusza (<%= s.current_version %>). Ten audyt korzysta z wersji z chwili przydziału (<%= s.version %>).</p><% } %>
+      <dl class="scenario-meta">
+        <% if (s.persona) { %><div><dt>Wcielasz się w osobę z</dt><dd><%= personas[s.persona] || s.persona %></dd></div><% } %>
+        <% if (s.estimated_minutes) { %><div><dt>Szacowany czas</dt><dd><%= s.estimated_minutes %> min</dd></div><% } %>
+        <% if (s.goal) { %><div><dt>Cel</dt><dd><%= s.goal %></dd></div><% } %>
+        <% if (s.expected_result) { %><div><dt>Oczekiwany rezultat</dt><dd><%= s.expected_result %></dd></div><% } %>
+      </dl>
+      <% if (s.description) { %><p><%= s.description %></p><% } %>
+      <% if (s.steps.length) { %>
+        <fieldset class="steps">
+          <legend>Kroki (wykonano <%= s.stepsDone %> z <%= s.steps.length %>)</legend>
+          <ol class="step-list">
+            <% for (const st of s.steps) { %>
+              <li>
+                <% if (editable) { %>
+                  <input type="checkbox" id="step-<%= st.id %>" name="step_<%= st.id %>" form="<%= formId %>"<% if (st.done) { %> checked<% } %>>
+                  <label for="step-<%= st.id %>"><%= st.text %></label>
+                <% } else { %>
+                  <span><%= st.text %></span> <span class="muted">— <%= st.done ? 'wykonano' : 'nie odhaczono' %></span>
+                <% } %>
+              </li>
+            <% } %>
+          </ol>
+        </fieldset>
+      <% } %>
+    </article>
+  <% } %>
+</section>
+<% } %>

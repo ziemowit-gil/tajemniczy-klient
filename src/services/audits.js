@@ -24,12 +24,12 @@ function resolveAnswer(entry, item) {
   return entry.answer === '' ? null : entry.answer;
 }
 
-function createAuditsService(db, { objects, users }) {
+function createAuditsService(db, { objects, users, snapshots }) {
   const select = `
     SELECT a.*, o.name AS object_name, o.type AS object_type, o.address AS object_address,
            au.name AS auditor_name,
-           (SELECT GROUP_CONCAT(title, '; ') FROM (SELECT s.title FROM audit_scenarios x JOIN scenarios s ON s.id = x.scenario_id
-              WHERE x.audit_id = a.id ORDER BY s.title COLLATE NOCASE)) AS scenario_title,
+           (SELECT GROUP_CONCAT(title, '; ') FROM (SELECT COALESCE(x.title, s.title) AS title FROM audit_scenarios x
+              JOIN scenarios s ON s.id = x.scenario_id WHERE x.audit_id = a.id ORDER BY 1 COLLATE NOCASE)) AS scenario_title,
            rv.name AS reviewer_name,
            (SELECT COUNT(*) FROM audit_items i WHERE i.audit_id = a.id) AS item_count,
            (SELECT COUNT(*) FROM audit_items i WHERE i.audit_id = a.id AND i.answer IS NOT NULL) AS answered_count
@@ -68,9 +68,9 @@ function createAuditsService(db, { objects, users }) {
                  a.due_date IS NULL, a.due_date, a.id DESC`).all(...params);
     },
 
-    /** Scenariusze przypisane do audytu (tytuł i instrukcja). */
-    scenarios: (auditId) => db.prepare(`SELECT s.id, s.title, s.description, s.areas FROM audit_scenarios x
-      JOIN scenarios s ON s.id = x.scenario_id WHERE x.audit_id = ? ORDER BY s.title COLLATE NOCASE`).all(auditId),
+    /** Scenariusze przypisane do audytu: migawki z krokami i stanem ich wykonania. */
+    scenarios: (auditId) => snapshots.list('audit', auditId),
+    saveSteps: (auditId, doneIds) => snapshots.setDone('audit', auditId, doneIds),
 
     items: (auditId) => db.prepare('SELECT * FROM audit_items WHERE audit_id = ? ORDER BY area DESC, position, id').all(auditId),
     scoringItems: (auditId) => svc.items(auditId).map(toScoringItem),
@@ -104,8 +104,7 @@ function createAuditsService(db, { objects, users }) {
         const info = db.prepare(
           'INSERT INTO audits (object_id, auditor_id, scenario_id, assigned_by, due_date) VALUES (?, ?, ?, ?, ?)',
         ).run(objectId, auditorId, primary, assignedBy, dueDate);
-        const link = db.prepare('INSERT INTO audit_scenarios (audit_id, scenario_id) VALUES (?, ?)');
-        for (const id of ids) link.run(info.lastInsertRowid, id);
+        snapshots.add('audit', info.lastInsertRowid, ids);
         const insert = db.prepare(`INSERT INTO audit_items
           (audit_id, criterion_id, code, area, category, text, hint, weight, answer_type, position)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);

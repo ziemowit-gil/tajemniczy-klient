@@ -47,11 +47,41 @@ const CRITERIA = [
 ];
 
 const SCENARIOS = [
-  ['Pełna ocena dostępności obiektu', 'Kompleksowa wizyta: dotarcie do budynku, poruszanie się, kontakt z dziekanatem, sprawdzenie strony i platformy e-learningowej oraz procedur wsparcia.', 'BOTH'],
-  ['Kandydat na studia z niepełnosprawnością ruchową', 'Wejdź do budynku jako osoba poruszająca się na wózku: dojazd, wejście, winda, toaleta, dziekanat. Zwróć uwagę na dostępność i postawę pracowników.', 'OZN'],
-  ['Student niewidomy lub słabowidzący', 'Sprawdź orientację w budynku, oznaczenia dotykowe i kontrastowe, dostępność materiałów, strony i platformy z czytnikiem ekranu oraz warunki egzaminów.', 'BOTH'],
-  ['Student niesłyszący lub słabosłyszący', 'Sprawdź komunikację w dziekanacie (pętla indukcyjna, PJM, pisemne ustalenia), napisy w materiałach wideo i sposób dostosowania zajęć.', 'BOTH'],
-  ['Proces kształcenia: wsparcie i egzaminy', 'Zgłoś potrzeby studenta, przejdź procedurę dostosowań: materiały, lektoraty, praktyki i warunki egzaminów.', 'KSZTALCENIE'],
+  {
+    title: 'Pełna ocena dostępności obiektu',
+    description: 'Kompleksowa wizyta: dotarcie do budynku, poruszanie się, kontakt z dziekanatem, sprawdzenie strony i platformy e-learningowej oraz procedur wsparcia.',
+    areas: 'BOTH', goal: 'Ocenić dostępność obiektu od dojścia po obsługę i dostępność cyfrową.', persona: null, estimatedMinutes: 120,
+    expectedResult: 'Wypełnione wszystkie kryteria, każde z komentarzem i dowodem (zdjęcie) tam, gdzie wykryto bariery.',
+    steps: ['Dotrzyj do budynku jak zwykły gość i oceń dojście oraz oznaczenie wejścia.', 'Przejdź trasę do dziekanatu: drzwi, winda, korytarze, oznaczenia.', 'Skorzystaj z toalety dostosowanej i sprawdź jej wyposażenie.', 'Odwiedź dziekanat i zapytaj o wsparcie dla osoby z niepełnosprawnością.', 'Sprawdź stronę uczelni i platformę e-learningową klawiaturą oraz powiększeniem 200%.', 'Zapytaj o procedurę dostosowania egzaminów i formaty materiałów.'],
+  },
+  {
+    title: 'Kandydat na studia z niepełnosprawnością ruchową',
+    description: 'Wejdź do budynku jako osoba poruszająca się na wózku: dojazd, wejście, winda, toaleta, dziekanat. Zwróć uwagę na dostępność i postawę pracowników.',
+    areas: 'OZN', goal: 'Sprawdzić, czy osoba na wózku samodzielnie dotrze do dziekanatu i załatwi sprawę.', persona: 'ruchowa', estimatedMinutes: 60,
+    expectedResult: 'Ocena trasy od parkingu do dziekanatu z wykazem barier architektonicznych.',
+    steps: ['Znajdź miejsce parkingowe dla osób z niepełnosprawnościami i oceń dojście do wejścia.', 'Wejdź głównym wejściem bez pomocy osób trzecich.', 'Dojedź windą na piętro dziekanatu.', 'Sprawdź szerokość drzwi i przejść oraz wysokość lad obsługi.', 'Skorzystaj z toalety dostosowanej.'],
+  },
+  {
+    title: 'Student niewidomy lub słabowidzący',
+    description: 'Sprawdź orientację w budynku, oznaczenia dotykowe i kontrastowe, dostępność materiałów, strony i platformy z czytnikiem ekranu oraz warunki egzaminów.',
+    areas: 'BOTH', goal: 'Ocenić, czy student z dysfunkcją wzroku może samodzielnie poruszać się i korzystać z materiałów.', persona: 'wzroku', estimatedMinutes: 90,
+    expectedResult: 'Wykaz barier orientacyjnych i cyfrowych oraz ocena dostępności materiałów i egzaminów.',
+    steps: ['Oceń oznaczenia wejścia, schodów i drzwi (kontrast, Braille, druk powiększony).', 'Sprawdź, czy dostępna jest tyflomapa lub inny system naprowadzania.', 'Przejdź stronę uczelni z czytnikiem ekranu.', 'Otwórz materiał na platformie e-learningowej czytnikiem ekranu.', 'Zapytaj o materiały w formatach alternatywnych i warunki egzaminu.'],
+  },
+  {
+    title: 'Student niesłyszący lub słabosłyszący',
+    description: 'Sprawdź komunikację w dziekanacie (pętla indukcyjna, PJM, pisemne ustalenia), napisy w materiałach wideo i sposób dostosowania zajęć.',
+    areas: 'BOTH', goal: 'Ocenić, czy student z dysfunkcją słuchu załatwi sprawy i będzie uczestniczył w zajęciach.', persona: 'sluchu', estimatedMinutes: 75,
+    expectedResult: 'Ocena komunikacji w dziekanacie, dostępności tłumacza PJM oraz napisów w materiałach.',
+    steps: ['Sprawdź, czy w dziekanacie działa pętla indukcyjna i jest oznaczona.', 'Poproś o rozmowę z tłumaczem PJM albo komunikację pisemną.', 'Obejrzyj nagranie wykładu i sprawdź jakość napisów.', 'Zapytaj, jak uczelnia dostosuje zajęcia i egzaminy.'],
+  },
+  {
+    title: 'Proces kształcenia: wsparcie i egzaminy',
+    description: 'Zgłoś potrzeby studenta, przejdź procedurę dostosowań: materiały, lektoraty, praktyki i warunki egzaminów.',
+    areas: 'KSZTALCENIE', goal: 'Sprawdzić, czy procedura wsparcia studenta jest jasna i skuteczna.', persona: null, estimatedMinutes: 60,
+    expectedResult: 'Opis ścieżki zgłoszenia potrzeb, czasu reakcji i zastosowanych dostosowań.',
+    steps: ['Znajdź informację o wsparciu na stronie i w dziekanacie.', 'Zgłoś potrzebę dostosowania zgodnie z procedurą.', 'Zapytaj o formaty materiałów, lektorat i praktyki.', 'Zapytaj o warunki dostosowanego egzaminu.'],
+  },
 ];
 
 const OFFICE_QUESTIONS = [
@@ -72,12 +102,36 @@ const OFFICE_QUESTIONS = [
   ['BOZN-14', 'Wrażenie ogólne', 'Poleciłbym/poleciłabym ten kierunek na tej uczelni osobie z taką niepełnosprawnością.', null, 3, 'scale'],
 ];
 
-// [tytuł, opis, zakres kryteriów, użycie] – scenariusze dla oceny „Dostępność kształcenia”
+// Scenariusze dla oceny „Dostępność kształcenia” (usage = education)
 const EDUCATION_SCENARIOS = [
-  ['Zapytanie e-mailowe o dostosowanie rekrutacji', 'Napisz do biura ds. osób z niepełnosprawnościami z pytaniem o dostosowanie egzaminu wstępnego lub rekrutacji na wybrany kierunek. Zanotuj czas i treść odpowiedzi.', 'KSZTALCENIE', 'education'],
-  ['Kontakt telefoniczny z biurem', 'Zadzwoń lub poproś o kontakt w formie dostosowanej do niepełnosprawności (np. SMS, czat). Oceń cierpliwość, wiedzę i gotowość pomocy.', 'KSZTALCENIE', 'education'],
-  ['Wizyta w biurze i rozmowa z doradcą', 'Umów się na spotkanie i omów realizację kierunku: zajęcia, laboratoria, praktyki, egzaminy. Zapytaj o konkretne dostosowania.', 'KSZTALCENIE', 'education'],
-  ['Pytanie o wsparcie w trakcie studiów', 'Dowiedz się, kto i jak wspiera studenta w trakcie semestru: asystent, materiały w formatach alternatywnych, kontakt z wykładowcami.', 'KSZTALCENIE', 'education'],
+  {
+    title: 'Zapytanie e-mailowe o dostosowanie rekrutacji',
+    description: 'Napisz do biura ds. osób z niepełnosprawnościami z pytaniem o dostosowanie egzaminu wstępnego lub rekrutacji na wybrany kierunek. Zanotuj czas i treść odpowiedzi.',
+    goal: 'Sprawdzić szybkość, rzeczowość i życzliwość odpowiedzi biura na zapytanie kandydata.', persona: null, estimatedMinutes: 30,
+    expectedResult: 'Zapisana data wysłania i odpowiedzi oraz ocena treści odpowiedzi.',
+    steps: ['Znajdź adres e-mail biura na stronie uczelni (policz kliknięcia).', 'Wyślij zapytanie o dostosowanie rekrutacji na wybrany kierunek.', 'Zanotuj datę i godzinę wysłania.', 'Po otrzymaniu odpowiedzi zanotuj datę i oceń jej treść.'],
+  },
+  {
+    title: 'Kontakt telefoniczny z biurem',
+    description: 'Zadzwoń lub poproś o kontakt w formie dostosowanej do niepełnosprawności (np. SMS, czat). Oceń cierpliwość, wiedzę i gotowość pomocy.',
+    goal: 'Ocenić dostępność biura w kanale głosowym lub alternatywnym.', persona: null, estimatedMinutes: 20,
+    expectedResult: 'Opis rozmowy, czasu oczekiwania i dostępności alternatywnych kanałów.',
+    steps: ['Znajdź numer telefonu lub alternatywny kanał (SMS, czat, PJM online).', 'Skontaktuj się z biurem w godzinach pracy.', 'Zapytaj o wsparcie na wybranym kierunku.', 'Zanotuj czas oczekiwania i przebieg rozmowy.'],
+  },
+  {
+    title: 'Wizyta w biurze i rozmowa z doradcą',
+    description: 'Umów się na spotkanie i omów realizację kierunku: zajęcia, laboratoria, praktyki, egzaminy. Zapytaj o konkretne dostosowania.',
+    goal: 'Ocenić doradztwo biura przy wyborze kierunku i planowaniu dostosowań.', persona: null, estimatedMinutes: 60,
+    expectedResult: 'Lista dostosowań zaproponowanych dla kierunku oraz ocena wiedzy doradcy.',
+    steps: ['Umów termin spotkania (stacjonarnie lub zdalnie).', 'Przedstaw swoją sytuację bez ujawniania więcej niż to konieczne.', 'Zapytaj o dostosowania zajęć, laboratoriów, praktyk i egzaminów kierunku.', 'Zapytaj o dalsze kroki i osobę kontaktową.'],
+  },
+  {
+    title: 'Pytanie o wsparcie w trakcie studiów',
+    description: 'Dowiedz się, kto i jak wspiera studenta w trakcie semestru: asystent, materiały w formatach alternatywnych, kontakt z wykładowcami.',
+    goal: 'Sprawdzić, jakiego wsparcia może oczekiwać student po rozpoczęciu nauki.', persona: null, estimatedMinutes: 30,
+    expectedResult: 'Opis dostępnych form wsparcia i sposobu ich uruchomienia.',
+    steps: ['Zapytaj o asystenta, tłumacza lub sprzęt wspierający.', 'Zapytaj o materiały w formatach alternatywnych i terminy ich dostarczenia.', 'Zapytaj, kto kontaktuje się z wykładowcami w sprawie dostosowań.'],
+  },
 ];
 
 function seedCatalog(db) {
@@ -94,14 +148,14 @@ function seedCatalog(db) {
     }
     // Każdy rodzaj scenariuszy uzupełniany osobno, więc starsze bazy dostają brakujące scenariusze kształcenia.
     const countScenarios = (usages) => db.prepare(`SELECT COUNT(*) AS n FROM scenarios WHERE usage IN (${usages.map(() => '?').join(',')})`).get(...usages).n;
-    if (countScenarios(['audit', 'both']) === 0) {
-      const insert = db.prepare('INSERT INTO scenarios (title, description, areas) VALUES (?, ?, ?)');
-      for (const sc of SCENARIOS) insert.run(...sc);
-    }
-    if (countScenarios(['education', 'both']) === 0) {
-      const insert = db.prepare('INSERT INTO scenarios (title, description, areas, usage) VALUES (?, ?, ?, ?)');
-      for (const sc of EDUCATION_SCENARIOS) insert.run(...sc);
-    }
+    const insertScenario = (sc, usage) => {
+      const info = db.prepare(`INSERT INTO scenarios (title, description, areas, usage, goal, persona, expected_result, estimated_minutes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(sc.title, sc.description, sc.areas || 'KSZTALCENIE', usage, sc.goal, sc.persona, sc.expectedResult, sc.estimatedMinutes);
+      const step = db.prepare('INSERT INTO scenario_steps (scenario_id, position, text) VALUES (?, ?, ?)');
+      sc.steps.forEach((text, i) => step.run(info.lastInsertRowid, i + 1, text));
+    };
+    if (countScenarios(['audit', 'both']) === 0) SCENARIOS.forEach((sc) => insertScenario(sc, 'audit'));
+    if (countScenarios(['education', 'both']) === 0) EDUCATION_SCENARIOS.forEach((sc) => insertScenario(sc, 'education'));
   });
 }
 

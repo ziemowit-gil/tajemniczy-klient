@@ -42,4 +42,9 @@ function collectAnswers(body) {
   return answers;
 }
 
-module.exports = { httpError, paramId, flashMiddleware, collectAnswers };
+/** Odhaczone kroki scenariuszy: pola `step_<id>` (checkbox wysyłany tylko gdy zaznaczony). */
+function collectDoneSteps(body) {
+  return Object.keys(body || {}).map((name) => /^step_(\d+)$/.exec(name)).filter(Boolean).map((m) => Number(m[1]));
+}
+
+module.exports = { httpError, paramId, flashMiddleware, collectAnswers, collectDoneSteps };

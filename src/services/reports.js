@@ -3,7 +3,7 @@ const { STATUS } = require('../domain/workflow');
 const { buildSummary, scoreItems } = require('../domain/scoring');
 const { toScoringItem } = require('./audits');
 
-function createReportsService(db, { objects, audits }) {
+function createReportsService(db, { objects, audits, snapshots }) {
   const itemsOf = (auditId) => db.prepare('SELECT * FROM audit_items WHERE audit_id = ?').all(auditId).map(toScoringItem);
 
   const svc = {
@@ -20,6 +20,7 @@ function createReportsService(db, { objects, audits }) {
         JOIN audit_items i ON i.id = att.audit_item_id WHERE i.audit_id = ? ORDER BY att.id`).all(audit.id);
       return {
         audit,
+        scenarios: snapshots.list('audit', audit.id),
         items,
         attachments,
         summary: buildSummary(items, { objectName: audit.object_name }),
@@ -36,8 +37,8 @@ function createReportsService(db, { objects, audits }) {
       const ids = objects.descendantIds(objectId);
       const rows = db.prepare(`
         SELECT a.id, a.approved_at, a.scenario_id, a.object_id, o.name AS object_name, o.type AS object_type,
-               (SELECT GROUP_CONCAT(title, '; ') FROM (SELECT sc.title FROM audit_scenarios x JOIN scenarios sc ON sc.id = x.scenario_id
-                  WHERE x.audit_id = a.id ORDER BY sc.title COLLATE NOCASE)) AS scenario_title,
+               (SELECT GROUP_CONCAT(title, '; ') FROM (SELECT COALESCE(x.title, sc.title) AS title FROM audit_scenarios x
+                  JOIN scenarios sc ON sc.id = x.scenario_id WHERE x.audit_id = a.id ORDER BY 1 COLLATE NOCASE)) AS scenario_title,
                au.name AS auditor_name
         FROM audits a JOIN objects o ON o.id = a.object_id
         JOIN users au ON au.id = a.auditor_id

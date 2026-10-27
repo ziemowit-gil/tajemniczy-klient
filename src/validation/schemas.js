@@ -45,9 +45,19 @@ const idList = z.preprocess(
   z.array(z.coerce.number().int().positive()).max(50).transform((a) => [...new Set(a)]),
 );
 
+const MAX_STEPS = 30;
+/** Kroki wpisywane jako tekst: jeden krok w wierszu; puste wiersze pomijane, numeracja z wiersza ("1. ") usuwana. */
+const stepsField = z.string().optional().transform((v) => (v || '').split(/\r?\n/).map((l) => l.replace(/^\s*\d+[.)]\s+/, '').trim()).filter(Boolean))
+  .pipe(z.array(z.string().max(300, 'Krok: maksymalnie 300 znaków')).max(MAX_STEPS, `Kroki: maksymalnie ${MAX_STEPS}`));
+
 const scenarioSchema = z.object({
   title: text('Tytuł', { max: 150 }),
   description: optionalText(3000),
+  goal: optionalText(1000),
+  persona: z.preprocess((v) => (v === '' ? undefined : v), z.enum(Object.keys(DISABILITIES), { error: 'Persona: wybierz wartość' }).optional()).transform((v) => v ?? null),
+  expectedResult: optionalText(1000),
+  estimatedMinutes: z.preprocess((v) => (v === '' || v === undefined ? undefined : v), z.coerce.number({ error: 'Czas: podaj liczbę minut' }).int().min(1, 'Czas: 1–600 minut').max(600, 'Czas: 1–600 minut').optional()).transform((v) => v ?? null),
+  steps: stepsField,
   areas: z.enum(['OZN', 'KSZTALCENIE', 'BOTH'], { error: 'Zakres: wybierz wartość' }),
   usage: z.enum(Object.keys(SCENARIO_USAGE), { error: 'Dotyczy: wybierz wartość' }),
   active: checkbox,

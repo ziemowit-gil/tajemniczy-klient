@@ -18,7 +18,7 @@ const toScoringItem = (row) => ({
 
 const fmt = (p) => (p === null ? 'brak danych' : `${String(p).replace('.', ',')}%`);
 
-function createOfficeReviewsService(db, { objects, users }) {
+function createOfficeReviewsService(db, { objects, users, snapshots }) {
   /** Unikalne id scenariuszy; muszą być aktywne i przeznaczone dla modułu kształcenia. */
   const validScenarioIds = (input) => {
     const ids = [...new Set(input || [])];
@@ -32,8 +32,8 @@ function createOfficeReviewsService(db, { objects, users }) {
 
   const select = `
     SELECT r.*, o.name AS object_name, au.name AS auditor_name, rv.name AS reviewer_name,
-      (SELECT GROUP_CONCAT(title, '; ') FROM (SELECT s.title FROM office_review_scenarios x JOIN scenarios s ON s.id = x.scenario_id
-         WHERE x.review_id = r.id ORDER BY s.title COLLATE NOCASE)) AS scenario_title,
+      (SELECT GROUP_CONCAT(title, '; ') FROM (SELECT COALESCE(x.title, s.title) AS title FROM office_review_scenarios x
+         JOIN scenarios s ON s.id = x.scenario_id WHERE x.review_id = r.id ORDER BY 1 COLLATE NOCASE)) AS scenario_title,
       (SELECT COUNT(*) FROM office_review_items i WHERE i.review_id = r.id) AS item_count,
       (SELECT COUNT(*) FROM office_review_items i WHERE i.review_id = r.id AND i.answer IS NOT NULL) AS answered_count
     FROM office_reviews r
@@ -64,8 +64,8 @@ function createOfficeReviewsService(db, { objects, users }) {
   const svc = {
     questions,
     get: (id) => db.prepare(`${select} WHERE r.id = ?`).get(id),
-    scenarios: (reviewId) => db.prepare(`SELECT s.id, s.title, s.description FROM office_review_scenarios x
-      JOIN scenarios s ON s.id = x.scenario_id WHERE x.review_id = ? ORDER BY s.title COLLATE NOCASE`).all(reviewId),
+    scenarios: (reviewId) => snapshots.list('review', reviewId),
+    saveSteps: (reviewId, doneIds) => snapshots.setDone('review', reviewId, doneIds),
     items: (reviewId) => db.prepare('SELECT * FROM office_review_items WHERE review_id = ? ORDER BY position, id').all(reviewId),
     scoringItems: (reviewId) => svc.items(reviewId).map(toScoringItem),
 
@@ -103,8 +103,7 @@ function createOfficeReviewsService(db, { objects, users }) {
       return transaction(db, () => {
         const info = db.prepare(`INSERT INTO office_reviews (object_id, auditor_id, programme, study_level, study_mode, disability)
           VALUES (?, ?, ?, ?, ?, ?)`).run(d.objectId, auditorId, d.programme, d.studyLevel, d.studyMode, d.disability);
-        const link = db.prepare('INSERT INTO office_review_scenarios (review_id, scenario_id) VALUES (?, ?)');
-        for (const id of ids) link.run(info.lastInsertRowid, id);
+        snapshots.add('review', info.lastInsertRowid, ids);
         const insert = db.prepare(`INSERT INTO office_review_items (review_id, question_id, code, category, text, hint, weight, answer_type, position)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
         for (const q of active) insert.run(info.lastInsertRowid, q.id, q.code, q.category, q.text, q.hint, q.weight, q.answer_type, q.position);
@@ -116,11 +115,7 @@ function createOfficeReviewsService(db, { objects, users }) {
     setScenarios(review, scenarioIds) {
       if (review.status === STATUS.APPROVED) throw new DomainError('Zatwierdzonej oceny nie można zmieniać.', 409);
       const ids = validScenarioIds(scenarioIds);
-      transaction(db, () => {
-        db.prepare('DELETE FROM office_review_scenarios WHERE review_id = ?').run(review.id);
-        const link = db.prepare('INSERT INTO office_review_scenarios (review_id, scenario_id) VALUES (?, ?)');
-        for (const id of ids) link.run(review.id, id);
-      });
+      transaction(db, () => snapshots.replace('review', review.id, ids));
       return svc.get(review.id);
     },
 
