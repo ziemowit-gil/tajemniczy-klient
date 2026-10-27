@@ -1,5 +1,5 @@
 /**
- * Moduł „Biuro ds. OZN”: audytor w roli kandydata na dany kierunek ocenia biuro ds. osób z niepełnosprawnościami.
+ * Moduł „Dostępność kształcenia”: audytor w roli kandydata na dany kierunek ocenia biuro ds. osób z niepełnosprawnościami.
  * Wyniki są liczone tym samym silnikiem co audyty, ale raportowane osobno.
  */
 const { transaction } = require('../db');
@@ -81,7 +81,7 @@ function createOfficeReviewsService(db, { objects }) {
       const object = objects.get(d.objectId);
       if (!object || object.type !== 'uczelnia') throw new DomainError('Wybierz uczelnię z listy obiektów.');
       const active = questions.list({ onlyActive: true });
-      if (!active.length) throw new DomainError('Brak aktywnych pytań w ankiecie biura ds. OZN.');
+      if (!active.length) throw new DomainError('Brak aktywnych pytań w ankiecie dostępności kształcenia.');
       return transaction(db, () => {
         const info = db.prepare(`INSERT INTO office_reviews (object_id, auditor_id, programme, study_level, study_mode, disability)
           VALUES (?, ?, ?, ?, ?, ?)`).run(d.objectId, auditorId, d.programme, d.studyLevel, d.studyMode, d.disability);
@@ -152,7 +152,7 @@ function createOfficeReviewsService(db, { objects }) {
       const gaps = findGaps(items, { limit: 5 });
       const lines = [];
       if (score.total.percent === null) lines.push('Ocena nie zawiera jeszcze odpowiedzi.');
-      else lines.push(`Biuro ds. OZN – ${review.object_name}, kierunek „${review.programme}”: ${fmt(score.total.percent)} (${score.total.rating.label.toLowerCase()}).`);
+      else lines.push(`Dostępność kształcenia – ${review.object_name}, kierunek „${review.programme}”: ${fmt(score.total.percent)} (${score.total.rating.label.toLowerCase()}).`);
       if (score.total.completeness < 100) lines.push(`Uzupełniono ${fmt(score.total.completeness)} pytań — wynik może się zmienić.`);
       if (gaps.length) lines.push(`Największe braki: ${gaps.slice(0, 3).map((g) => g.text.replace(/[.\s]+$/, '')).join('; ')}.`);
       return { items, score, gaps, lines };

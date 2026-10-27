@@ -1,4 +1,4 @@
--- Moduł „Biuro ds. OZN”: audytor jako kandydat na kierunek ocenia biuro ds. osób z niepełnosprawnościami.
+-- Moduł „Dostępność kształcenia”: audytor jako kandydat na kierunek ocenia biuro ds. osób z niepełnosprawnościami.
 -- Niezależny od audytów obiektów: własny katalog pytań, własne oceny i własny raport.
 
 CREATE TABLE office_questions (

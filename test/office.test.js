@@ -44,7 +44,7 @@ class Client {
 const as = (sub, role) => new Client().login(sub, role);
 const uid = (ext) => db.prepare('SELECT id FROM users WHERE external_id = ?').get(ext).id;
 
-test('moduł biura ds. OZN: pełny przepływ kandydata, izolacja i raport', async () => {
+test('moduł „Dostępność kształcenia”: pełny przepływ kandydata, izolacja i raport', async () => {
   const adm = await as('adm', 'a');
   const coord = await as('koord', 'k');
   const other = await as('koord2', 'k');

@@ -14,7 +14,7 @@ const labels = { levels: STUDY_LEVELS, modes: STUDY_MODES, disabilities: DISABIL
 
 function createOfficeController({ office, objects }) {
   const universities = () => objects.list().filter((o) => o.type === 'uczelnia');
-  const newFormData = (extra = {}) => ({ title: 'Nowa ocena biura ds. OZN', errors: {}, values: {}, universities: universities(), ...labels, ...extra });
+  const newFormData = (extra = {}) => ({ title: 'Nowa ocena dostępności kształcenia', errors: {}, values: {}, universities: universities(), ...labels, ...extra });
 
   const viewData = (req, review, extra = {}) => {
     const { items, score, lines, gaps } = office.summarize(review);
@@ -26,7 +26,7 @@ function createOfficeController({ office, objects }) {
     }
     void items; void gaps;
     return {
-      title: `Biuro ds. OZN: ${review.object_name}`,
+      title: `Dostępność kształcenia: ${review.object_name}`,
       review, groups, score, lines, answerOptions: ANSWER_OPTIONS, ...labels,
       canEdit: office.canEdit(req.user, review),
       canReview: review.status === STATUS.SUBMITTED && [ROLES.COORDINATOR, ROLES.ADMIN].includes(req.user.role),
@@ -47,7 +47,7 @@ function createOfficeController({ office, objects }) {
     },
 
     index(req, res) {
-      res.render('office/index', { title: 'Ocena biura ds. OZN', reviews: office.list(req.user), ...labels });
+      res.render('office/index', { title: 'Dostępność kształcenia', reviews: office.list(req.user), ...labels });
     },
 
     newForm: (req, res) => res.render('office/new', newFormData()),
@@ -57,7 +57,7 @@ function createOfficeController({ office, objects }) {
       if (!ok) return res.status(422).render('office/new', newFormData({ errors, values: req.body }));
       try {
         const review = office.create(data, req.user.id);
-        res.flash('success', 'Rozpoczęto ocenę biura ds. OZN. Odpowiedzi możesz zapisywać etapami.');
+        res.flash('success', 'Rozpoczęto ocenę dostępności kształcenia. Odpowiedzi możesz zapisywać etapami.');
         return res.redirect(303, `/office/${review.id}`);
       } catch (err) {
         if (!(err instanceof DomainError)) throw err;
@@ -133,7 +133,7 @@ function createOfficeController({ office, objects }) {
 
     /* ---------- raport ---------- */
     report(req, res) {
-      res.render('office/report', { title: 'Raport: biura ds. OZN', report: office.report(req.user), ...labels });
+      res.render('office/report', { title: 'Raport: dostępność kształcenia', report: office.report(req.user), ...labels });
     },
     reportCsv(req, res) {
       res.attachment('raport-biura-ozn.csv');
@@ -141,7 +141,7 @@ function createOfficeController({ office, objects }) {
     },
 
     /* ---------- pytania ankiety (administrator) ---------- */
-    questionsIndex: (req, res) => res.render('office/questions', { title: 'Pytania ankiety biura ds. OZN', questions: office.questions.list(), typeLabels: ANSWER_TYPE_LABELS }),
+    questionsIndex: (req, res) => res.render('office/questions', { title: 'Pytania ankiety: dostępność kształcenia', questions: office.questions.list(), typeLabels: ANSWER_TYPE_LABELS }),
     questionNew: (req, res) => res.render('office/question-form', questionForm({ title: 'Nowe pytanie', values: { weight: 3, answerType: 'scale', active: true } })),
     questionCreate(req, res) {
       const { ok, data, errors } = parseForm(officeQuestionSchema, req.body);

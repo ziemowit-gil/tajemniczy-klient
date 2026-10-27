@@ -24,8 +24,8 @@
   <h2 id="summary-h">Wstępne podsumowanie</h2>
   <% for (const line of lines) { %><p><%= line %></p><% } %>
   <div class="score-row">
-    <div class="label"><span>Wynik biura ds. OZN</span><span><%= fmtPct(score.total.percent) %></span></div>
-    <meter min="0" max="100" value="<%= score.total.percent || 0 %>" aria-label="Wynik biura ds. OZN: <%= fmtPct(score.total.percent) %>"><%= fmtPct(score.total.percent) %></meter>
+    <div class="label"><span>Wynik dostępności kształcenia</span><span><%= fmtPct(score.total.percent) %></span></div>
+    <meter min="0" max="100" value="<%= score.total.percent || 0 %>" aria-label="Wynik dostępności kształcenia: <%= fmtPct(score.total.percent) %>"><%= fmtPct(score.total.percent) %></meter>
     <% if (score.total.rating) { %><div class="muted"><%= score.total.rating.label %> · uzupełniono <%= fmtPct(score.total.completeness) %> pytań</div><% } %>
   </div>
 </section>

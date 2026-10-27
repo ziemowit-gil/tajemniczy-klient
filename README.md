@@ -20,7 +20,7 @@ Otwórz http://localhost:3000/login. W trybie `dev` na stronie logowania są prz
 | Karol Koordynator | Koordynator (uczelnie: Uniwersytet Przykładowy, Politechnika Demonstracyjna) |
 | Ewa Audytorka, Piotr Tajemniczy | Audytor / Tajemniczy Klient |
 
-Dane demo: 2 uczelnie, wydział, budynek, 5 audytów w statusach Przypisany, W trakcie, Złożony i Zatwierdzony (2×) oraz 5 ocen biur ds. OZN.
+Dane demo: 2 uczelnie, wydział, budynek, 5 audytów w statusach Przypisany, W trakcie, Złożony i Zatwierdzony (2×) oraz 5 ocen w module „Dostępność kształcenia”.
 
 ## Uruchomienie
 
@@ -69,9 +69,9 @@ Cudze audyty zwracają 404, a nie 403, żeby nie ujawniać ich istnienia.
 - Złożenie wymaga odpowiedzi na wszystkie kryteria. „Nie dotyczy” wymaga uzasadnienia w komentarzu.
 - Załączniki: JPEG, PNG, WebP, PDF (limit `MAX_UPLOAD_MB`). Typ jest sprawdzany także po sygnaturze pliku. Pliki trafiają poza katalog publiczny i są serwowane tylko po autoryzacji.
 
-## Moduł „Biuro ds. OZN”
+## Moduł „Dostępność kształcenia”
 
-Audytor wciela się w **kandydata na wybrany kierunek** (uczelnia, kierunek, poziom i tryb studiów, rodzaj niepełnosprawności) i ocenia **biuro ds. osób z niepełnosprawnościami**: znalezienie i kontakt, doradztwo przed rekrutacją, wsparcie na kierunku, dostępność biura i wrażenie ogólne (14 pytań, edytowalnych przez administratora w „Pytania biura OZN”).
+Audytor wciela się w **kandydata na wybrany kierunek** (uczelnia, kierunek, poziom i tryb studiów, rodzaj niepełnosprawności) i ocenia **biuro ds. osób z niepełnosprawnościami**: znalezienie i kontakt, doradztwo przed rekrutacją, wsparcie na kierunku, dostępność biura i wrażenie ogólne (14 pytań, edytowalnych przez administratora w „Pytania: kształcenie”).
 
 - Przepływ jak w audytach: W trakcie → Złożony → Zatwierdzony (koordynator zatwierdza lub zwraca z uzasadnieniem). Pytania są kopiowane do oceny przy jej rozpoczęciu.
 - Wyniki są **raportowane osobno** (`/office/report`, CSV): per uczelnia i kierunek, z wynikami według kategorii. Nie wchodzą do raportów zbiorczych audytów ani do punktacji obszaru kształcenia.

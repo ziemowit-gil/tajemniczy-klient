@@ -22,7 +22,7 @@ const coord = person('koordynator@demo.local', 'Karol Koordynator', 'coordinator
 const aud1 = person('audytor1@demo.local', 'Ewa Audytorka', 'auditor');
 const aud2 = person('audytor2@demo.local', 'Piotr Tajemniczy', 'auditor');
 
-/** Oceny biura ds. OZN (osobny moduł); dodawane, jeśli jeszcze ich nie ma. */
+/** Oceny dostępności kształcenia (osobny moduł); dodawane, jeśli jeszcze ich nie ma. */
 function seedOffice() {
   if (db.prepare('SELECT COUNT(*) AS n FROM office_reviews').get().n > 0) return;
   const { office } = services;
@@ -44,7 +44,7 @@ function seedOffice() {
   make(u1, 'Informatyka', 'II', 'stacjonarne', 'sluchu', aud2, 0.35, 'approved');
   make(u2, 'Zarządzanie', 'I', 'niestacjonarne', 'ruchowa', aud1, 0.6, 'submitted');
   make(u2, 'Pedagogika', 'jednolite', 'stacjonarne', 'psychiczna', aud2, 0.5, null);
-  console.log('Dodano oceny biur ds. OZN.');
+  console.log('Dodano oceny dostępności kształcenia.');
 }
 
 if (db.prepare('SELECT COUNT(*) AS n FROM objects').get().n > 0) {

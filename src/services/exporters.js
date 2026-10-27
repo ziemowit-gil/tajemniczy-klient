@@ -72,7 +72,7 @@ function objectCsv(report) {
 
 function officeReportCsv(report) {
   const rows = [
-    ['Raport: ocena biur ds. OZN przez kandydatów (audytorów)'],
+    ['Raport: dostępność kształcenia – oceny kandydatów (audytorów)'],
     ['Zatwierdzone oceny', report.totalReviews],
     [],
     ['Uczelnia', 'Kierunek', 'Liczba ocen', 'Wynik ogólny'],

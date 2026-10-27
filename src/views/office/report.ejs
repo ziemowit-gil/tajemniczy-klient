@@ -1,6 +1,6 @@
 <%- include('../partials/header') %>
 <div class="page-head">
-  <h1>Raport: biura ds. OZN</h1>
+  <h1>Raport: dostępność kształcenia</h1>
   <a class="btn btn-secondary" href="/office/report.csv">Pobierz CSV</a>
 </div>
 <p class="muted">Wyniki ze <strong>zatwierdzonych</strong> ocen kandydatów (liczba ocen: <%= report.totalReviews %>). Raport jest niezależny od wyników audytów obiektów.</p>
@@ -10,7 +10,7 @@
   <section aria-labelledby="u-<%= u.objectId %>">
     <h2 id="u-<%= u.objectId %>"><%= u.name %></h2>
     <div class="score-row">
-      <div class="label"><span>Wynik biura ds. OZN (<%= u.count %> <%= u.count === 1 ? 'ocena' : 'ocen' %>)</span><span><%= fmtPct(u.score.percent) %></span></div>
+      <div class="label"><span>Wynik dostępności kształcenia (<%= u.count %> <%= u.count === 1 ? 'ocena' : 'ocen' %>)</span><span><%= fmtPct(u.score.percent) %></span></div>
       <meter min="0" max="100" value="<%= u.score.percent || 0 %>" aria-label="<%= u.name %>: <%= fmtPct(u.score.percent) %>"><%= fmtPct(u.score.percent) %></meter>
       <% if (u.score.rating) { %><div class="muted"><%= u.score.rating.label %></div><% } %>
     </div>

@@ -77,7 +77,7 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, attachment
   r.get('/reports/objects/:id/report.csv', requireRole(ADMIN, COORDINATOR), reportsCtl.objectCsv);
   r.get('/reports/objects/:id/report.pdf', requireRole(ADMIN, COORDINATOR), reportsCtl.objectPdf);
 
-  /* --- biuro ds. OZN: ocena przez audytora w roli kandydata --- */
+  /* --- dostępność kształcenia: ocena przez audytora w roli kandydata --- */
   r.get('/office', officeCtl.index);
   r.get('/office/new', requireRole(AUDITOR), officeCtl.newForm);
   r.post('/office', requireRole(AUDITOR), officeCtl.create);
