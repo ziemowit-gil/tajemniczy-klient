@@ -23,21 +23,27 @@ function createCatalogService(db) {
   };
 
   const scenarios = {
-    list: ({ onlyActive = false } = {}) => db.prepare(
-      `SELECT * FROM scenarios ${onlyActive ? 'WHERE active = 1' : ''} ORDER BY title COLLATE NOCASE`,
-    ).all(),
+    /** usage: 'audit' | 'education' – zwraca scenariusze tego modułu oraz wspólne ('both'). */
+    list: ({ onlyActive = false, usage } = {}) => {
+      const where = [];
+      const params = [];
+      if (onlyActive) where.push('active = 1');
+      if (usage) { where.push(`usage IN (?, 'both')`); params.push(usage); }
+      return db.prepare(`SELECT * FROM scenarios ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY title COLLATE NOCASE`).all(...params);
+    },
     get: (id) => db.prepare('SELECT * FROM scenarios WHERE id = ?').get(id),
     create(d) {
-      const info = db.prepare('INSERT INTO scenarios (title, description, areas, active) VALUES (?, ?, ?, ?)')
-        .run(d.title, d.description, d.areas, d.active ? 1 : 0);
+      const info = db.prepare('INSERT INTO scenarios (title, description, areas, usage, active) VALUES (?, ?, ?, ?, ?)')
+        .run(d.title, d.description, d.areas, d.usage, d.active ? 1 : 0);
       return scenarios.get(info.lastInsertRowid);
     },
     update(id, d) {
-      db.prepare('UPDATE scenarios SET title = ?, description = ?, areas = ?, active = ? WHERE id = ?')
-        .run(d.title, d.description, d.areas, d.active ? 1 : 0, id);
+      db.prepare('UPDATE scenarios SET title = ?, description = ?, areas = ?, usage = ?, active = ? WHERE id = ?')
+        .run(d.title, d.description, d.areas, d.usage, d.active ? 1 : 0, id);
       return scenarios.get(id);
     },
-    inUse: (id) => db.prepare('SELECT 1 FROM audits WHERE scenario_id = ?').get(id) !== undefined,
+    inUse: (id) => db.prepare('SELECT 1 FROM audit_scenarios WHERE scenario_id = ?').get(id) !== undefined
+      || db.prepare('SELECT 1 FROM office_review_scenarios WHERE scenario_id = ?').get(id) !== undefined,
     remove(id) {
       db.prepare('DELETE FROM scenarios WHERE id = ?').run(id);
     },

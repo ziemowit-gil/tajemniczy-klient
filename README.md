@@ -61,11 +61,15 @@ Nazwy pól tokenu ustawiasz w `SZO_CLAIM_*`. Role z SZO mapuje `SZO_ROLE_MAP`, n
 
 Cudze audyty zwracają 404, a nie 403, żeby nie ujawniać ich istnienia.
 
+## Scenariusze
+
+Wspólny słownik (panel **Scenariusze**). Pole „Dotyczy” określa, gdzie scenariusz można wybrać: *Audyty obiektów*, *Dostępność kształcenia* albo *Oba moduły*. „Zakres kryteriów” (OZN / kształcenie / oba) decyduje o kryteriach audytu i nie ma znaczenia dla scenariuszy używanych tylko w ocenach kształcenia. Scenariusza użytego w audycie lub ocenie nie da się usunąć, można go tylko wyłączyć.
+
 ## Przepływ audytu
 
 `Przypisany` → (pierwszy zapis) `W trakcie` → `Złożony / oczekuje na weryfikację` → `Zatwierdzony`. Koordynator może zwrócić audyt ze statusu „Złożony” do „W trakcie”.
 
-- Przy przydziale kryteria aktywne w zakresie scenariusza są **kopiowane do audytu** (migawka). Późniejsza zmiana kryteriów nie zmienia trwających ani zatwierdzonych wyników.
+- Do audytu można przypisać **kilka scenariuszy**. Przy przydziale aktywne kryteria z zakresów wszystkich wybranych scenariuszy są **kopiowane do audytu** (migawka, bez powtórzeń); instrukcje scenariuszy widać na stronie audytu. Późniejsza zmiana kryteriów nie zmienia trwających ani zatwierdzonych wyników.
 - Złożenie wymaga odpowiedzi na wszystkie kryteria. „Nie dotyczy” wymaga uzasadnienia w komentarzu.
 - Załączniki: JPEG, PNG, WebP, PDF (limit `MAX_UPLOAD_MB`). Typ jest sprawdzany także po sygnaturze pliku. Pliki trafiają poza katalog publiczny i są serwowane tylko po autoryzacji.
 
@@ -74,6 +78,7 @@ Cudze audyty zwracają 404, a nie 403, żeby nie ujawniać ich istnienia.
 Audytor wciela się w **kandydata na wybrany kierunek** (uczelnia, kierunek, poziom i tryb studiów, rodzaj niepełnosprawności) i ocenia **biuro ds. osób z niepełnosprawnościami**: znalezienie i kontakt, doradztwo przed rekrutacją, wsparcie na kierunku, dostępność biura i wrażenie ogólne (14 pytań, edytowalnych przez administratora w „Pytania: kształcenie”).
 
 - Przepływ jak w audytach: W trakcie → Złożony → Zatwierdzony (koordynator zatwierdza lub zwraca z uzasadnieniem). Pytania są kopiowane do oceny przy jej rozpoczęciu.
+- Ocena może mieć **scenariusze kontaktu** (opcjonalnie, kilka naraz), np. zapytanie e-mailowe, telefon, wizyta; ich opisy są instrukcją dla audytora. Scenariusze nie zmieniają zestawu pytań.
 - Wyniki są **raportowane osobno** (`/office/report`, CSV): per uczelnia i kierunek, z wynikami według kategorii. Nie wchodzą do raportów zbiorczych audytów ani do punktacji obszaru kształcenia.
 - Audytor widzi swoje oceny, koordynator oceny uczelni, które koordynuje, administrator wszystkie.
 - Moduł nie ma załączników ani eksportu PDF; przebieg kontaktu opisuje się w polu tekstowym.

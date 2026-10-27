@@ -153,8 +153,8 @@ test('pełny przepływ audytu: przydział → wypełnienie → złożenie → za
   assert.equal(res.status, 303);
 
   // przydział
-  const scenarioId = db.prepare(`SELECT id FROM scenarios WHERE areas = 'BOTH' LIMIT 1`).get().id;
-  res = await adm.post('/audits', { objectId, auditorId: userId('u-aud1'), scenarioId, dueDate: '2026-12-31' });
+  const scenarioId = db.prepare(`SELECT id FROM scenarios WHERE areas = 'BOTH' AND usage = 'audit' LIMIT 1`).get().id;
+  res = await adm.post('/audits', { objectId, auditorId: userId('u-aud1'), scenarioIds: scenarioId, dueDate: '2026-12-31' });
   assert.equal(res.status, 303);
   const auditId = Number(/\/audits\/(\d+)/.exec(res.headers.get('location'))[1]);
   assert.equal(services.audits.get(auditId).status, 'assigned');

@@ -1,6 +1,6 @@
 /** Zarządzanie słownikami administratora: obiekty, kryteria, scenariusze, użytkownicy. */
 const {
-  OBJECT_TYPES, AREA_LABELS, SCENARIO_AREAS, ANSWER_TYPE_LABELS, ROLES, ROLE_LABELS,
+  OBJECT_TYPES, AREA_LABELS, SCENARIO_AREAS, SCENARIO_USAGE, ANSWER_TYPE_LABELS, ROLES, ROLE_LABELS,
 } = require('../domain/constants');
 const {
   objectSchema, criterionSchema, scenarioSchema, userUpdateSchema, parseForm,
@@ -101,11 +101,11 @@ function createAdminController({ objects, catalog, users }) {
     },
 
     /* ---------- Scenariusze ---------- */
-    scenariosIndex: (req, res) => res.render('scenarios/index', { title: 'Scenariusze', scenarios: catalog.scenarios.list(), areaLabels: SCENARIO_AREAS }),
-    scenarioNew: (req, res) => res.render('scenarios/form', { title: 'Nowy scenariusz', scenario: null, errors: {}, values: { areas: 'BOTH', active: true }, areaLabels: SCENARIO_AREAS }),
+    scenariosIndex: (req, res) => res.render('scenarios/index', { title: 'Scenariusze', scenarios: catalog.scenarios.list(), areaLabels: SCENARIO_AREAS, usageLabels: SCENARIO_USAGE }),
+    scenarioNew: (req, res) => res.render('scenarios/form', { title: 'Nowy scenariusz', scenario: null, errors: {}, values: { areas: 'BOTH', usage: 'audit', active: true }, areaLabels: SCENARIO_AREAS, usageLabels: SCENARIO_USAGE }),
     scenarioCreate(req, res) {
       const { ok, data, errors } = parseForm(scenarioSchema, req.body);
-      if (!ok) return res.status(422).render('scenarios/form', { title: 'Nowy scenariusz', scenario: null, errors, values: checkboxValues(req.body), areaLabels: SCENARIO_AREAS });
+      if (!ok) return res.status(422).render('scenarios/form', { title: 'Nowy scenariusz', scenario: null, errors, values: checkboxValues(req.body), areaLabels: SCENARIO_AREAS, usageLabels: SCENARIO_USAGE });
       catalog.scenarios.create(data);
       res.flash('success', `Dodano scenariusz „${data.title}”.`);
       res.redirect(303, '/scenarios');
@@ -113,14 +113,14 @@ function createAdminController({ objects, catalog, users }) {
     scenarioEdit(req, res) {
       const s = catalog.scenarios.get(paramId(req));
       if (!s) throw httpError(404, 'Nie znaleziono scenariusza.');
-      res.render('scenarios/form', { title: 'Edycja scenariusza', scenario: s, errors: {}, areaLabels: SCENARIO_AREAS, values: { title: s.title, description: s.description, areas: s.areas, active: Boolean(s.active) } });
+      res.render('scenarios/form', { title: 'Edycja scenariusza', scenario: s, errors: {}, areaLabels: SCENARIO_AREAS, usageLabels: SCENARIO_USAGE, values: { title: s.title, description: s.description, areas: s.areas, usage: s.usage, active: Boolean(s.active) } });
     },
     scenarioUpdate(req, res) {
       const id = paramId(req);
       const s = catalog.scenarios.get(id);
       if (!s) throw httpError(404, 'Nie znaleziono scenariusza.');
       const { ok, data, errors } = parseForm(scenarioSchema, req.body);
-      if (!ok) return res.status(422).render('scenarios/form', { title: 'Edycja scenariusza', scenario: s, errors, values: checkboxValues(req.body), areaLabels: SCENARIO_AREAS });
+      if (!ok) return res.status(422).render('scenarios/form', { title: 'Edycja scenariusza', scenario: s, errors, values: checkboxValues(req.body), areaLabels: SCENARIO_AREAS, usageLabels: SCENARIO_USAGE });
       catalog.scenarios.update(id, data);
       res.flash('success', `Zapisano scenariusz „${data.title}”.`);
       res.redirect(303, '/scenarios');
@@ -129,7 +129,7 @@ function createAdminController({ objects, catalog, users }) {
       const id = paramId(req);
       const s = catalog.scenarios.get(id);
       if (!s) throw httpError(404, 'Nie znaleziono scenariusza.');
-      if (catalog.scenarios.inUse(id)) res.flash('error', `Scenariusz „${s.title}” jest użyty w audytach – możesz go tylko wyłączyć.`);
+      if (catalog.scenarios.inUse(id)) res.flash('error', `Scenariusz „${s.title}” jest użyty w audytach lub ocenach – możesz go tylko wyłączyć.`);
       else { catalog.scenarios.remove(id); res.flash('success', `Usunięto scenariusz „${s.title}”.`); }
       res.redirect(303, '/scenarios');
     },

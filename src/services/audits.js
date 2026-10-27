@@ -27,14 +27,15 @@ function resolveAnswer(entry, item) {
 function createAuditsService(db, { objects, users }) {
   const select = `
     SELECT a.*, o.name AS object_name, o.type AS object_type, o.address AS object_address,
-           au.name AS auditor_name, s.title AS scenario_title, s.areas AS scenario_areas,
+           au.name AS auditor_name,
+           (SELECT GROUP_CONCAT(title, '; ') FROM (SELECT s.title FROM audit_scenarios x JOIN scenarios s ON s.id = x.scenario_id
+              WHERE x.audit_id = a.id ORDER BY s.title COLLATE NOCASE)) AS scenario_title,
            rv.name AS reviewer_name,
            (SELECT COUNT(*) FROM audit_items i WHERE i.audit_id = a.id) AS item_count,
            (SELECT COUNT(*) FROM audit_items i WHERE i.audit_id = a.id AND i.answer IS NOT NULL) AS answered_count
     FROM audits a
     JOIN objects o ON o.id = a.object_id
     JOIN users au ON au.id = a.auditor_id
-    JOIN scenarios s ON s.id = a.scenario_id
     LEFT JOIN users rv ON rv.id = a.reviewer_id`;
 
   const svc = {
@@ -67,32 +68,44 @@ function createAuditsService(db, { objects, users }) {
                  a.due_date IS NULL, a.due_date, a.id DESC`).all(...params);
     },
 
+    /** Scenariusze przypisane do audytu (tytuł i instrukcja). */
+    scenarios: (auditId) => db.prepare(`SELECT s.id, s.title, s.description, s.areas FROM audit_scenarios x
+      JOIN scenarios s ON s.id = x.scenario_id WHERE x.audit_id = ? ORDER BY s.title COLLATE NOCASE`).all(auditId),
+
     items: (auditId) => db.prepare('SELECT * FROM audit_items WHERE audit_id = ? ORDER BY area DESC, position, id').all(auditId),
     scoringItems: (auditId) => svc.items(auditId).map(toScoringItem),
 
     /**
-     * Przydziela audyt: tworzy migawkę aktywnych kryteriów z obszarów scenariusza.
+     * Przydziela audyt: tworzy migawkę aktywnych kryteriów z obszarów wszystkich wybranych scenariuszy
+     * (kryteria się nie powtarzają, nawet gdy zakresy scenariuszy na siebie zachodzą).
      */
-    create({ objectId, auditorId, scenarioId, dueDate }, assignedBy) {
+    create({ objectId, auditorId, scenarioIds, dueDate }, assignedBy) {
       const object = objects.get(objectId);
       if (!object) throw new DomainError('Wybrany obiekt nie istnieje.');
       const auditor = users.findById(auditorId);
       if (!auditor || !auditor.active || auditor.role !== ROLES.AUDITOR) {
         throw new DomainError('Wybrany użytkownik nie jest aktywnym audytorem.');
       }
-      const scenario = db.prepare('SELECT * FROM scenarios WHERE id = ? AND active = 1').get(scenarioId);
-      if (!scenario) throw new DomainError('Wybrany scenariusz nie istnieje lub jest nieaktywny.');
+      const ids = [...new Set(scenarioIds)];
+      if (!ids.length) throw new DomainError('Wybierz co najmniej jeden scenariusz.');
+      const scenarios = db.prepare(
+        `SELECT * FROM scenarios WHERE active = 1 AND usage IN ('audit', 'both') AND id IN (${ids.map(() => '?').join(',')})`,
+      ).all(...ids);
+      if (scenarios.length !== ids.length) throw new DomainError('Wybrany scenariusz nie istnieje, jest nieaktywny albo nie dotyczy audytów obiektów.');
 
-      const areas = scenario.areas === 'BOTH' ? ['OZN', 'KSZTALCENIE'] : [scenario.areas];
+      const areas = [...new Set(scenarios.flatMap((s) => (s.areas === 'BOTH' ? ['OZN', 'KSZTALCENIE'] : [s.areas])))];
       const criteria = db.prepare(
         `SELECT * FROM criteria WHERE active = 1 AND area IN (${areas.map(() => '?').join(',')}) ORDER BY area DESC, position, id`,
       ).all(...areas);
-      if (!criteria.length) throw new DomainError('Brak aktywnych kryteriów dla zakresu tego scenariusza.');
+      if (!criteria.length) throw new DomainError('Brak aktywnych kryteriów dla zakresu wybranych scenariuszy.');
+      const primary = ids[0]; // scenariusz główny = pierwszy wybrany
 
       return transaction(db, () => {
         const info = db.prepare(
           'INSERT INTO audits (object_id, auditor_id, scenario_id, assigned_by, due_date) VALUES (?, ?, ?, ?, ?)',
-        ).run(objectId, auditorId, scenarioId, assignedBy, dueDate);
+        ).run(objectId, auditorId, primary, assignedBy, dueDate);
+        const link = db.prepare('INSERT INTO audit_scenarios (audit_id, scenario_id) VALUES (?, ?)');
+        for (const id of ids) link.run(info.lastInsertRowid, id);
         const insert = db.prepare(`INSERT INTO audit_items
           (audit_id, criterion_id, code, area, category, text, hint, weight, answer_type, position)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);

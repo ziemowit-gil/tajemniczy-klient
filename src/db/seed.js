@@ -72,6 +72,14 @@ const OFFICE_QUESTIONS = [
   ['BOZN-14', 'Wrażenie ogólne', 'Poleciłbym/poleciłabym ten kierunek na tej uczelni osobie z taką niepełnosprawnością.', null, 3, 'scale'],
 ];
 
+// [tytuł, opis, zakres kryteriów, użycie] – scenariusze dla oceny „Dostępność kształcenia”
+const EDUCATION_SCENARIOS = [
+  ['Zapytanie e-mailowe o dostosowanie rekrutacji', 'Napisz do biura ds. osób z niepełnosprawnościami z pytaniem o dostosowanie egzaminu wstępnego lub rekrutacji na wybrany kierunek. Zanotuj czas i treść odpowiedzi.', 'KSZTALCENIE', 'education'],
+  ['Kontakt telefoniczny z biurem', 'Zadzwoń lub poproś o kontakt w formie dostosowanej do niepełnosprawności (np. SMS, czat). Oceń cierpliwość, wiedzę i gotowość pomocy.', 'KSZTALCENIE', 'education'],
+  ['Wizyta w biurze i rozmowa z doradcą', 'Umów się na spotkanie i omów realizację kierunku: zajęcia, laboratoria, praktyki, egzaminy. Zapytaj o konkretne dostosowania.', 'KSZTALCENIE', 'education'],
+  ['Pytanie o wsparcie w trakcie studiów', 'Dowiedz się, kto i jak wspiera studenta w trakcie semestru: asystent, materiały w formatach alternatywnych, kontakt z wykładowcami.', 'KSZTALCENIE', 'education'],
+];
+
 function seedCatalog(db) {
   transaction(db, () => {
     if (db.prepare('SELECT COUNT(*) AS n FROM criteria').get().n === 0) {
@@ -84,11 +92,17 @@ function seedCatalog(db) {
         VALUES (?, ?, ?, ?, ?, ?, ?)`);
       OFFICE_QUESTIONS.forEach(([code, category, text, hint, weight, type], i) => insert.run(code, category, text, hint, weight, type, (i + 1) * 10));
     }
-    if (db.prepare('SELECT COUNT(*) AS n FROM scenarios').get().n === 0) {
+    // Każdy rodzaj scenariuszy uzupełniany osobno, więc starsze bazy dostają brakujące scenariusze kształcenia.
+    const countScenarios = (usages) => db.prepare(`SELECT COUNT(*) AS n FROM scenarios WHERE usage IN (${usages.map(() => '?').join(',')})`).get(...usages).n;
+    if (countScenarios(['audit', 'both']) === 0) {
       const insert = db.prepare('INSERT INTO scenarios (title, description, areas) VALUES (?, ?, ?)');
-      for (const s of SCENARIOS) insert.run(...s);
+      for (const sc of SCENARIOS) insert.run(...sc);
+    }
+    if (countScenarios(['education', 'both']) === 0) {
+      const insert = db.prepare('INSERT INTO scenarios (title, description, areas, usage) VALUES (?, ?, ?, ?)');
+      for (const sc of EDUCATION_SCENARIOS) insert.run(...sc);
     }
   });
 }
 
-module.exports = { seedCatalog, CRITERIA, SCENARIOS, OFFICE_QUESTIONS };
+module.exports = { seedCatalog, CRITERIA, SCENARIOS, EDUCATION_SCENARIOS, OFFICE_QUESTIONS };

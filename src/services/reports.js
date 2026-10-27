@@ -35,9 +35,11 @@ function createReportsService(db, { objects, audits }) {
       const object = objects.get(objectId);
       const ids = objects.descendantIds(objectId);
       const rows = db.prepare(`
-        SELECT a.id, a.approved_at, a.scenario_id, a.object_id, o.name AS object_name, o.type AS object_type, s.title AS scenario_title,
+        SELECT a.id, a.approved_at, a.scenario_id, a.object_id, o.name AS object_name, o.type AS object_type,
+               (SELECT GROUP_CONCAT(title, '; ') FROM (SELECT sc.title FROM audit_scenarios x JOIN scenarios sc ON sc.id = x.scenario_id
+                  WHERE x.audit_id = a.id ORDER BY sc.title COLLATE NOCASE)) AS scenario_title,
                au.name AS auditor_name
-        FROM audits a JOIN objects o ON o.id = a.object_id JOIN scenarios s ON s.id = a.scenario_id
+        FROM audits a JOIN objects o ON o.id = a.object_id
         JOIN users au ON au.id = a.auditor_id
         WHERE a.status = ? AND a.object_id IN (${ids.map(() => '?').join(',')})
         ORDER BY a.approved_at DESC, a.id DESC`).all(STATUS.APPROVED, ...ids);

@@ -35,7 +35,7 @@ function auditCsv(report) {
   const rows = [
     ['Raport z audytu dostępności'],
     ['Obiekt', audit.object_name],
-    ['Scenariusz', audit.scenario_title],
+    ['Scenariusze', audit.scenario_title],
     ['Audytor', audit.auditor_name],
     ['Status', STATUS_LABELS[audit.status] + (report.preliminary ? ' (raport wstępny)' : '')],
     ['Wynik ogólny', pct(score.total.percent)],
@@ -61,7 +61,7 @@ function objectCsv(report) {
     [AREA_LABELS.OZN, pct(score.areas.OZN.percent)],
     [AREA_LABELS.KSZTALCENIE, pct(score.areas.KSZTALCENIE.percent)],
     [],
-    ['Audyt', 'Obiekt', 'Scenariusz', 'Audytor', 'Zatwierdzono', 'Wynik ogólny', AREA_LABELS.OZN, AREA_LABELS.KSZTALCENIE],
+    ['Audyt', 'Obiekt', 'Scenariusze', 'Audytor', 'Zatwierdzono', 'Wynik ogólny', AREA_LABELS.OZN, AREA_LABELS.KSZTALCENIE],
     ...audits.map((a) => [
       a.id, a.object_name, a.scenario_title, a.auditor_name, a.approved_at,
       pct(a.score.total.percent), pct(a.score.areas.OZN.percent), pct(a.score.areas.KSZTALCENIE.percent),
@@ -157,7 +157,7 @@ function auditPdf(report) {
   if (report.preliminary) doc.fontSize(10).fillColor('#B00020').text('RAPORT WSTĘPNY – audyt nie został zatwierdzony').fillColor(COLORS.text);
   doc.font('regular').fontSize(10).moveDown(0.5);
   doc.text(`Obiekt: ${audit.object_name}${audit.object_address ? `, ${audit.object_address}` : ''}`);
-  doc.text(`Scenariusz: ${audit.scenario_title}`);
+  doc.text(`Scenariusze: ${audit.scenario_title}`);
   doc.text(`Audytor: ${audit.auditor_name}`);
   doc.text(`Status: ${STATUS_LABELS[audit.status]}`);
   if (audit.approved_at) doc.text(`Zatwierdzono: ${audit.approved_at} UTC${audit.reviewer_name ? ` (${audit.reviewer_name})` : ''}`);

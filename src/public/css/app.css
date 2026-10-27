@@ -141,3 +141,9 @@ td.actions form, .actions form { margin: 0; }
 .demo-users form { margin: 0; }
 .demo-users button { width: 100%; text-align: left; }
 .demo-users button .muted { color: inherit; font-weight: 400; }
+.checkgroup { max-width: 40rem; }
+.check-top { align-items: flex-start; margin-bottom: .6rem; }
+.check-top input { margin-top: .2rem; flex: none; }
+.hint.block { display: block; margin: .15rem 0 0; font-weight: 400; }
+.scenario-list { margin: 0 0 1.25rem; padding-left: 1.2rem; }
+.scenario-list li { margin-bottom: .4rem; }

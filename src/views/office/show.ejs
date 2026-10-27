@@ -10,10 +10,20 @@
   <div><dt>Kierunek</dt><dd><%= review.programme %></dd></div>
   <div><dt>Studia</dt><dd><%= levels[review.study_level] %>, <%= modes[review.study_mode].toLowerCase() %></dd></div>
   <div><dt>Wcielenie w osobę z</dt><dd><%= disabilities[review.disability] %></dd></div>
+  <% if (scenarios.length) { %><div><dt>Scenariusze</dt><dd><%= scenarios.map((s) => s.title).join('; ') %></dd></div><% } %>
   <div><dt>Kandydat (audytor)</dt><dd><%= review.auditor_name %></dd></div>
   <div><dt>Status</dt><dd><span class="status status-<%= review.status %>"><%= statusLabels[review.status] %></span></dd></div>
   <% if (review.approved_at) { %><div><dt>Zatwierdzono</dt><dd><%= fmtDateTime(review.approved_at) %><%= review.reviewer_name ? `, ${review.reviewer_name}` : '' %></dd></div><% } %>
 </dl>
+
+<% if (scenarios.some((s) => s.description)) { %>
+<section aria-labelledby="scen-h">
+  <h2 id="scen-h">Scenariusze do wykonania</h2>
+  <ul class="scenario-list">
+    <% for (const s of scenarios) { %><li><strong><%= s.title %></strong><% if (s.description) { %><br><%= s.description %><% } %></li><% } %>
+  </ul>
+</section>
+<% } %>
 
 <% if (review.review_comment && review.status !== 'submitted') { %>
   <div class="note-box"><strong>Komentarz koordynatora:</strong> <%= review.review_comment %></div>

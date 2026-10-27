@@ -11,7 +11,7 @@
 <% if (!reviews.length) { %><p>Brak ocen.</p><% } else { %>
 <div class="table-wrap"><table>
   <caption class="sr-only">Lista ocen dostępności kształcenia</caption>
-  <thead><tr><th scope="col">Uczelnia</th><th scope="col">Kierunek</th><th scope="col">Kandydat (audytor)</th><th scope="col">Niepełnosprawność</th><th scope="col">Status</th><th scope="col" class="num">Postęp</th></tr></thead>
+  <thead><tr><th scope="col">Uczelnia</th><th scope="col">Kierunek</th><th scope="col">Kandydat (audytor)</th><th scope="col">Niepełnosprawność</th><th scope="col">Scenariusze</th><th scope="col">Status</th><th scope="col" class="num">Postęp</th></tr></thead>
   <tbody>
   <% for (const r of reviews) { %>
     <tr>
@@ -19,6 +19,7 @@
       <td><%= r.programme %><br><span class="muted"><%= levels[r.study_level] %>, <%= modes[r.study_mode].toLowerCase() %></span></td>
       <td><%= r.auditor_name %></td>
       <td><%= disabilities[r.disability] %></td>
+      <td><%= r.scenario_title || '—' %></td>
       <td><span class="status status-<%= r.status %>"><%= statusLabels[r.status] %></span></td>
       <td class="num"><%= r.answered_count %> / <%= r.item_count %></td>
     </tr>

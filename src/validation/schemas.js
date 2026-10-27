@@ -1,5 +1,5 @@
 const { z } = require('zod');
-const { OBJECT_TYPES, ROLES, STUDY_LEVELS, STUDY_MODES, DISABILITIES } = require('../domain/constants');
+const { OBJECT_TYPES, ROLES, STUDY_LEVELS, STUDY_MODES, DISABILITIES, SCENARIO_USAGE } = require('../domain/constants');
 
 z.config(z.locales.pl());
 
@@ -39,17 +39,24 @@ const criterionSchema = z.object({
   active: checkbox,
 });
 
+/** Pola wielokrotnego wyboru (checkboxy) przychodzą jako string, tablica albo wcale. */
+const idList = z.preprocess(
+  (v) => (v === undefined || v === '' ? [] : Array.isArray(v) ? v : [v]),
+  z.array(z.coerce.number().int().positive()).max(50).transform((a) => [...new Set(a)]),
+);
+
 const scenarioSchema = z.object({
   title: text('Tytuł', { max: 150 }),
   description: optionalText(3000),
   areas: z.enum(['OZN', 'KSZTALCENIE', 'BOTH'], { error: 'Zakres: wybierz wartość' }),
+  usage: z.enum(Object.keys(SCENARIO_USAGE), { error: 'Dotyczy: wybierz wartość' }),
   active: checkbox,
 });
 
 const auditCreateSchema = z.object({
   objectId: requiredId('Obiekt'),
   auditorId: requiredId('Audytor'),
-  scenarioId: requiredId('Scenariusz'),
+  scenarioIds: idList.pipe(z.array(z.number()).min(1, 'Scenariusze: wybierz co najmniej jeden')),
   dueDate: z.preprocess(
     (v) => (v === '' ? undefined : v),
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Termin: podaj datę w formacie RRRR-MM-DD').optional(),
@@ -81,6 +88,7 @@ const officeReviewSchema = z.object({
   studyLevel: z.enum(Object.keys(STUDY_LEVELS), { error: 'Poziom studiów: wybierz wartość' }),
   studyMode: z.enum(Object.keys(STUDY_MODES), { error: 'Tryb studiów: wybierz wartość' }),
   disability: z.enum(Object.keys(DISABILITIES), { error: 'Rodzaj niepełnosprawności: wybierz wartość' }),
+  scenarioIds: idList,
 });
 
 const officeDetailsSchema = z.object({

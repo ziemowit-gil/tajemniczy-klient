@@ -10,6 +10,7 @@
   <%- include('../partials/field', { name: 'studyLevel', label: 'Poziom studiów', kind: 'select', value: values.studyLevel, errors, required: true, blank: '— wybierz —', options: Object.entries(levels) }) %>
   <%- include('../partials/field', { name: 'studyMode', label: 'Tryb studiów', kind: 'select', value: values.studyMode, errors, required: true, blank: '— wybierz —', options: Object.entries(modes) }) %>
   <%- include('../partials/field', { name: 'disability', label: 'Wcielam się w osobę z', kind: 'select', value: values.disability, errors, required: true, blank: '— wybierz —', options: Object.entries(disabilities) }) %>
+  <%- include('../partials/checkgroup', { name: 'scenarioIds', label: 'Scenariusze kontaktu (opcjonalnie)', errors, selected: selectedScenarios, hint: 'Wybierz sposoby kontaktu z biurem, które zamierzasz sprawdzić. Opis każdego zobaczysz przy ocenie.', options: scenarios.map((s) => ({ id: s.id, title: s.title, description: s.description })) }) %>
   <div class="actions"><button type="submit">Rozpocznij ocenę</button><a class="btn btn-secondary" href="/office">Anuluj</a></div>
 </form>
 <%- include('../partials/footer') %>

@@ -1,0 +1,18 @@
+<%#
+  Grupa pól wyboru (wielokrotny wybór) w fieldset z legendą.
+  Parametry: name, label, options [{ id, title, description }], selected (tablica string), errors, hint, required
+%>
+<% const err = locals.errors && locals.errors[name]; const hint = locals.hint; const chosen = (locals.selected || []).map(String);
+   const describedby = [hint ? `${name}-hint` : '', err ? `${name}-err` : ''].filter(Boolean).join(' '); %>
+<fieldset class="field checkgroup"<% if (describedby) { %> aria-describedby="<%= describedby %>"<% } %>>
+  <legend><%= label %><% if (locals.required) { %> <span class="muted">(wymagane)</span><% } %></legend>
+  <% if (hint) { %><p class="hint" id="<%= name %>-hint"><%= hint %></p><% } %>
+  <% if (!options.length) { %><p class="muted">Brak dostępnych pozycji.</p><% } %>
+  <% for (const o of options) { %>
+    <div class="check check-top">
+      <input type="checkbox" id="<%= name %>-<%= o.id %>" name="<%= name %>" value="<%= o.id %>"<% if (chosen.includes(String(o.id))) { %> checked<% } %>>
+      <label for="<%= name %>-<%= o.id %>"><%= o.title %><% if (o.description) { %><span class="hint block"><%= o.description %></span><% } %></label>
+    </div>
+  <% } %>
+  <% if (err) { %><p class="field-error" id="<%= name %>-err"><%= err %></p><% } %>
+</fieldset>

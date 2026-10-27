@@ -78,7 +78,7 @@ function createApp(config, { db = openDatabase(config.databasePath), szoClient }
     admin: createAdminController({ objects, catalog, users }),
     auditsCtl: createAuditsController({ audits, objects, users, catalog, attachments, reports }),
     reportsCtl: createReportsController({ reports, objects, audits }),
-    officeCtl: createOfficeController({ office, objects }),
+    officeCtl: createOfficeController({ office, objects, catalog }),
     attachments,
   }));
 

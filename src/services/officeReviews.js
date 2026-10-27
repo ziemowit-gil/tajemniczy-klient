@@ -21,6 +21,8 @@ const fmt = (p) => (p === null ? 'brak danych' : `${String(p).replace('.', ',')}
 function createOfficeReviewsService(db, { objects }) {
   const select = `
     SELECT r.*, o.name AS object_name, au.name AS auditor_name, rv.name AS reviewer_name,
+      (SELECT GROUP_CONCAT(title, '; ') FROM (SELECT s.title FROM office_review_scenarios x JOIN scenarios s ON s.id = x.scenario_id
+         WHERE x.review_id = r.id ORDER BY s.title COLLATE NOCASE)) AS scenario_title,
       (SELECT COUNT(*) FROM office_review_items i WHERE i.review_id = r.id) AS item_count,
       (SELECT COUNT(*) FROM office_review_items i WHERE i.review_id = r.id AND i.answer IS NOT NULL) AS answered_count
     FROM office_reviews r
@@ -51,6 +53,8 @@ function createOfficeReviewsService(db, { objects }) {
   const svc = {
     questions,
     get: (id) => db.prepare(`${select} WHERE r.id = ?`).get(id),
+    scenarios: (reviewId) => db.prepare(`SELECT s.id, s.title, s.description FROM office_review_scenarios x
+      JOIN scenarios s ON s.id = x.scenario_id WHERE x.review_id = ? ORDER BY s.title COLLATE NOCASE`).all(reviewId),
     items: (reviewId) => db.prepare('SELECT * FROM office_review_items WHERE review_id = ? ORDER BY position, id').all(reviewId),
     scoringItems: (reviewId) => svc.items(reviewId).map(toScoringItem),
 
@@ -80,11 +84,19 @@ function createOfficeReviewsService(db, { objects }) {
     create(d, auditorId) {
       const object = objects.get(d.objectId);
       if (!object || object.type !== 'uczelnia') throw new DomainError('Wybierz uczelnię z listy obiektów.');
+      const ids = [...new Set(d.scenarioIds || [])];
+      if (ids.length) {
+        const found = db.prepare(`SELECT COUNT(*) AS n FROM scenarios WHERE active = 1 AND usage IN ('education', 'both')
+          AND id IN (${ids.map(() => '?').join(',')})`).get(...ids).n;
+        if (found !== ids.length) throw new DomainError('Wybrany scenariusz nie istnieje, jest nieaktywny albo nie dotyczy dostępności kształcenia.');
+      }
       const active = questions.list({ onlyActive: true });
       if (!active.length) throw new DomainError('Brak aktywnych pytań w ankiecie dostępności kształcenia.');
       return transaction(db, () => {
         const info = db.prepare(`INSERT INTO office_reviews (object_id, auditor_id, programme, study_level, study_mode, disability)
           VALUES (?, ?, ?, ?, ?, ?)`).run(d.objectId, auditorId, d.programme, d.studyLevel, d.studyMode, d.disability);
+        const link = db.prepare('INSERT INTO office_review_scenarios (review_id, scenario_id) VALUES (?, ?)');
+        for (const id of ids) link.run(info.lastInsertRowid, id);
         const insert = db.prepare(`INSERT INTO office_review_items (review_id, question_id, code, category, text, hint, weight, answer_type, position)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
         for (const q of active) insert.run(info.lastInsertRowid, q.id, q.code, q.category, q.text, q.hint, q.weight, q.answer_type, q.position);

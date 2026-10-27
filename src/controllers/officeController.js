@@ -12,9 +12,16 @@ const { paramId, httpError, collectAnswers } = require('./helpers');
 
 const labels = { levels: STUDY_LEVELS, modes: STUDY_MODES, disabilities: DISABILITIES, statusLabels: STATUS_LABELS };
 
-function createOfficeController({ office, objects }) {
+function createOfficeController({ office, objects, catalog }) {
   const universities = () => objects.list().filter((o) => o.type === 'uczelnia');
-  const newFormData = (extra = {}) => ({ title: 'Nowa ocena dostępności kształcenia', errors: {}, values: {}, universities: universities(), ...labels, ...extra });
+  const newFormData = (extra = {}) => {
+    const values = extra.values || {};
+    return {
+      title: 'Nowa ocena dostępności kształcenia', errors: {}, values: {}, universities: universities(),
+      scenarios: catalog.scenarios.list({ onlyActive: true, usage: 'education' }),
+      selectedScenarios: [].concat(values.scenarioIds ?? []), ...labels, ...extra,
+    };
+  };
 
   const viewData = (req, review, extra = {}) => {
     const { items, score, lines, gaps } = office.summarize(review);
@@ -27,7 +34,7 @@ function createOfficeController({ office, objects }) {
     void items; void gaps;
     return {
       title: `Dostępność kształcenia: ${review.object_name}`,
-      review, groups, score, lines, answerOptions: ANSWER_OPTIONS, ...labels,
+      review, groups, score, lines, scenarios: office.scenarios(review.id), answerOptions: ANSWER_OPTIONS, ...labels,
       canEdit: office.canEdit(req.user, review),
       canReview: review.status === STATUS.SUBMITTED && [ROLES.COORDINATOR, ROLES.ADMIN].includes(req.user.role),
       canDelete: office.canDelete(req.user, review),

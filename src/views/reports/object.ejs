@@ -34,7 +34,7 @@
 <% if (!report.audits.length) { %><p>Brak zatwierdzonych audytów.</p><% } else { %>
 <div class="table-wrap"><table>
   <caption class="sr-only">Zatwierdzone audyty</caption>
-  <thead><tr><th scope="col">Obiekt</th><th scope="col">Scenariusz</th><th scope="col">Audytor</th><th scope="col">Zatwierdzono</th><th scope="col" class="num">Ogółem</th><th scope="col" class="num">OZN</th><th scope="col" class="num">Kształcenie</th></tr></thead>
+  <thead><tr><th scope="col">Obiekt</th><th scope="col">Scenariusze</th><th scope="col">Audytor</th><th scope="col">Zatwierdzono</th><th scope="col" class="num">Ogółem</th><th scope="col" class="num">OZN</th><th scope="col" class="num">Kształcenie</th></tr></thead>
   <tbody>
   <% for (const a of report.audits) { %>
     <tr>

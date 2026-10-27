@@ -22,6 +22,8 @@ const AREA_LABELS = {
 
 const SCENARIO_AREAS = { OZN: 'Tylko dostępność dla OZN', KSZTALCENIE: 'Tylko proces kształcenia', BOTH: 'Oba obszary' };
 
+const SCENARIO_USAGE = { audit: 'Audyty obiektów', education: 'Dostępność kształcenia', both: 'Oba moduły' };
+
 const OBJECT_TYPES = { uczelnia: 'Uczelnia', wydzial: 'Wydział', kampus: 'Kampus', budynek: 'Budynek' };
 
 const ANSWER_TYPE_LABELS = { scale: 'Skala 0–3', ternary: 'Tak / częściowo / nie' };
@@ -31,6 +33,6 @@ const STUDY_MODES = { stacjonarne: 'Stacjonarne', niestacjonarne: 'Niestacjonarn
 const DISABILITIES = { ruchowa: 'Niepełnosprawność ruchowa', wzroku: 'Niepełnosprawność wzroku', sluchu: 'Niepełnosprawność słuchu', psychiczna: 'Niepełnosprawność psychiczna / neuroróżnorodność', inna: 'Inna' };
 
 module.exports = {
-  STUDY_LEVELS, STUDY_MODES, DISABILITIES,
+  STUDY_LEVELS, STUDY_MODES, DISABILITIES, SCENARIO_USAGE,
   ROLES, ROLE_LABELS, ROLE_PRIORITY, AREAS, AREA_LABELS, SCENARIO_AREAS, OBJECT_TYPES, ANSWER_TYPE_LABELS,
 };

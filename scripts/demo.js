@@ -27,8 +27,9 @@ function seedOffice() {
   if (db.prepare('SELECT COUNT(*) AS n FROM office_reviews').get().n > 0) return;
   const { office } = services;
   const uniList = objects.list().filter((o) => o.type === 'uczelnia');
-  const make = (uni, programme, level, mode, disability, who, quality, finish) => {
-    let r = office.create({ objectId: uni.id, programme, studyLevel: level, studyMode: mode, disability }, who.id);
+  const eduScenarios = catalog.scenarios.list({ usage: 'education' }).map((s) => s.id);
+  const make = (uni, programme, level, mode, disability, who, quality, finish, scenarioIds = []) => {
+    let r = office.create({ objectId: uni.id, programme, studyLevel: level, studyMode: mode, disability, scenarioIds }, who.id);
     const answers = {};
     office.items(r.id).forEach((item, i) => {
       const good = ((i * 7) % 10) / 10 < quality;
@@ -39,10 +40,10 @@ function seedOffice() {
     if (finish === 'approved') office.approve(office.get(r.id), coord, 'Zweryfikowano.');
   };
   const [u1, u2] = uniList;
-  make(u1, 'Psychologia', 'I', 'stacjonarne', 'wzroku', aud1, 0.8, 'approved');
-  make(u1, 'Psychologia', 'I', 'stacjonarne', 'ruchowa', aud2, 0.55, 'approved');
-  make(u1, 'Informatyka', 'II', 'stacjonarne', 'sluchu', aud2, 0.35, 'approved');
-  make(u2, 'Zarządzanie', 'I', 'niestacjonarne', 'ruchowa', aud1, 0.6, 'submitted');
+  make(u1, 'Psychologia', 'I', 'stacjonarne', 'wzroku', aud1, 0.8, 'approved', eduScenarios.slice(0, 2));
+  make(u1, 'Psychologia', 'I', 'stacjonarne', 'ruchowa', aud2, 0.55, 'approved', eduScenarios.slice(1, 3));
+  make(u1, 'Informatyka', 'II', 'stacjonarne', 'sluchu', aud2, 0.35, 'approved', [eduScenarios[0]]);
+  make(u2, 'Zarządzanie', 'I', 'niestacjonarne', 'ruchowa', aud1, 0.6, 'submitted', eduScenarios.slice(2));
   make(u2, 'Pedagogika', 'jednolite', 'stacjonarne', 'psychiczna', aud2, 0.5, null);
   console.log('Dodano oceny dostępności kształcenia.');
 }
@@ -59,9 +60,9 @@ const faculty = objects.create({ name: 'Wydział Nauk Społecznych', type: 'wydz
 const building = objects.create({ name: 'Budynek A – Collegium Novum', type: 'budynek', parentId: faculty.id, address: 'ul. Akademicka 3, 00-001 Warszawa', coordinatorId: null, notes: 'Zabytkowy, po remoncie 2022.' });
 objects.create({ name: 'Politechnika Demonstracyjna', type: 'uczelnia', parentId: null, address: 'al. Techniczna 10, 30-001 Kraków', coordinatorId: coord.id, notes: null });
 
-const scenarios = Object.fromEntries(catalog.scenarios.list().map((s) => [s.areas + s.title.length, s]));
-const full = catalog.scenarios.list().find((s) => s.areas === 'BOTH');
-void scenarios;
+const auditScenarios = catalog.scenarios.list({ usage: 'audit' });
+const byTitle = (title) => auditScenarios.find((s) => s.title === title).id;
+const full = byTitle('Pełna ocena dostępności obiektu');
 
 /** Wypełnia audyt deterministycznie; `quality` 0–1 steruje odsetkiem wysokich ocen. */
 function fill(audit, quality) {
@@ -75,24 +76,24 @@ function fill(audit, quality) {
 }
 
 // 1) zatwierdzony
-let a = audits.create({ objectId: building.id, auditorId: aud1.id, scenarioId: full.id, dueDate: '2026-09-30' }, admin.id);
+let a = audits.create({ objectId: building.id, auditorId: aud1.id, scenarioIds: [full], dueDate: '2026-09-30' }, admin.id);
 a = fill(a, 0.75);
 audits.submit(audits.get(a.id), aud1);
 audits.approve(audits.get(a.id), coord, 'Zgodne z wymaganiami.');
 
 // 2) zatwierdzony – inny obiekt, żeby raport zbiorczy uczelni agregował kilka audytów
-a = audits.create({ objectId: faculty.id, auditorId: aud2.id, scenarioId: full.id, dueDate: '2026-10-15' }, admin.id);
+a = audits.create({ objectId: faculty.id, auditorId: aud2.id, scenarioIds: [full], dueDate: '2026-10-15' }, admin.id);
 a = fill(a, 0.4);
 audits.submit(audits.get(a.id), aud2);
 audits.approve(audits.get(a.id), coord, null);
 
 // 3) złożony – czeka na koordynatora
-a = audits.create({ objectId: uni.id, auditorId: aud1.id, scenarioId: full.id, dueDate: '2026-11-15' }, admin.id);
+a = audits.create({ objectId: uni.id, auditorId: aud1.id, scenarioIds: [full], dueDate: '2026-11-15' }, admin.id);
 a = fill(a, 0.6);
 audits.submit(audits.get(a.id), aud1);
 
 // 4) w trakcie – wypełniony częściowo
-a = audits.create({ objectId: building.id, auditorId: aud2.id, scenarioId: catalog.scenarios.list().find((s) => s.areas === 'KSZTALCENIE').id, dueDate: '2026-12-01' }, admin.id);
+a = audits.create({ objectId: building.id, auditorId: aud2.id, scenarioIds: [byTitle('Proces kształcenia: wsparcie i egzaminy'), byTitle('Student niesłyszący lub słabosłyszący')], dueDate: '2026-12-01' }, admin.id);
 const some = audits.items(a.id).slice(0, 4);
 audits.saveAnswers(audits.get(a.id), {
   answers: Object.fromEntries(some.map((it) => [it.id, { answer: it.answer_type === 'scale' ? '2' : 'tak', comment: '' }])),
@@ -100,7 +101,7 @@ audits.saveAnswers(audits.get(a.id), {
 });
 
 // 5) przypisany – jeszcze nie rozpoczęty
-audits.create({ objectId: faculty.id, auditorId: aud1.id, scenarioId: catalog.scenarios.list().find((s) => s.areas === 'OZN').id, dueDate: '2026-12-20' }, admin.id);
+audits.create({ objectId: faculty.id, auditorId: aud1.id, scenarioIds: [byTitle('Kandydat na studia z niepełnosprawnością ruchową'), byTitle('Student niewidomy lub słabowidzący')], dueDate: '2026-12-20' }, admin.id);
 
 seedOffice();
 console.log(`Dane demo gotowe: ${db.prepare('SELECT COUNT(*) AS n FROM audits').get().n} audytów, ${db.prepare('SELECT COUNT(*) AS n FROM objects').get().n} obiektów.`);

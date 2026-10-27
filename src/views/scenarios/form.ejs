@@ -4,7 +4,8 @@
 <form method="post" action="<%= scenario ? `/scenarios/${scenario.id}` : '/scenarios' %>" novalidate>
   <%- include('../partials/field', { name: 'title', label: 'Tytuł', kind: 'input', value: values.title, errors, required: true }) %>
   <%- include('../partials/field', { name: 'description', label: 'Opis scenariusza (instrukcja dla audytora)', kind: 'textarea', value: values.description, errors }) %>
-  <%- include('../partials/field', { name: 'areas', label: 'Zakres oceny', kind: 'select', value: values.areas, errors, required: true, hint: 'Decyduje, które kryteria trafią do audytu.', options: Object.entries(areaLabels) }) %>
+  <%- include('../partials/field', { name: 'usage', label: 'Dotyczy', kind: 'select', value: values.usage, errors, required: true, hint: 'W którym module można wybrać ten scenariusz.', options: Object.entries(usageLabels) }) %>
+  <%- include('../partials/field', { name: 'areas', label: 'Zakres kryteriów (audyty obiektów)', kind: 'select', value: values.areas, errors, required: true, hint: 'Decyduje, które kryteria trafią do audytu. Dla scenariuszy wyłącznie z modułu „Dostępność kształcenia” nie ma znaczenia.', options: Object.entries(areaLabels) }) %>
   <div class="field check"><input type="checkbox" id="active" name="active"<% if (values.active) { %> checked<% } %>><label for="active">Aktywny (można go przydzielać)</label></div>
   <div class="actions"><button type="submit">Zapisz</button><a class="btn btn-secondary" href="/scenarios">Anuluj</a></div>
 </form>

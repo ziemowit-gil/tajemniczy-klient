@@ -1,4 +1,4 @@
-const { AREA_LABELS, ROLES, SCENARIO_AREAS } = require('../domain/constants');
+const { AREA_LABELS, ROLES } = require('../domain/constants');
 const { STATUS, STATUS_LABELS, isEditable } = require('../domain/workflow');
 const { ANSWER_OPTIONS } = require('../domain/scoring');
 const { DomainError } = require('../services/audits');
@@ -22,7 +22,7 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
     }
     return {
       title: `Audyt: ${audit.object_name}`,
-      audit, groups, summary: preview.summary, statusLabels: STATUS_LABELS, answerOptions: ANSWER_OPTIONS,
+      audit, groups, scenarios: audits.scenarios(audit.id), summary: preview.summary, statusLabels: STATUS_LABELS, answerOptions: ANSWER_OPTIONS,
       canEdit: audits.canEdit(req.user, audit),
       canReview: audit.status === STATUS.SUBMITTED && [ROLES.COORDINATOR, ROLES.ADMIN].includes(req.user.role),
       canExport: req.user.role !== ROLES.AUDITOR || audit.auditor_id === req.user.id,
@@ -30,6 +30,13 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
       problems: {}, errors: {}, ...extra,
     };
   };
+
+  const newFormData = ({ errors = {}, values = {} } = {}) => ({
+    title: 'Przydziel audyt', errors, values,
+    selectedScenarios: [].concat(values.scenarioIds ?? []),
+    objects: objects.list(), auditors: users.listByRole(ROLES.AUDITOR),
+    scenarios: catalog.scenarios.list({ onlyActive: true, usage: 'audit' }),
+  });
 
   return {
     /** Ładuje audyt i sprawdza dostęp; dla cudzych audytów zwraca 404, by nie ujawniać ich istnienia. */
@@ -54,23 +61,19 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
     },
 
     newForm(req, res) {
-      res.render('audits/new', {
-        title: 'Przydziel audyt', errors: {}, values: { objectId: req.query.objectId },
-        objects: objects.list(), auditors: users.listByRole(ROLES.AUDITOR), scenarios: catalog.scenarios.list({ onlyActive: true }), areaLabels: SCENARIO_AREAS,
-      });
+      res.render('audits/new', newFormData({ values: { objectId: req.query.objectId } }));
     },
 
     create(req, res) {
-      const form = () => ({ objects: objects.list(), auditors: users.listByRole(ROLES.AUDITOR), scenarios: catalog.scenarios.list({ onlyActive: true }), areaLabels: SCENARIO_AREAS });
       const { ok, data, errors } = parseForm(auditCreateSchema, req.body);
-      if (!ok) return res.status(422).render('audits/new', { title: 'Przydziel audyt', errors, values: req.body, ...form() });
+      if (!ok) return res.status(422).render('audits/new', newFormData({ errors, values: req.body }));
       try {
         const audit = audits.create(data, req.user.id);
         res.flash('success', `Przydzielono audyt obiektu „${audit.object_name}” audytorowi ${audit.auditor_name}.`);
         return res.redirect(303, `/audits/${audit.id}`);
       } catch (err) {
         if (!(err instanceof DomainError)) throw err;
-        return res.status(422).render('audits/new', { title: 'Przydziel audyt', errors: { _form: err.message }, values: req.body, ...form() });
+        return res.status(422).render('audits/new', newFormData({ errors: { _form: err.message }, values: req.body }));
       }
     },
 
