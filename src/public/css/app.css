@@ -439,3 +439,28 @@ main:has(> .login-top) { max-width: none; padding: 0 0 2rem; }
 .login-card .error-summary { border-radius: 0; border-left: 6px solid #a4141f; }
 .login-back { margin: 1.25rem 0 0; }
 @media print { .login-top, .login-info { display: none; } }
+
+/* ===== Okno audytu w stylu portalu: niebieski baner na całą szerokość z tytułem, przyciskami i etapami. Biały tekst na #1457d1 6,3:1, na #0e43a6 8,4:1. ===== */
+.audit-hero { background: #1457d1; color: #fff; margin: -1.5rem -1rem 1.5rem; padding: 1.5rem 1rem 1.4rem;
+  background-image: radial-gradient(circle at 6% 130%, rgba(255, 255, 255, .13) 0 15rem, transparent 15.05rem), radial-gradient(circle at 102% -20%, rgba(234, 143, 0, .5) 0 7rem, transparent 7.05rem); }
+@media (min-width: 56rem) { .audit-hero { margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); padding-left: max(1rem, calc((100vw - 72rem) / 2 + 1rem)); padding-right: max(1rem, calc((100vw - 72rem) / 2 + 1rem)); } }
+.audit-hero .eyebrow { color: #fff; font-weight: 600; margin: 0 0 .25rem; }
+.audit-hero h1 { color: #fff; margin: 0; font-size: 1.9rem; }
+.audit-hero .btn { border-radius: 0; font-weight: 700; }
+.audit-hero .btn-secondary { background: transparent; color: #fff; border: 2px solid #fff; }
+.audit-hero .btn-secondary:hover { background: rgba(255, 255, 255, .16); color: #fff; }
+.audit-hero .btn-danger { background: #fff; color: #a4141f; border: 2px solid #fff; }
+.audit-hero .btn-danger:hover { background: #fdecee; color: #a4141f; }
+.audit-hero :focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.audit-hero .stepper { gap: .4rem; }
+.audit-hero .step { background: #0e43a6; color: #fff; border-radius: 0; }
+.audit-hero .step-num { background: transparent; color: #fff; border: 2px solid #fff; }
+.audit-hero .step-done .step-num { background: #1b6b34; border-color: #1b6b34; }
+.audit-hero .step-current { background: #fff; color: #0e43a6; font-weight: 700; }
+.audit-hero .step-current .step-num { background: #1457d1; border-color: #1457d1; color: #fff; }
+.audit-hero .step-todo { color: #fff; }
+.audit-side { border-radius: 4px; }
+.cat > summary { background: #0e43a6; border-radius: 0; }
+.criterion { border-radius: 4px; }
+.save-bar { border-top: 3px solid #1457d1; }
+.archive-actions { margin-bottom: 1rem; }
