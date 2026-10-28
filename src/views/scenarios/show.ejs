@@ -7,6 +7,7 @@
     <a class="btn btn-secondary" href="/scenarios">Wróć do listy</a>
   </div>
 </div>
+<%- include('../partials/archive-actions', { kind: 'scenario', id: scenario.id, archived: scenario.archived_at, canArchive: true, canPurge: true, next: '/scenarios', label: 'scenariusz' }) %>
 
 <dl class="audit-meta">
   <div><dt>Dotyczy</dt><dd><%= usageLabels[scenario.usage] %></dd></div>

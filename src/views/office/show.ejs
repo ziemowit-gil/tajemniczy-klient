@@ -5,6 +5,7 @@
     <form method="post" action="/office/<%= review.id %>/delete" data-confirm="Usunąć tę ocenę?"><button type="submit" class="btn btn-danger">Usuń ocenę</button></form>
   <% } %>
 </div>
+<%- include('../partials/archive-actions', { kind: 'review', id: review.id, archived: review.archived_at, canArchive: ['administrator', 'coordinator'].includes(currentUser.role) && review.status === 'approved', canPurge: currentUser.role === 'administrator', next: '/office', label: 'ocenę' }) %>
 
 <dl class="audit-meta">
   <div><dt>Kierunek</dt><dd><%= review.programme %></dd></div>

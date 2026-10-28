@@ -28,6 +28,7 @@
     <% }) %>
   </ol>
 </header>
+<%- include('../partials/archive-actions', { kind: 'audit', id: audit.id, archived: audit.archived_at, canArchive: canManage && audit.status === 'approved', canPurge: isAdmin, next: '/audits', label: 'audyt' }) %>
 
 <div class="audit-layout">
 <aside class="audit-side" aria-label="Informacje o audycie">

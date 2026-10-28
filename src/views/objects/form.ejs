@@ -1,5 +1,6 @@
 <%- include('../partials/header') %>
 <h1><%= title %></h1>
+<% if (object) { %><%- include('../partials/archive-actions', { kind: 'object', id: object.id, archived: object.archived_at, canArchive: true, canPurge: true, next: '/objects', label: 'obiekt' }) %><% } %>
 <% if (Object.keys(errors).length) { %><div class="error-summary" role="alert">Formularz zawiera błędy. Popraw zaznaczone pola.</div><% } %>
 <form method="post" action="<%= object ? `/objects/${object.id}` : '/objects' %>" novalidate>
   <%- include('../partials/field', { name: 'name', label: 'Nazwa', kind: 'input', value: values.name, errors, required: true }) %>

@@ -1,0 +1,29 @@
+<%- include('../partials/header') %>
+<div class="page-head"><h1>Archiwum</h1></div>
+<p class="muted">Zarchiwizowane pozycje nie pokazują się na listach roboczych, ale nic z nich nie zostało usunięte. Możesz je przywrócić<%= isAdmin ? ' albo usunąć trwale (tylko administrator)' : '' %>. Archiwizować można zatwierdzone audyty i oceny oraz (administrator) obiekty i scenariusze.</p>
+<% for (const sec of sections) { %>
+  <section aria-labelledby="arch-<%= sec.kind %>">
+    <h2 id="arch-<%= sec.kind %>"><%= sec.title %> <span class="muted">(<%= sec.rows.length %>)</span></h2>
+    <% if (!sec.rows.length) { %><p>Brak pozycji w archiwum.</p><% } else { %>
+    <div class="table-wrap"><table>
+      <caption class="sr-only"><%= sec.title %> w archiwum</caption>
+      <thead><tr><th scope="col">Pozycja</th><th scope="col">Zarchiwizowano</th><th scope="col">Akcje</th></tr></thead>
+      <tbody>
+      <% for (const r of sec.rows) { %>
+        <tr>
+          <th scope="row"><a href="<%= sec.href(r) %>"><%= r.display_name %><% if (sec.kind === 'audit' || sec.kind === 'review') { %> (nr <%= r.id %>)<% } %></a></th>
+          <td><%= fmtDateTime(r.archived_at) %></td>
+          <td>
+            <form method="post" action="/archive/<%= sec.kind %>/<%= r.id %>/restore"><button type="submit" class="btn-small">Przywróć<span class="sr-only">: <%= r.display_name %></span></button></form>
+            <% if (isAdmin) { %>
+            <form method="post" action="/archive/<%= sec.kind %>/<%= r.id %>/purge" data-confirm="Usunąć TRWALE: <%= r.display_name %>? Tej operacji nie można cofnąć."><button type="submit" class="btn-small btn-danger">Usuń trwale<span class="sr-only">: <%= r.display_name %></span></button></form>
+            <% } %>
+          </td>
+        </tr>
+      <% } %>
+      </tbody>
+    </table></div>
+    <% } %>
+  </section>
+<% } %>
+<%- include('../partials/footer') %>

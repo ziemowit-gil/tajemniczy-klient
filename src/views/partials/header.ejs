@@ -19,9 +19,9 @@
          const links = [['/', 'Pulpit']];
          links.push(['/audits', role === 'auditor' ? 'Moje audyty' : 'Audyty']);
          links.push(['/office', 'Dostępność kształcenia']);
-         if (role === 'administrator' || role === 'coordinator') { links.push(['/objects', 'Obiekty']); links.push(['/reports', 'Raporty']); links.push(['/stats', 'Statystyki']); }
+         if (role === 'administrator' || role === 'coordinator') { links.push(['/objects', 'Obiekty']); links.push(['/reports', 'Raporty']); links.push(['/stats', 'Statystyki']); links.push(['/archive', 'Archiwum']); }
          const adminLinks = role === 'administrator'
-           ? [['/criteria', 'Kryteria audytu'], ['/scenarios', 'Scenariusze'], ['/office/questions', 'Pytania: kształcenie'], ['/users', 'Użytkownicy'], ['/settings/szo', 'Integracja z SZO']]
+           ? [['/criteria', 'Kryteria audytu'], ['/scenarios', 'Scenariusze'], ['/office/questions', 'Pytania: kształcenie'], ['/users', 'Użytkownicy'], ['/log', 'Dziennik operacji'], ['/settings/szo', 'Integracja z SZO']]
            : [];
          const all = links.concat(adminLinks);
          const best = all.filter(([h]) => h === '/' ? currentPath === '/' : (currentPath === h || currentPath.startsWith(h + '/'))).sort((a, b) => b[0].length - a[0].length)[0];

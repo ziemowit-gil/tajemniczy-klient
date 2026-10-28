@@ -28,7 +28,7 @@ function createCatalogService(db) {
   const scenarios = {
     /** usage: 'audit' | 'education' – scenariusze tego modułu oraz wspólne ('both'); active: true | false. */
     list: ({ onlyActive = false, usage, active } = {}) => {
-      const where = [];
+      const where = ['s.archived_at IS NULL'];
       const params = [];
       if (onlyActive || active === true) where.push('s.active = 1');
       if (active === false) where.push('s.active = 0');

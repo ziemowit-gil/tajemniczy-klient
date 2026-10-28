@@ -35,6 +35,8 @@ const { createOfficeController } = require('./controllers/officeController');
 const { createDeclarationController } = require('./controllers/declarationController');
 const { createSettingsController } = require('./controllers/settingsController');
 const { createExternalAuthController } = require('./controllers/externalAuthController');
+const { createArchiveService } = require('./services/archive');
+const { createArchiveController } = require('./controllers/archiveController');
 const { createWorkItems } = require('./services/workItems');
 const { createExternalAuth } = require('./services/externalAuth');
 const { createSmsSender } = require('./services/smsSender');
@@ -73,6 +75,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
   const declarations = createDeclarationsService(db);
   const history = createHistoryService(db);
   const notifier = createNotifier(db, { config, mailer, users, objects });
+  const archive = createArchiveService(db, { objects, catalog: catalog, attachments });
   const workItems = createWorkItems({ audits, office });
   const sms = createSmsSender(config, { fetchImpl, getApiKey: () => settings.szoApiKey() });
   const externalAuth = createExternalAuth(db, { config, users, sms });
@@ -118,6 +121,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
   app.use(buildRouter({
     config, declarations,
     auth: createAuthController({ config, szo, szoPkce, users, sessions, notifier, declarations, externalEnabled: () => externalAuth.enabled }),
+    archiveCtl: createArchiveController({ archive, objects }),
     extAuth: createExternalAuthController({ externalAuth, sessions, config, enabled: () => externalAuth.enabled }),
     admin: createAdminController({ objects, catalog, users, szoDirectory, notifier, externalAuth, mailer, importDomains: config.szo.importDomains, declarations, declarationRequired: config.declarationRequired }),
     settingsCtl: createSettingsController({ settings, szoDirectory, config }),
@@ -145,7 +149,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
     return res.status(status).render('error', { title: 'Błąd', status, message });
   });
 
-  return { app, db, services: { users, objects, catalog, audits, attachments, reports, office, snapshots, sessions, history, notifier, stats, settings, declarations, externalAuth, sms } };
+  return { app, db, services: { users, objects, catalog, audits, attachments, reports, office, snapshots, sessions, history, notifier, stats, settings, declarations, externalAuth, sms, archive } };
 }
 
 module.exports = { createApp };

@@ -1,0 +1,17 @@
+<%#
+  Archiwizacja, przywracanie i trwałe usunięcie pozycji.
+  Parametry: kind (audit|review|object|scenario), id, archived (data lub null), canArchive, canPurge, next (adres powrotu), label (np. „audyt”)
+%>
+<% if (archived || canArchive || canPurge) { %>
+<section class="archive-actions" aria-label="Archiwum i usuwanie">
+  <% if (archived) { %>
+    <p class="note-box" role="status">Ta pozycja jest w archiwum (od <%= fmtDateTime(archived) %>) i nie pokazuje się na listach roboczych.</p>
+    <form method="post" action="/archive/<%= kind %>/<%= id %>/restore"><input type="hidden" name="next" value="<%= next %>"><button type="submit" class="btn btn-secondary">Przywróć z archiwum</button></form>
+  <% } else if (canArchive) { %>
+    <form method="post" action="/archive/<%= kind %>/<%= id %>" data-confirm="Przenieść do archiwum? Pozycja zniknie z list roboczych, ale nic nie zostanie usunięte i można ją przywrócić."><input type="hidden" name="next" value="<%= next %>"><button type="submit" class="btn btn-secondary">Przenieś do archiwum</button></form>
+  <% } %>
+  <% if (canPurge) { %>
+    <form method="post" action="/archive/<%= kind %>/<%= id %>/purge" data-confirm="Usunąć TRWALE (<%= label %>) razem z powiązanymi odpowiedziami i załącznikami? Tej operacji nie można cofnąć."><input type="hidden" name="next" value="<%= next %>"><button type="submit" class="btn btn-danger">Usuń trwale</button></form>
+  <% } %>
+</section>
+<% } %>

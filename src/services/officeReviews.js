@@ -78,7 +78,7 @@ function createOfficeReviewsService(db, { objects, users, snapshots }) {
     canEdit: (user, review) => user?.role === ROLES.AUDITOR && review.auditor_id === user.id && isEditable(review.status),
 
     list(user) {
-      const where = [];
+      const where = ['r.archived_at IS NULL'];
       const params = [];
       if (user.role === ROLES.AUDITOR) { where.push('r.auditor_id = ?'); params.push(user.id); }
       const scope = scopeIds(user);

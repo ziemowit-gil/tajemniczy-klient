@@ -1,0 +1,17 @@
+<%- include('../partials/header') %>
+<div class="page-head"><h1>Dziennik operacji</h1></div>
+<p class="muted">Archiwizacje, przywrócenia i trwałe usunięcia (ostatnie 300 wpisów).</p>
+<% if (!entries.length) { %><p>Brak wpisów.</p><% } else { %>
+<div class="table-wrap"><table>
+  <caption class="sr-only">Dziennik operacji</caption>
+  <thead><tr><th scope="col">Kiedy</th><th scope="col">Kto</th><th scope="col">Operacja</th><th scope="col">Rodzaj</th><th scope="col">Pozycja</th><th scope="col">Uwagi</th></tr></thead>
+  <tbody>
+  <% const actions = { archived: 'Archiwizacja', restored: 'Przywrócenie', purged: 'Usunięcie trwałe' }; %>
+  <% for (const e of entries) { %>
+    <tr><td><%= fmtDateTime(e.created_at) %></td><td><%= e.actor_name || '—' %></td><td><%= actions[e.action] || e.action %></td>
+      <td><%= kinds[e.entity_type] ? kinds[e.entity_type].label : e.entity_type %></td><td><%= e.entity_name || '—' %> (nr <%= e.entity_id %>)</td><td><%= e.note || '' %></td></tr>
+  <% } %>
+  </tbody>
+</table></div>
+<% } %>
+<%- include('../partials/footer') %>

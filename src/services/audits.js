@@ -54,7 +54,7 @@ function createAuditsService(db, { objects, users, snapshots }) {
     canEdit: (user, audit) => user?.role === ROLES.AUDITOR && audit.auditor_id === user.id && isEditable(audit.status),
 
     list(user, { status } = {}) {
-      const where = [];
+      const where = ['a.archived_at IS NULL'];
       const params = [];
       if (user.role === ROLES.AUDITOR) { where.push('a.auditor_id = ?'); params.push(user.id); }
       if (user.role === ROLES.COORDINATOR) {

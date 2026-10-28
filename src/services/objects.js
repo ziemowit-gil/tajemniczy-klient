@@ -46,13 +46,13 @@ function createObjectsService(db) {
 
     /** Lista obiektów; koordynator widzi tylko obiekty ze swojego zakresu (jego i podległe). */
     list({ coordinatorId } = {}) {
-      let where = '';
+      let where = 'WHERE o.archived_at IS NULL';
       const params = [];
       if (coordinatorId) {
         const roots = db.prepare('SELECT id FROM objects WHERE coordinator_id = ?').all(coordinatorId).map((r) => r.id);
         const ids = [...new Set(roots.flatMap((id) => svc.descendantIds(id)))];
         if (!ids.length) return [];
-        where = `WHERE o.id IN (${ids.map(() => '?').join(',')})`;
+        where += ` AND o.id IN (${ids.map(() => '?').join(',')})`;
         params.push(...ids);
       }
       return db.prepare(`
@@ -68,7 +68,7 @@ function createObjectsService(db) {
 
     /** Obiekty, które mogą być rodzicem (bez samego obiektu i jego potomków, by nie tworzyć cykli). */
     parentOptions(excludeId) {
-      const all = db.prepare('SELECT id, name, type FROM objects ORDER BY name COLLATE NOCASE').all();
+      const all = db.prepare('SELECT id, name, type FROM objects WHERE archived_at IS NULL ORDER BY name COLLATE NOCASE').all();
       if (!excludeId) return all;
       const banned = new Set(svc.descendantIds(excludeId));
       return all.filter((o) => !banned.has(o.id));

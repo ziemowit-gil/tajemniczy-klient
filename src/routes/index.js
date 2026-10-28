@@ -4,7 +4,7 @@ const { ROLES } = require('../domain/constants');
 
 const { ADMIN, AUDITOR, COORDINATOR } = ROLES;
 
-function buildRouter({ auth, extAuth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, settingsCtl, declarationCtl, declarations, attachments, config }) {
+function buildRouter({ auth, extAuth, archiveCtl, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, settingsCtl, declarationCtl, declarations, attachments, config }) {
   const r = express.Router();
 
   /* --- publiczne --- */
@@ -35,6 +35,13 @@ function buildRouter({ auth, extAuth, admin, auditsCtl, reportsCtl, officeCtl, s
   r.get('/', reportsCtl.dashboard);
   r.get('/account', auth.showAccount);
   r.post('/account', auth.updateAccount);
+
+  /* --- archiwum i dziennik operacji --- */
+  r.get('/archive', requireRole(ADMIN, COORDINATOR), archiveCtl.index);
+  r.post('/archive/:kind/:id', requireRole(ADMIN, COORDINATOR), archiveCtl.archive);
+  r.post('/archive/:kind/:id/restore', requireRole(ADMIN, COORDINATOR), archiveCtl.restore);
+  r.post('/archive/:kind/:id/purge', requireRole(ADMIN), archiveCtl.purge);
+  r.get('/log', requireRole(ADMIN), archiveCtl.log);
 
   /* --- obiekty --- */
   r.get('/objects', requireRole(ADMIN, COORDINATOR), admin.objectsIndex);
