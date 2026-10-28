@@ -303,3 +303,30 @@ main:has(> .login-hero) { max-width: none; padding: 0; }
 .decline-box { margin-top: 1rem; }
 .decline-box > summary { cursor: pointer; font-weight: 600; color: var(--danger); width: fit-content; }
 .decline-box form { margin-top: .75rem; }
+
+/* ===== Logowanie w stylu Metro: płasko, kafle, cyan, bez zaokrągleń. Tekst ciemny na jasnych polach (≥ 7:1), biały na ciemnych (≥ 15:1). ===== */
+.login-hero { background: #00bcf2; }
+.login-card { border-radius: 0; background: #fff; padding: 2.25rem 2.25rem 2rem; box-shadow: none; }
+.login-card h1 { font-weight: 300; font-size: 2.4rem; line-height: 1.1; letter-spacing: -.01em; margin-bottom: 1rem; }
+.login-card h2 { font-weight: 600; font-size: 1.15rem; text-transform: uppercase; letter-spacing: .04em; }
+.login-card .step-label { color: #1d1d1a; text-transform: uppercase; letter-spacing: .06em; font-size: .85rem; }
+.login-tiles { gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+.login-tiles li:nth-child(1) .tile { background: #00bcf2; }
+.login-tiles li:nth-child(2) .tile { background: #ffb900; }
+.login-tiles .tile { border-radius: 0; min-height: 10rem; display: flex; flex-direction: column; justify-content: flex-end; padding: 1rem 1.1rem; color: #1d1d1a; transition: none; }
+.login-tiles .tile strong { font-size: 1.35rem; font-weight: 600; margin-bottom: .35rem; }
+.login-tiles .tile span { color: #1d1d1a; font-size: .95rem; }
+.login-tiles .tile:hover, .login-tiles .tile:focus-visible { background: #1d1d1a; color: #fff; }
+.login-tiles .tile:hover span, .login-tiles .tile:focus-visible span { color: #fff; }
+.login-tiles .tile:focus-visible { outline: 4px solid #1d1d1a; outline-offset: 3px; box-shadow: 0 0 0 3px #fff; }
+.login-tiles .tile[aria-current="true"] { background: #1d1d1a; color: #fff; }
+.login-tiles .tile[aria-current="true"] span { color: #fff; }
+.login-card input[type="text"], .login-card input[type="email"], .login-card input[type="password"], .login-card input[type="tel"] { border: 2px solid #1d1d1a; border-radius: 0; background: #fff; }
+.login-card input:focus-visible { outline: 4px solid #00bcf2; outline-offset: 0; border-color: #1d1d1a; }
+.login-card button[type="submit"], .login-card .btn { border-radius: 0; background: #1d1d1a; color: #fff; border: 2px solid #1d1d1a; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.login-card button[type="submit"]:hover, .login-card .btn:hover { background: #00bcf2; color: #1d1d1a; border-color: #1d1d1a; }
+.login-card button[type="submit"]:focus-visible, .login-card .btn:focus-visible, .login-card a:focus-visible { outline: 4px solid #00bcf2; outline-offset: 2px; box-shadow: 0 0 0 2px #1d1d1a; }
+.login-card .error-summary { border-radius: 0; border: 0; border-left: 8px solid var(--danger); background: var(--danger-bg); color: #5c0b12; font-weight: 600; }
+.login-card .field-error { color: #8c0f1a; font-weight: 600; }
+.login-card .note-box { border-radius: 0; }
+.login-card a { color: #004e6c; text-decoration: underline; text-underline-offset: 3px; }
