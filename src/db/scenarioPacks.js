@@ -266,11 +266,116 @@ const UCZELNIE = [
   },
 ];
 
+
+/* ------------------------- audyty miejsc usługowych: sklepy, restauracje, urzędy i inne ------------------------- */
+const HANDEL = [
+  {
+    usage: A, areas: 'OZN', persona: 'ruchowa', estimatedMinutes: 45,
+    title: 'Sklep: zakupy osoby poruszającej się na wózku',
+    description: 'Wciel się w klienta na wózku lub o kulach, który robi zwykłe zakupy w sklepie lub centrum handlowym bez zapowiedzi.',
+    goal: 'Sprawdzić, czy osoba z niepełnosprawnością ruchową wejdzie, swobodnie się przemieści, dosięgnie produktów i zapłaci.',
+    expectedResult: 'Ocena dojścia i wejścia, szerokości przejść, wysokości półek i lad, kasy oraz toalety, z listą barier i zdjęciami.',
+    steps: [
+      'Znajdź wejście bez stopni lub z rampą i sprawdź, czy drzwi otwierają się samodzielnie albo bez dużej siły.',
+      'Przejdź między regałami: zanotuj, czy przejścia mają co najmniej 90 cm i czy nic ich nie blokuje (kosze, palety, promocje).',
+      'Spróbuj sięgnąć po produkty z najwyższej i najniższej półki oraz zapytaj obsługę o pomoc.',
+      'Sprawdź kasę: czy jest obniżona lada lub kasa dostępna dla wózka, i zapłać za drobny zakup.',
+      'Sprawdź, czy jest toaleta dostosowana, i zanotuj jej stan oraz dostęp.',
+    ],
+  },
+  {
+    usage: A, areas: 'OZN', persona: 'wzroku', estimatedMinutes: 45,
+    title: 'Sklep: zakupy osoby niewidomej lub słabowidzącej',
+    description: 'Wciel się w klienta niewidomego (z białą laską lub psem przewodnikiem) albo słabowidzącego, który robi zakupy samodzielnie.',
+    goal: 'Sprawdzić, czy osoba z niepełnosprawnością wzroku odnajdzie drogę, produkty, ceny i zapłaci z pomocą lub bez.',
+    expectedResult: 'Ocena orientacji w przestrzeni, oznaczeń kontrastowych, czytelności cen i opisów, pomocy obsługi, terminala płatniczego oraz przyjęcia psa przewodnika.',
+    steps: [
+      'Wejdź ze zwykłym wsparciem (laska lub pies przewodnik) i zanotuj, czy pies został przyjęty bez problemu.',
+      'Poproś pracownika o pomoc w znalezieniu konkretnego produktu i oceń sposób prowadzenia oraz opisu.',
+      'Sprawdź, czy ceny i opisy są czytelne (duży druk, kontrast) albo dostępne w inny sposób (skaner cen, aplikacja, opis ustny).',
+      'Zapłać kartą lub telefonem: sprawdź, czy terminal jest dostępny (klawiatura, głos, wysokość) i czy kasjer czyta kwotę.',
+      'Zanotuj, czego brakowało (oznaczenia kontrastowe, ścieżki, opisy) i jak zachował się personel.',
+    ],
+  },
+  {
+    usage: A, areas: 'OZN', persona: 'sluchu', estimatedMinutes: 40,
+    title: 'Sklep lub punkt usług: obsługa osoby Głuchej lub niedosłyszącej',
+    description: 'Wciel się w klienta Głuchego lub niedosłyszącego, który załatwia sprawę (zakup, zwrot, reklamacja) bez możliwości rozmowy przez telefon.',
+    goal: 'Sprawdzić, czy da się załatwić sprawę pisemnie, gestem lub z użyciem tłumacza online, i czy personel potrafi się komunikować.',
+    expectedResult: 'Ocena komunikacji pisemnej i wizualnej, zachowania pracownika, informacji niezależnych od dźwięku (komunikaty, kolejka) i dostępnych kanałów kontaktu.',
+    steps: [
+      'Poproś o pomoc w zakupie lub zwrocie, wyjaśniając, że porozumiewasz się pisemnie lub w języku migowym.',
+      'Sprawdź, czy pracownik chce pisać, pokazywać na ekranie lub użyć tłumacza online, i zanotuj jego postawę.',
+      'Sprawdź, czy komunikaty i wywołania kolejki są też widoczne (ekran, numerek), a nie tylko głosowe.',
+      'Zapytaj, jak skontaktować się ze sklepem bez telefonu (e-mail, czat, SMS), i zapisz odpowiedź.',
+    ],
+  },
+  {
+    usage: A, areas: 'OZN', persona: 'ruchowa', estimatedMinutes: 50,
+    title: 'Restauracja lub kawiarnia: wejście, stolik i toaleta dla osoby na wózku',
+    description: 'Wciel się w gościa na wózku, który przychodzi na obiad lub kawę bez rezerwacji.',
+    goal: 'Sprawdzić, czy gość na wózku wejdzie, zajmie dostępny stolik, skorzysta z menu i toalety.',
+    expectedResult: 'Ocena wejścia, przejść między stolikami, wysokości stołów, dostępnej toalety oraz nastawienia obsługi.',
+    steps: [
+      'Znajdź wejście bez stopni i sprawdź szerokość drzwi oraz próg.',
+      'Poproś o stolik: sprawdź, czy jest miejsce na wózek bez ustawiania mebli oraz czy stół ma odpowiednią wysokość i podjazd pod blat.',
+      'Przejdź do baru lub lady, jeśli zamawia się przy niej, i oceń wysokość oraz dostęp.',
+      'Sprawdź toaletę: dojazd, szerokość drzwi, miejsce do obrotu, uchwyty, i zanotuj stan.',
+      'Zanotuj zachowanie obsługi i to, czy była gotowa pomóc bez dopytywania.',
+    ],
+  },
+  {
+    usage: A, areas: 'OZN', persona: 'wzroku', estimatedMinutes: 40,
+    title: 'Restauracja lub kawiarnia: menu i zamówienie osoby niewidomej',
+    description: 'Wciel się w gościa niewidomego lub słabowidzącego, który wybiera i zamawia danie samodzielnie.',
+    goal: 'Sprawdzić, czy gość dowie się, co jest w ofercie, zamówi i zapłaci bez pomocy osoby widzącej.',
+    expectedResult: 'Ocena dostępności menu (duży druk, Braille, wersja elektroniczna, czytanie przez obsługę), pomocy przy stole, rachunku i płatności.',
+    steps: [
+      'Poproś o menu i sprawdź, czy jest wersja w dużym druku, w Braille’u, elektroniczna zgodna z czytnikiem ekranu albo czy kelner czyta ofertę.',
+      'Zamów danie, pytając o składy i alergeny, i oceń cierpliwość oraz dokładność odpowiedzi.',
+      'Sprawdź, czy dania są opisane przy podaniu (położenie na talerzu) i czy obsługa proponuje pomoc.',
+      'Poproś o rachunek, sprawdź jego czytelność i zapłać kartą lub telefonem.',
+    ],
+  },
+  {
+    usage: A, areas: 'OZN', persona: 'psychiczna', estimatedMinutes: 45,
+    title: 'Miejsce usługowe: hałas, światło i tłok dla osoby z nadwrażliwością sensoryczną',
+    description: 'Wciel się w klienta z autyzmem lub nadwrażliwością sensoryczną, dla którego hałas, migające światło i tłok są przeciążające.',
+    goal: 'Sprawdzić, czy miejsce oferuje spokojniejszą przestrzeń lub godziny i czy personel reaguje życzliwie na prośbę o dostosowanie.',
+    expectedResult: 'Ocena poziomu hałasu i oświetlenia, dostępności cichego kąta lub spokojnych godzin, jasnej komunikacji oraz zachowania personelu.',
+    steps: [
+      'Wejdź w godzinach większego ruchu i zanotuj poziom hałasu, muzykę, zapachy i oświetlenie.',
+      'Zapytaj, czy jest spokojniejsze miejsce, godziny albo możliwość ściszenia muzyki, i zapisz odpowiedź.',
+      'Sprawdź, czy informacje (ceny, menu, procedura) są proste i jednoznaczne oraz czy pracownik mówi spokojnie i konkretnie.',
+      'Zanotuj, czy możesz załatwić sprawę bez presji czasu i bez nieprzyjemnych komentarzy.',
+    ],
+  },
+  {
+    usage: A, areas: 'OZN', persona: 'inna', estimatedMinutes: 50,
+    title: 'Strona lub aplikacja: zamówienie albo rezerwacja online (sklep, restauracja, usługa)',
+    description: 'Wciel się w osobę korzystającą z czytnika ekranu i samej klawiatury, która chce zamówić, zarezerwować stolik lub umówić wizytę przez stronę.',
+    goal: 'Sprawdzić, czy proces online da się przejść bez myszy i bez wzroku oraz czy są alternatywne kanały kontaktu.',
+    expectedResult: 'Ocena nawigacji klawiaturą, etykiet pól, komunikatów o błędach, kontrastu i powiększania tekstu, CAPTCHA oraz alternatywy telefonicznej lub mailowej.',
+    steps: [
+      'Przejdź stronę samą klawiaturą (Tab, Enter) i sprawdź, czy widać fokus oraz czy da się dotrzeć do wyboru produktu lub terminu.',
+      'Wypełnij formularz zamówienia lub rezerwacji, zwracając uwagę na etykiety pól i komunikaty o błędach.',
+      'Powiększ tekst do 200% i sprawdź, czy treść nadal jest czytelna i nic nie znika.',
+      'Sprawdź, czy płatność lub potwierdzenie nie wymaga dostępu do wzroku (np. obraz CAPTCHA bez alternatywy).',
+      'Zanotuj, czy jest podany numer telefonu, e-mail lub czat jako zamiennik, i jak szybko odpowiedziano.',
+    ],
+  },
+];
+
 const PACKS = {
   uczelnie: {
     label: 'Przykładowe scenariusze dla uczelni',
     description: 'Siedem grup potrzeb (Głusi, niedosłyszący, ruchowe, wzroku, poznawcze, kryzys psychiczny, ADHD), każda w wariancie zaplanowanym (Dostępność kształcenia) i wizyty bez zapowiedzi (audyty obiektów), oraz scenariusze: porównawczy (ten sam kierunek przy różnych niepełnosprawnościach) i wizyta w Centrum Dostępności (zaplanowana i kontrola lokalu).',
     scenarios: UCZELNIE,
+  },
+  handel: {
+    label: 'Sklepy, restauracje i inne miejsca usługowe',
+    description: 'Siedem scenariuszy wizyt bez zapowiedzi dla audytów obiektów: zakupy na wózku, zakupy osoby niewidomej, obsługa osoby Głuchej, restauracja (wejście i toaleta, menu i zamówienie), nadwrażliwość sensoryczna oraz zamówienie lub rezerwacja online.',
+    scenarios: HANDEL,
   },
 };
 

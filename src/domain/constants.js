@@ -31,7 +31,11 @@ const SCENARIO_AREAS = { OZN: 'Tylko dostępność dla OZN', KSZTALCENIE: 'Tylko
 
 const SCENARIO_USAGE = { audit: 'Audyty obiektów', education: 'Dostępność kształcenia', both: 'Oba moduły' };
 
-const OBJECT_TYPES = { uczelnia: 'Uczelnia', wydzial: 'Wydział', kampus: 'Kampus', budynek: 'Budynek' };
+const OBJECT_TYPES = {
+  uczelnia: 'Uczelnia', wydzial: 'Wydział', kampus: 'Kampus', budynek: 'Budynek',
+  sklep: 'Sklep lub centrum handlowe', restauracja: 'Restauracja, kawiarnia lub bar', hotel: 'Hotel lub nocleg', urzad: 'Urząd lub instytucja',
+  biblioteka: 'Biblioteka', kultura: 'Kultura i rozrywka (kino, teatr, muzeum)', zdrowie: 'Placówka zdrowia', transport: 'Transport i dworzec', inne: 'Inny obiekt',
+};
 
 const ANSWER_TYPE_LABELS = { scale: 'Skala 0–3', ternary: 'Tak / częściowo / nie' };
 
