@@ -1,5 +1,6 @@
 <%- include('partials/header') %>
 <div class="login-hero">
+<%- include('partials/login-brand') %>
 <% const extView = mode !== 'dev' && Boolean(locals.externalEnabled) && (locals.method === 'external' || Boolean(locals.externalError)); %>
 <div class="login-box login-card">
   <% if (extView) { %>

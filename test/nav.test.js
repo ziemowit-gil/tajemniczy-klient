@@ -70,27 +70,24 @@ test('koordynator i audytor nie widzą grupy Administracja', async () => {
   assert.match(u, />Moje audyty<\/a>/);
 });
 
-test('strona logowania: dekoracyjne tło i ikona jako zasoby statyczne, formularz na białej karcie', async () => {
+test('strona logowania: własna identyfikacja (panel marki ze znakiem SVG i karta formularza), ikona jako zasób statyczny', async () => {
   const html = await (await fetch(`${base}/login`)).text();
-  assert.match(html, /<div class="login-hero">\s*<div class="login-box login-card">/);
+  assert.match(html, /<div class="login-hero">\s*<aside class="login-brand">/);
+  assert.match(html, /<svg class="logo-mark"[^>]*aria-hidden="true"/, 'znak jest dekoracją dla czytników ekranu');
+  assert.match(html, /<div class="login-box login-card">/);
   assert.match(html, /<link rel="icon" type="image\/svg\+xml" href="\/img\/icon\.svg\?v=[0-9a-f]{10}">/);
-  assert.doesNotMatch(html, /login-bg/, 'tło jest w CSS, nie w treści strony (dekoracja)');
+  assert.doesNotMatch(html, /metro/i);
 
   const css = await (await fetch(`${base}/css/app.css`)).text();
-  assert.match(css, /\.login-hero\s*\{[^}]*url\("\/img\/login-bg\.svg"\)/);
-  assert.match(css, /\.login-card\s*\{[^}]*background:\s*#fff/, 'tekst leży na białej karcie');
+  assert.match(css, /\.login-brand\s*\{[^}]*background:\s*#1457d1/, 'panel marki w granacie FEER (biały tekst 6,3:1)');
+  assert.doesNotMatch(css, /Logowanie w stylu Metro/);
 
-  for (const file of ['login-bg.svg', 'icon.svg']) {
-    const res = await fetch(`${base}/img/${file}`);
-    assert.equal(res.status, 200, file);
-    assert.match(res.headers.get('content-type'), /image\/svg\+xml/);
-    const svg = await res.text();
-    assert.doesNotMatch(svg, /<script|onload=|onclick=|href="http|xlink:href|<foreignObject/i, 'SVG bez skryptów i zasobów zewnętrznych');
-    assert.ok(svg.length < 6000, 'lekki plik');
-  }
-  // CSP dopuszcza obrazy z własnej domeny
-  const csp = (await fetch(`${base}/login`)).headers.get('content-security-policy');
-  assert.match(csp, /img-src 'self'/);
+  const res = await fetch(`${base}/img/icon.svg`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type'), /image\/svg\+xml/);
+  const svg = await res.text();
+  assert.doesNotMatch(svg, /<script|onload=|onclick=|href="http|xlink:href|<foreignObject/i, 'SVG bez skryptów i zasobów zewnętrznych');
+  assert.ok(svg.length < 6000, 'lekki plik');
 });
 
 test('adresy plików statycznych mają odcisk treści (omijają stare kopie w Cloudflare i przeglądarce)', async () => {

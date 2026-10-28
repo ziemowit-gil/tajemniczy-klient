@@ -304,37 +304,50 @@ main:has(> .login-hero) { max-width: none; padding: 0; }
 .decline-box > summary { cursor: pointer; font-weight: 600; color: var(--danger); width: fit-content; }
 .decline-box form { margin-top: .75rem; }
 
-/* ===== Logowanie w stylu Metro: płasko, kafle, cyan, bez zaokrągleń. Tekst ciemny na jasnych polach (≥ 7:1), biały na ciemnych (≥ 15:1). ===== */
-.login-hero { background: #00bcf2 url("/img/login-metro.svg") center / cover no-repeat; }
-.login-card { border-radius: 0; background: #fff; padding: 2.25rem 2.25rem 2rem; box-shadow: none; }
-.login-card h1 { font-weight: 300; font-size: 2.4rem; line-height: 1.1; letter-spacing: -.01em; margin-bottom: 1rem; }
-.login-card h2 { font-weight: 600; font-size: 1.15rem; text-transform: uppercase; letter-spacing: .04em; }
-.login-card .step-label { color: #1d1d1a; text-transform: uppercase; letter-spacing: .06em; font-size: .85rem; }
-.login-tiles { gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
-.login-tiles li:nth-child(1) .tile { background: #00bcf2; }
-.login-tiles li:nth-child(2) .tile { background: #ffb900; }
-.login-tiles .tile { border-radius: 0; min-height: 10rem; display: flex; flex-direction: column; justify-content: flex-end; padding: 1rem 1.1rem; color: #1d1d1a; transition: none; }
-.login-tiles .tile strong { font-size: 1.35rem; font-weight: 600; margin-bottom: .35rem; }
-.login-tiles .tile span { color: #1d1d1a; font-size: .95rem; }
-.login-tiles .tile:hover, .login-tiles .tile:focus-visible { background: #1d1d1a; color: #fff; }
-.login-tiles .tile:hover span, .login-tiles .tile:focus-visible span { color: #fff; }
-.login-tiles .tile:focus-visible { outline: 4px solid #1d1d1a; outline-offset: 3px; box-shadow: 0 0 0 3px #fff; }
-.login-tiles .tile[aria-current="true"] { background: #1d1d1a; color: #fff; }
-.login-tiles .tile[aria-current="true"] span { color: #fff; }
-.login-card input[type="text"], .login-card input[type="email"], .login-card input[type="password"], .login-card input[type="tel"] { border: 2px solid #1d1d1a; border-radius: 0; background: #fff; }
-.login-card input:focus-visible { outline: 4px solid #00bcf2; outline-offset: 0; border-color: #1d1d1a; }
-.login-card button[type="submit"], .login-card .btn { border-radius: 0; background: #1d1d1a; color: #fff; border: 2px solid #1d1d1a; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-.login-card button[type="submit"]:hover, .login-card .btn:hover { background: #00bcf2; color: #1d1d1a; border-color: #1d1d1a; }
-.login-card button[type="submit"]:focus-visible, .login-card .btn:focus-visible, .login-card a:focus-visible { outline: 4px solid #00bcf2; outline-offset: 2px; box-shadow: 0 0 0 2px #1d1d1a; }
-.login-card .error-summary { border-radius: 0; border: 0; border-left: 8px solid var(--danger); background: var(--danger-bg); color: #5c0b12; font-weight: 600; }
-.login-card .field-error { color: #8c0f1a; font-weight: 600; }
-.login-card .note-box { border-radius: 0; }
-.login-card a { color: #004e6c; text-decoration: underline; text-underline-offset: 3px; }
+
 .edit-box > summary { cursor: pointer; font-weight: 600; width: fit-content; }
 .edit-box form { margin-top: .75rem; }
 .decline-section { margin: 1rem 0; }
-.login-tiles li:nth-child(3) .tile { background: #1d1d1a; color: #fff; }
-.login-tiles li:nth-child(3) .tile span { color: #fff; }
-.login-tiles li:nth-child(3) .tile:hover, .login-tiles li:nth-child(3) .tile:focus-visible { background: #00bcf2; color: #1d1d1a; }
-.login-tiles li:nth-child(3) .tile:hover span, .login-tiles li:nth-child(3) .tile:focus-visible span { color: #1d1d1a; }
 .reg-code { font-size: 2.6rem; font-weight: 300; letter-spacing: .35em; margin: .5rem 0; }
+
+/* ===== Logowanie: własna identyfikacja aplikacji (kolory FEER: granat #1457d1 z akcentem #ea8f00), układ dwupanelowy jak samodzielna aplikacja.
+   Kontrast: biały tekst na #1457d1 6,3:1; tekst #1d1d1a na jasnym tle 16:1; pomarańcz tylko jako dekoracja. ===== */
+body:has(.login-hero) .site-header { display: none; }
+.login-hero { display: grid; grid-template-columns: minmax(0, 1fr); min-height: calc(100vh - 3rem); margin: 0; padding: 0; background: #fff; }
+.login-brand { background: #1457d1; color: #fff; padding: 2rem 1.5rem; display: flex; flex-direction: column; justify-content: center; gap: .35rem;
+  background-image: radial-gradient(circle at 12% 110%, rgba(255, 255, 255, .14) 0 18rem, transparent 18.05rem), radial-gradient(circle at 105% -10%, rgba(234, 143, 0, .55) 0 9rem, transparent 9.05rem); }
+.login-brand .logo-mark { width: 4.5rem; height: 4.5rem; margin-bottom: .75rem; }
+.login-brand p { margin: 0; color: #fff; }
+.login-brand .brand-name { font-size: 2rem; font-weight: 700; letter-spacing: -.01em; }
+.login-brand .brand-tag { font-size: 1.1rem; max-width: 24rem; }
+.login-brand .brand-by { font-size: .95rem; margin-top: 1.25rem; }
+.login-hero > .login-card { width: 100%; max-width: 32rem; margin: 0; padding: 2rem 1.5rem 2.5rem; align-self: center; justify-self: center; background: transparent; border-radius: 0; }
+@media (min-width: 56rem) {
+  .login-hero { grid-template-columns: minmax(20rem, 5fr) minmax(26rem, 6fr); }
+  .login-brand { padding: 3rem; }
+  .login-brand .logo-mark { width: 6rem; height: 6rem; }
+  .login-brand .brand-name { font-size: 2.6rem; }
+  .login-hero > .login-card { padding: 3rem 2.5rem; }
+}
+.login-card h1 { font-weight: 700; font-size: 1.9rem; line-height: 1.15; margin-bottom: .75rem; }
+.login-card h2 { font-weight: 700; font-size: 1.1rem; margin: 1.25rem 0 .6rem; }
+.login-card .step-label { color: #1457d1; font-weight: 700; font-size: .9rem; text-transform: none; letter-spacing: 0; margin: 0 0 .25rem; }
+.login-tiles { grid-template-columns: 1fr; gap: .6rem; }
+.login-tiles .tile { background: #f3f5f8; color: #1d1d1a; border-radius: 10px; min-height: 0; display: block; padding: .9rem 1.1rem; }
+.login-tiles li:nth-child(n) .tile { background: #f3f5f8; color: #1d1d1a; }
+.login-tiles .tile strong { font-size: 1.1rem; font-weight: 700; margin-bottom: .15rem; }
+.login-tiles .tile span, .login-tiles li:nth-child(n) .tile span { color: #3a3a35; font-size: .95rem; }
+.login-tiles .tile:hover, .login-tiles .tile:focus-visible, .login-tiles li:nth-child(n) .tile:hover, .login-tiles li:nth-child(n) .tile:focus-visible { background: #1457d1; color: #fff; }
+.login-tiles .tile:hover span, .login-tiles .tile:focus-visible span, .login-tiles li:nth-child(n) .tile:hover span, .login-tiles li:nth-child(n) .tile:focus-visible span { color: #fff; }
+.login-tiles .tile:focus-visible { outline: 3px solid #1d1d1a; outline-offset: 3px; box-shadow: none; }
+.login-tiles .tile[aria-current="true"], .login-tiles li:nth-child(n) .tile[aria-current="true"] { background: #1d1d1a; color: #fff; }
+.login-tiles .tile[aria-current="true"] span { color: #fff; }
+.login-card input[type="text"], .login-card input[type="email"], .login-card input[type="password"], .login-card input[type="tel"] { border: 2px solid #5b6472; border-radius: 8px; background: #fff; }
+.login-card input:focus-visible { outline: 3px solid #1457d1; outline-offset: 2px; border-color: #1457d1; }
+.login-card button[type="submit"], .login-card .btn { border-radius: 8px; background: #1457d1; color: #fff; border: 2px solid #1457d1; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.login-card button[type="submit"]:hover, .login-card .btn:hover { background: #0e43a6; border-color: #0e43a6; color: #fff; }
+.login-card button[type="submit"]:focus-visible, .login-card .btn:focus-visible, .login-card a:focus-visible { outline: 3px solid #1d1d1a; outline-offset: 2px; box-shadow: none; }
+.login-card .error-summary { border-radius: 8px; border: 0; border-left: 6px solid #a4141f; background: #fdecee; color: #5c0b12; font-weight: 600; }
+.login-card .note-box { border-radius: 8px; }
+.login-card a { color: #0e43a6; text-decoration: underline; text-underline-offset: 3px; }
+@media print { .login-brand { display: none; } }
