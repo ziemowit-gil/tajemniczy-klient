@@ -96,7 +96,7 @@ function createOfficeReviewsService(db, { objects, users, snapshots }) {
       const object = objects.get(d.objectId);
       if (!object || object.type !== 'uczelnia') throw new DomainError('Wybierz uczelnię z listy obiektów.');
       const auditor = users.findById(auditorId);
-      if (!auditor || !auditor.active || auditor.role !== ROLES.AUDITOR) throw new DomainError('Wybrany użytkownik nie jest aktywnym audytorem.');
+      if (!auditor || !auditor.active || !auditor.roles.includes(ROLES.AUDITOR)) throw new DomainError('Wybrany użytkownik nie jest aktywnym audytorem.');
       const ids = validScenarioIds(d.scenarioIds);
       const active = questions.list({ onlyActive: true });
       if (!active.length) throw new DomainError('Brak aktywnych pytań w ankiecie dostępności kształcenia.');

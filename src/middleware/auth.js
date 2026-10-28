@@ -18,12 +18,13 @@ function attachUser({ szo, users, sessions }) {
       if (bearer) {
         const identity = await szo.verify(bearer[1]);
         const user = users.upsertFromIdentity(identity);
-        req.user = user.active ? user : null;
+        req.user = user.active ? { ...user, role: users.effectiveRole(user), storedRole: user.role } : null;
         req.authVia = 'bearer';
       } else {
-        const userId = await sessions.read(req);
-        const user = userId ? users.findById(userId) : null;
-        req.user = user?.active ? user : null;
+        const session = await sessions.read(req);
+        const user = session ? users.findById(session.id) : null;
+        // Rola aktywna w tej sesji (przełącznik ról); nieaktualna lub odebrana rola jest ignorowana.
+        req.user = user?.active ? { ...user, role: users.effectiveRole(user, session.role), storedRole: user.role } : null;
         req.authVia = 'session';
       }
       res.locals.currentUser = req.user;

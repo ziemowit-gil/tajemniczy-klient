@@ -1,41 +1,99 @@
 const { ROLES } = require('../domain/constants');
 
+/** Kolejność od najniższej do najwyższej roli (także kolejność wyświetlania). */
+const ROLE_ORDER = [ROLES.AUDITOR, ROLES.COORDINATOR, ROLES.ADMIN];
+const sortRoles = (roles) => ROLE_ORDER.filter((r) => roles.includes(r));
+const highestRole = (roles) => [...ROLE_ORDER].reverse().find((r) => roles.includes(r)) || ROLES.AUDITOR;
+
+/**
+ * Użytkownicy i ich role. Każdy użytkownik ma obowiązkową rolę Audytora (Tajemniczego Klienta) oraz opcjonalnie rolę
+ * Koordynatora i/lub Administratora. `users.role` to ostatnio używana rola (domyślna po zalogowaniu); w trakcie sesji
+ * aktywną rolę wybiera się osobno (przełącznik ról), więc dwie sesje tej samej osoby mogą działać w różnych rolach.
+ */
 function createUsersService(db, { defaultRole }) {
   const byExternal = db.prepare('SELECT * FROM users WHERE external_id = ?');
   const byId = db.prepare('SELECT * FROM users WHERE id = ?');
+  const rolesOf = db.prepare('SELECT role FROM user_roles WHERE user_id = ?');
+  const hydrate = (row) => (row ? { ...row, roles: sortRoles(rolesOf.all(row.id).map((r) => r.role)) } : row);
 
-  return {
-    findById: (id) => byId.get(id),
+  /** Ustawia komplet ról (Audytor zawsze), usuwając pozostałe. */
+  function writeRoles(userId, extras) {
+    const wanted = new Set([ROLES.AUDITOR, ...extras.filter((r) => ROLE_ORDER.includes(r))]);
+    db.prepare('DELETE FROM user_roles WHERE user_id = ?').run(userId);
+    const insert = db.prepare('INSERT INTO user_roles (user_id, role) VALUES (?, ?)');
+    for (const r of wanted) insert.run(userId, r);
+    return [...wanted];
+  }
+
+  /** Zapisuje ostatnio używaną rolę, pilnując, by była jedną z przyznanych (w przeciwnym razie najwyższa). */
+  function storeActiveRole(userId, roles, preferred) {
+    const role = roles.includes(preferred) ? preferred : highestRole(roles);
+    db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, userId);
+  }
+
+  const svc = {
+    ROLE_ORDER,
+    findById: (id) => hydrate(byId.get(id)),
+
+    /** Aktywna rola w sesji: wybrana w sesji, w przeciwnym razie ostatnio używana, w ostateczności najwyższa przyznana. */
+    effectiveRole: (user, preferred) => (user.roles.includes(preferred) ? preferred : (user.roles.includes(user.role) ? user.role : highestRole(user.roles))),
+
+    hasRole: (id, role) => db.prepare('SELECT 1 FROM user_roles WHERE user_id = ? AND role = ?').get(id, role) !== undefined,
 
     /**
-     * Tworzy lub aktualizuje użytkownika na podstawie tożsamości z SZO.
-     * Rola z SZO (jeśli rozpoznana) jest źródłem prawdy; bez niej zostaje rola nadana lokalnie przez administratora.
+     * Tworzy lub aktualizuje użytkownika na podstawie tożsamości z SZO. Nowa osoba dostaje rolę Audytora oraz ewentualnie
+     * rolę z SZO (albo domyślną). Rola z SZO (jeśli rozpoznana) jest dodawana do przyznanych i ustawiana jako domyślna;
+     * bez niej role nadane lokalnie przez administratora pozostają bez zmian.
      */
     upsertFromIdentity(identity) {
       const existing = byExternal.get(identity.externalId);
       if (!existing) {
+        const initial = identity.role || defaultRole;
         const info = db.prepare(
           `INSERT INTO users (external_id, name, email, role, last_login_at) VALUES (?, ?, ?, ?, datetime('now'))`,
-        ).run(identity.externalId, identity.name, identity.email, identity.role || defaultRole);
-        return byId.get(info.lastInsertRowid);
+        ).run(identity.externalId, identity.name, identity.email, initial);
+        writeRoles(info.lastInsertRowid, [initial]);
+        return svc.findById(info.lastInsertRowid);
       }
-      db.prepare(
-        `UPDATE users SET name = ?, email = ?, role = ?, last_login_at = datetime('now') WHERE id = ?`,
-      ).run(identity.name, identity.email, identity.role || existing.role, existing.id);
-      return byId.get(existing.id);
+      db.prepare(`UPDATE users SET name = ?, email = ?, last_login_at = datetime('now') WHERE id = ?`).run(identity.name, identity.email, existing.id);
+      if (identity.role) {
+        const roles = hydrate(existing).roles;
+        const next = writeRoles(existing.id, [...roles, identity.role]);
+        storeActiveRole(existing.id, next, identity.role);
+      }
+      return svc.findById(existing.id);
     },
 
-    list: () => db.prepare('SELECT * FROM users ORDER BY active DESC, name COLLATE NOCASE').all(),
-    listByRole: (...roles) => {
+    list: () => db.prepare('SELECT * FROM users ORDER BY active DESC, name COLLATE NOCASE').all().map(hydrate),
+
+    /** Aktywni użytkownicy, którzy mają przyznaną którąkolwiek z ról (nie tylko aktywną w danej chwili). */
+    listByRole(...roles) {
       const marks = roles.map(() => '?').join(',');
-      return db.prepare(`SELECT * FROM users WHERE active = 1 AND role IN (${marks}) ORDER BY name COLLATE NOCASE`).all(...roles);
+      return db.prepare(`SELECT DISTINCT u.* FROM users u JOIN user_roles r ON r.user_id = u.id
+        WHERE u.active = 1 AND r.role IN (${marks}) ORDER BY u.name COLLATE NOCASE`).all(...roles).map(hydrate);
     },
 
+    /** Zgodność wsteczna: jedna rola obok obowiązkowej roli Audytora. */
     update(id, { role, active }) {
-      const user = byId.get(id);
-      if (!user) return null;
-      db.prepare('UPDATE users SET role = ?, active = ? WHERE id = ?').run(role, active ? 1 : 0, id);
-      return byId.get(id);
+      if (!byId.get(id)) return null;
+      return svc.setRoles(id, { extras: role === ROLES.AUDITOR ? [] : [role], active, activeRole: role });
+    },
+
+    /** Ustawia role dodatkowe (Audytor jest zawsze) i aktywność konta; `activeRole` opcjonalnie wskazuje rolę domyślną. */
+    setRoles(id, { extras, active, activeRole }) {
+      if (!byId.get(id)) return null;
+      const roles = writeRoles(id, extras);
+      db.prepare('UPDATE users SET active = ? WHERE id = ?').run(active ? 1 : 0, id);
+      storeActiveRole(id, roles, activeRole ?? byId.get(id).role);
+      return svc.findById(id);
+    },
+
+    /** Przełącza ostatnio używaną rolę (zapamiętywaną na kolejne logowanie); zwraca false, gdy rola nie jest przyznana. */
+    switchRole(id, role) {
+      const user = svc.findById(id);
+      if (!user || !user.roles.includes(role)) return false;
+      db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, id);
+      return true;
     },
 
     setNotify: (id, enabled) => db.prepare('UPDATE users SET notify_email = ? WHERE id = ?').run(enabled ? 1 : 0, id),
@@ -43,8 +101,10 @@ function createUsersService(db, { defaultRole }) {
     exists: (externalId) => byExternal.get(externalId) !== undefined,
     existingExternalIds: () => new Set(db.prepare('SELECT external_id FROM users').all().map((r) => r.external_id)),
 
-    countActiveAdmins: () => db.prepare(`SELECT COUNT(*) AS n FROM users WHERE role = ? AND active = 1`).get(ROLES.ADMIN).n,
+    countActiveAdmins: () => db.prepare(`SELECT COUNT(DISTINCT u.id) AS n FROM users u JOIN user_roles r ON r.user_id = u.id
+      WHERE r.role = ? AND u.active = 1`).get(ROLES.ADMIN).n,
   };
+  return svc;
 }
 
-module.exports = { createUsersService };
+module.exports = { createUsersService, ROLE_ORDER };

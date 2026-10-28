@@ -50,6 +50,15 @@
     <% } %>
     <div class="user-box">
       <a href="/account" class="account-link"<% if (currentPath === '/account') { %> aria-current="page"<% } %>><%= currentUser.name %> (<%= roleLabels[currentUser.role] %>)</a>
+      <% if (currentUser.roles && currentUser.roles.length > 1) { %>
+        <form method="post" action="/role" class="role-switch">
+          <label for="role-switch">Aktywna rola</label>
+          <select id="role-switch" name="role">
+            <% for (const r of currentUser.roles) { %><option value="<%= r %>"<% if (r === currentUser.role) { %> selected<% } %>><%= roleLabels[r] %></option><% } %>
+          </select>
+          <button type="submit" class="btn-small">Przełącz</button>
+        </form>
+      <% } %>
       <form method="post" action="/logout"><button type="submit" class="link-button">Wyloguj</button></form>
     </div>
     <% } %>

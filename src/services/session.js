@@ -10,8 +10,9 @@ function createSessionService(cfg) {
   return {
     cookieName: COOKIE_NAME,
 
-    async issue(res, userId) {
-      const token = await new SignJWT({})
+    /** Wystawia sesję; `role` to aktywna rola w tej sesji (przełączana w aplikacji). */
+    async issue(res, userId, role) {
+      const token = await new SignJWT(role ? { role } : {})
         .setProtectedHeader({ alg: 'HS256' })
         .setSubject(String(userId))
         .setIssuer(ISSUER)
@@ -33,7 +34,7 @@ function createSessionService(cfg) {
       try {
         const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'], issuer: ISSUER });
         const id = Number(payload.sub);
-        return Number.isInteger(id) ? id : null;
+        return Number.isInteger(id) ? { id, role: typeof payload.role === 'string' ? payload.role : null } : null;
       } catch {
         return null;
       }

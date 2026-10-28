@@ -22,6 +22,7 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, 
   r.get('/declaration', declarationCtl.show);
   r.post('/declaration', declarationCtl.accept);
   r.post('/logout', auth.logout);
+  r.post('/role', auth.switchRole);
   r.get('/', reportsCtl.dashboard);
   r.get('/account', auth.showAccount);
   r.post('/account', auth.updateAccount);

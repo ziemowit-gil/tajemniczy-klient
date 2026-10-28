@@ -1,6 +1,6 @@
 /** Zarządzanie słownikami administratora: obiekty, kryteria, scenariusze, użytkownicy. */
 const {
-  OBJECT_TYPES, AREA_LABELS, SCENARIO_AREAS, SCENARIO_USAGE, DISABILITIES, ANSWER_TYPE_LABELS, ROLES, ROLE_LABELS,
+  OBJECT_TYPES, AREA_LABELS, SCENARIO_AREAS, SCENARIO_USAGE, DISABILITIES, ANSWER_TYPE_LABELS, ROLES, ROLE_LABELS, ROLE_SET_LABELS,
 } = require('../domain/constants');
 const {
   objectSchema, criterionSchema, scenarioSchema, userUpdateSchema, importSchema, parseForm,
@@ -178,11 +178,11 @@ function createAdminController({ objects, catalog, users, szoDirectory, notifier
     },
 
     /* ---------- Użytkownicy ---------- */
-    usersIndex: (req, res) => res.render('users/index', { title: 'Użytkownicy', users: users.list(), roleLabels: ROLE_LABELS, importEnabled: szoDirectory.enabled, declared: declarations.acceptedMap(), declarationRequired }),
+    usersIndex: (req, res) => res.render('users/index', { title: 'Użytkownicy', users: users.list(), roleLabels: ROLE_LABELS, roleSetLabels: ROLE_SET_LABELS, importEnabled: szoDirectory.enabled, declared: declarations.acceptedMap(), declarationRequired }),
 
     /** Import osób z SZO: lista kont z uprawnieniem „Tajemniczy Klient”, których jeszcze nie ma w aplikacji. */
     async usersImportForm(req, res) {
-      const view = { title: 'Importuj użytkowników z SZO', importDomains, roleLabels: ROLE_LABELS, enabled: szoDirectory.enabled, people: [], error: null, defaultRole: ROLES.AUDITOR };
+      const view = { title: 'Importuj użytkowników z SZO', importDomains, roleLabels: ROLE_LABELS, roleSetLabels: ROLE_SET_LABELS, enabled: szoDirectory.enabled, people: [], error: null, defaultRole: ROLES.AUDITOR };
       if (!szoDirectory.enabled) return res.render('users/import', view);
       try {
         const existing = users.existingExternalIds();
@@ -278,14 +278,19 @@ function createAdminController({ objects, catalog, users, szoDirectory, notifier
       if (!target) throw httpError(404, 'Nie znaleziono użytkownika.');
       const { ok, data, errors } = parseForm(userUpdateSchema, req.body);
       if (!ok) { res.flash('error', Object.values(errors)[0]); return res.redirect(303, '/users'); }
-      const losesAdmin = target.role === ROLES.ADMIN && target.active && (data.role !== ROLES.ADMIN || !data.active);
+      // Role dodatkowe: z pól wyboru, a przy starszym zapisie `role` z jednej wartości. Audytor jest zawsze.
+      const extras = data.role !== undefined
+        ? (data.role === ROLES.AUDITOR ? [] : [data.role])
+        : [data.coordinator && ROLES.COORDINATOR, data.administrator && ROLES.ADMIN].filter(Boolean);
+      const losesAdmin = target.roles.includes(ROLES.ADMIN) && target.active && (!extras.includes(ROLES.ADMIN) || !data.active);
       if (losesAdmin && users.countActiveAdmins() <= 1) {
         res.flash('error', 'Nie można odebrać uprawnień ostatniemu aktywnemu administratorowi.');
         return res.redirect(303, '/users');
       }
-      const updated = users.update(id, data);
-      if (updated.active && (target.role !== updated.role || !target.active)) notifier.roleAssigned(updated);
-      res.flash('success', `Zapisano użytkownika ${target.name}. Rola przekazywana w tokenie SZO nadpisuje to ustawienie przy kolejnym logowaniu.`);
+      const updated = users.setRoles(id, { extras, active: data.active, activeRole: data.role });
+      const gainedRole = updated.roles.some((r) => !target.roles.includes(r));
+      if (updated.active && (gainedRole || target.role !== updated.role || !target.active)) notifier.roleAssigned(updated);
+      res.flash('success', `Zapisano użytkownika ${target.name}. Rola przekazywana w tokenie SZO jest dodawana do przyznanych przy kolejnym logowaniu.`);
       res.redirect(303, '/users');
     },
   };

@@ -13,6 +13,13 @@ const ROLE_LABELS = {
 // Kolejność = priorytet, gdy SZO zwraca kilka ról naraz.
 const ROLE_PRIORITY = [ROLES.ADMIN, ROLES.COORDINATOR, ROLES.AUDITOR];
 
+/** Zestawy ról do wyboru przy imporcie (Audytor jest zawsze; wartość to rola dodatkowa). */
+const ROLE_SET_LABELS = {
+  auditor: 'Tylko Audytor / Tajemniczy Klient',
+  coordinator: 'Audytor + Koordynator (z przełączaniem ról)',
+  administrator: 'Audytor + Administrator (z przełączaniem ról)',
+};
+
 const AREAS = Object.freeze({ OZN: 'OZN', EDU: 'KSZTALCENIE' });
 
 const AREA_LABELS = {
@@ -34,5 +41,5 @@ const DISABILITIES = { ruchowa: 'Niepełnosprawność ruchowa', wzroku: 'Niepeł
 
 module.exports = {
   STUDY_LEVELS, STUDY_MODES, DISABILITIES, SCENARIO_USAGE,
-  ROLES, ROLE_LABELS, ROLE_PRIORITY, AREAS, AREA_LABELS, SCENARIO_AREAS, OBJECT_TYPES, ANSWER_TYPE_LABELS,
+  ROLES, ROLE_LABELS, ROLE_PRIORITY, ROLE_SET_LABELS, AREAS, AREA_LABELS, SCENARIO_AREAS, OBJECT_TYPES, ANSWER_TYPE_LABELS,
 };

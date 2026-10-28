@@ -83,7 +83,7 @@ function createAuditsService(db, { objects, users, snapshots }) {
       const object = objects.get(objectId);
       if (!object) throw new DomainError('Wybrany obiekt nie istnieje.');
       const auditor = users.findById(auditorId);
-      if (!auditor || !auditor.active || auditor.role !== ROLES.AUDITOR) {
+      if (!auditor || !auditor.active || !auditor.roles.includes(ROLES.AUDITOR)) {
         throw new DomainError('Wybrany użytkownik nie jest aktywnym audytorem.');
       }
       const ids = [...new Set(scenarioIds)];

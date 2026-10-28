@@ -158,7 +158,12 @@ test('ocena kształcenia: audytor zakłada ocenę bez scenariuszy, administrator
 
   // administrator musi wskazać audytora będącego audytorem
   assert.equal((await adm.post('/office', base2)).status, 422);
-  assert.equal((await adm.post('/office', [...base2, ['auditorId', uid('adm')]])).status, 422);
+  // każdy ma rolę Audytora (także administrator), ale konto nieaktywne ani nieistniejące nie może dostać oceny
+  services.users.upsertFromIdentity({ externalId: 'nieaktywny', name: 'Nieaktywny', email: null, role: 'auditor' });
+  const inactive = db.prepare(`SELECT id FROM users WHERE external_id = 'nieaktywny'`).get().id;
+  services.users.update(inactive, { role: 'auditor', active: false });
+  assert.equal((await adm.post('/office', [...base2, ['auditorId', inactive]])).status, 422);
+  assert.equal((await adm.post('/office', [...base2, ['auditorId', 999999]])).status, 422);
 
   // zatwierdzonej oceny nie można już zmieniać
   services.office.items(r1).forEach((it) => db.prepare('UPDATE office_review_items SET answer = ? WHERE id = ?').run(it.answer_type === 'scale' ? '3' : 'tak', it.id));

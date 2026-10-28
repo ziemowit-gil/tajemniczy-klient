@@ -1,6 +1,6 @@
 const { z } = require('zod');
 const { AuthError } = require('../services/szoAuth');
-const { ROLES } = require('../domain/constants');
+const { ROLES, ROLE_LABELS } = require('../domain/constants');
 const { parseForm } = require('../validation/schemas');
 
 const devLoginSchema = z.object({
@@ -39,7 +39,7 @@ function createAuthController({ config, szo, szoPkce, users, sessions, notifier,
         // Administratorzy wskazani w ADMIN_EMAILS konfigurują system, więc nie dostają maila o nadaniu roli.
         if (!existed && user.role !== ROLES.ADMIN) notifier.roleAssigned(user);
         if (!user.active) throw new AuthError('Konto jest wyłączone.', { status: 403 });
-        await sessions.issue(res, user.id);
+        await sessions.issue(res, user.id, user.role);
         return res.redirect(303, '/');
       } catch (err) {
         if (!(err instanceof AuthError)) throw err;
@@ -62,7 +62,7 @@ function createAuthController({ config, szo, szoPkce, users, sessions, notifier,
         const user = users.upsertFromIdentity(identity);
         if (!existed && user.role !== ROLES.ADMIN) notifier.roleAssigned(user);
         if (!user.active) throw new AuthError('Konto jest wyłączone.', { status: 403 });
-        await sessions.issue(res, user.id);
+        await sessions.issue(res, user.id, user.role);
         return res.redirect(303, '/');
       } catch (err) {
         if (!(err instanceof AuthError)) throw err;
@@ -77,7 +77,7 @@ function createAuthController({ config, szo, szoPkce, users, sessions, notifier,
       if (!ok) return res.status(422).render('login', { title: 'Logowanie', mode: 'dev', loginUrl: null, errors, values: req.body, authError: null });
       const slug = data.email || data.name.toLowerCase().replace(/\s+/g, '.');
       const user = users.upsertFromIdentity({ externalId: `dev:${slug}`, name: data.name, email: data.email || null, role: data.role });
-      await sessions.issue(res, user.id);
+      await sessions.issue(res, user.id, user.role);
       return res.redirect(303, '/');
     },
 
@@ -89,6 +89,19 @@ function createAuthController({ config, szo, szoPkce, users, sessions, notifier,
       users.setNotify(req.user.id, req.body.notifyEmail === 'on');
       res.flash('success', 'Zapisano ustawienia konta.');
       res.redirect(303, '/account');
+    },
+
+    /** Przełącznik ról: zmienia rolę aktywną w tej sesji (i zapamiętuje ją na kolejne logowanie). */
+    async switchRole(req, res) {
+      const role = String(req.body.role || '');
+      if (!req.user.roles.includes(role)) {
+        res.flash('error', 'Nie masz przyznanej takiej roli.');
+        return res.redirect(303, '/');
+      }
+      users.switchRole(req.user.id, role);
+      await sessions.issue(res, req.user.id, role);
+      res.flash('success', `Przełączono na rolę: ${ROLE_LABELS[role]}.`);
+      return res.redirect(303, '/');
     },
 
     logout(req, res) {

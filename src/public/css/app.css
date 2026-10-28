@@ -217,3 +217,16 @@ main:has(> .login-hero) { max-width: none; padding: 0; }
 .declaration-text p:last-child { margin-bottom: 0; }
 .declaration-logout { margin-top: 1.5rem; }
 .declaration-logout .link-button { color: var(--muted); }
+
+/* Przełącznik ról w nagłówku */
+.role-switch { display: flex; gap: .4rem; align-items: center; margin: 0; }
+.role-switch label { color: #fff; font-size: .9rem; margin: 0; font-weight: 500; }
+.role-switch select { width: auto; padding: .25rem .4rem; font-size: .9rem; border-color: #fff; }
+.role-switch button { background: #fff; color: var(--text); border-color: #fff; }
+.role-switch button:hover { background: #dfe3e9; color: var(--text); border-color: #dfe3e9; }
+.user-box { flex-wrap: wrap; justify-content: flex-end; }
+
+/* Role w panelu Użytkownicy */
+.role-set { display: grid; gap: .3rem; }
+.role-fixed { font-weight: 600; }
+.check-inline { display: flex; gap: .4rem; align-items: center; font-weight: 500; margin: 0; }

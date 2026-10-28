@@ -87,8 +87,11 @@ const answersSchema = z.object({
 const reviewSchema = z.object({ comment: optionalText(2000) });
 const returnSchema = z.object({ comment: text('Uzasadnienie zwrotu', { max: 2000 }) });
 
+/** Role dodatkowe jako pola wyboru (Audytor jest zawsze); `role` to starszy zapis jednej roli, nadal obsługiwany. */
 const userUpdateSchema = z.object({
-  role: z.enum(Object.values(ROLES), { error: 'Rola: wybierz wartość' }),
+  role: z.enum(Object.values(ROLES), { error: 'Rola: wybierz wartość' }).optional(),
+  coordinator: checkbox,
+  administrator: checkbox,
   active: checkbox,
 });
 
