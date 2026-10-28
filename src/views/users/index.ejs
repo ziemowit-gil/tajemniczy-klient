@@ -3,6 +3,7 @@
   <h1>Użytkownicy</h1>
   <% if (importEnabled) { %><a class="btn" href="/users/import">Importuj z SZO</a><% } %>
 </div>
+<p class="muted">Dezaktywowane konta (na liście na końcu) można reaktywować. Trwale usunąć można tylko konto bez audytów, ocen i oświadczenia.</p>
 <p class="muted">Konta powstają automatycznie przy pierwszym logowaniu przez SZO. Każdy ma obowiązkową rolę Audytora / Tajemniczego Klienta; Koordynator i Administrator to role dodatkowe, między którymi użytkownik przełącza się w nagłówku strony. Rola przekazana w tokenie SZO jest dodawana do przyznanych przy logowaniu.</p>
 <div class="table-wrap"><table>
   <caption class="sr-only">Lista użytkowników</caption>
@@ -26,7 +27,15 @@
       <td><%= fmtDateTime(u.last_login_at) %></td>
       <% if (declarationRequired) { %><td><%= declared.has(u.id) ? `Złożone ${fmtDateTime(declared.get(u.id))}` : 'Brak' %></td><% } %>
       <td><form id="user-<%= u.id %>" method="post" action="/users/<%= u.id %>"><button type="submit" class="btn-small">Zapisz<span class="sr-only">: <%= u.name %></span></button></form>
-        <% if (u.kind === 'external') { %>
+        <% if (!u.active) { %>
+          <form method="post" action="/users/<%= u.id %>/reactivate"><button type="submit" class="btn-small">Reaktywuj<span class="sr-only">: <%= u.name %></span></button></form>
+        <% } else if (u.id !== currentUser.id) { %>
+          <form method="post" action="/users/<%= u.id %>/deactivate" data-confirm="Dezaktywować konto: <%= u.name %>? Osoba nie będzie mogła się zalogować; audyty i historia zostaną."><button type="submit" class="btn-small btn-secondary">Dezaktywuj<span class="sr-only">: <%= u.name %></span></button></form>
+        <% } %>
+        <% if (u.id !== currentUser.id) { %>
+          <form method="post" action="/users/<%= u.id %>/delete" data-confirm="Usunąć trwale konto: <%= u.name %>? Tej operacji nie można cofnąć. Konta z audytami lub oświadczeniem nie da się usunąć."><button type="submit" class="btn-small btn-danger">Usuń<span class="sr-only">: <%= u.name %></span></button></form>
+        <% } %>
+        <% if (u.kind === 'external' && u.active) { %>
           <form method="post" action="/users/<%= u.id %>/external/link"><button type="submit" class="btn-small btn-secondary">Wyślij link do hasła<span class="sr-only">: <%= u.name %></span></button></form>
           <form method="post" action="/users/<%= u.id %>/external/phone" class="inline-form">
             <label for="phone-<%= u.id %>" class="sr-only">Nowy numer telefonu: <%= u.name %></label>

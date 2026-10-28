@@ -118,6 +118,30 @@ function createUsersService(db, { defaultRole }) {
     duplicateEmails: () => new Set(db.prepare(`SELECT lower(email) AS e FROM users WHERE email IS NOT NULL GROUP BY lower(email) HAVING COUNT(*) > 1`).all().map((r) => r.e)),
     existingExternalIds: () => new Set(db.prepare('SELECT external_id FROM users').all().map((r) => r.external_id)),
 
+    /** Powiązania blokujące usunięcie konta: audyty i oceny wykonywane przez osobę oraz złożone oświadczenia (ślad prawny). */
+    usage(id) {
+      const n = (sql) => db.prepare(sql).get(id).n;
+      return {
+        audits: n('SELECT COUNT(*) AS n FROM audits WHERE auditor_id = ?'),
+        reviews: n('SELECT COUNT(*) AS n FROM office_reviews WHERE auditor_id = ?'),
+        declarations: n('SELECT COUNT(*) AS n FROM declarations WHERE user_id = ?'),
+      };
+    },
+
+    /** Trwale usuwa konto bez powiązań (np. założone omyłkowo); w przeciwnym razie zwraca false i nic nie zmienia. */
+    remove(id) {
+      const u = svc.usage(id);
+      if (u.audits || u.reviews || u.declarations) return false;
+      return db.prepare('DELETE FROM users WHERE id = ?').run(id).changes === 1;
+    },
+
+    /** Reaktywuje konto i zdejmuje blokadę logowania po błędnych hasłach. */
+    reactivate(id) {
+      if (!byId.get(id)) return null;
+      db.prepare('UPDATE users SET active = 1, failed_logins = 0, locked_until = NULL WHERE id = ?').run(id);
+      return svc.findById(id);
+    },
+
     countActiveAdmins: () => db.prepare(`SELECT COUNT(DISTINCT u.id) AS n FROM users u JOIN user_roles r ON r.user_id = u.id
       WHERE r.role = ? AND u.active = 1`).get(ROLES.ADMIN).n,
   };

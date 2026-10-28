@@ -68,6 +68,9 @@ function buildRouter({ auth, extAuth, admin, auditsCtl, reportsCtl, officeCtl, s
   r.post('/users/external', requireRole(ADMIN), admin.externalCreate);
   r.post('/users/:id/external/link', requireRole(ADMIN), admin.externalResendLink);
   r.post('/users/:id/external/phone', requireRole(ADMIN), admin.externalPhone);
+  r.post('/users/:id/deactivate', requireRole(ADMIN), admin.userDeactivate);
+  r.post('/users/:id/reactivate', requireRole(ADMIN), admin.userReactivate);
+  r.post('/users/:id/delete', requireRole(ADMIN), admin.userDelete);
   r.post('/users/:id', requireRole(ADMIN), admin.userUpdate);
 
   /* --- ustawienia: integracja z SZO (klucz API) --- */

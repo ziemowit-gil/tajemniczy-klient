@@ -304,6 +304,51 @@ function createAdminController({ objects, catalog, users, szoDirectory, notifier
       return res.redirect(303, '/users');
     },
 
+    /** Dezaktywacja i reaktywacja konta (odwracalne; historia i audyty zostają). */
+    userDeactivate(req, res) {
+      const target = users.findById(paramId(req));
+      if (!target) throw httpError(404, 'Nie znaleziono użytkownika.');
+      if (target.id === req.user.id) { res.flash('error', 'Nie możesz dezaktywować własnego konta.'); return res.redirect(303, '/users'); }
+      if (target.roles.includes(ROLES.ADMIN) && target.active && users.countActiveAdmins() <= 1) {
+        res.flash('error', 'Nie można dezaktywować ostatniego aktywnego administratora.');
+        return res.redirect(303, '/users');
+      }
+      users.setRoles(target.id, { extras: target.roles.filter((r) => r !== ROLES.AUDITOR), active: false, activeRole: target.role });
+      res.flash('success', `Dezaktywowano konto: ${target.name}. Osoba nie może się zalogować; audyty i historia zostają. Konto można reaktywować.`);
+      return res.redirect(303, '/users');
+    },
+
+    userReactivate(req, res) {
+      const target = users.findById(paramId(req));
+      if (!target) throw httpError(404, 'Nie znaleziono użytkownika.');
+      if (target.active) { res.flash('info', `Konto ${target.name} jest już aktywne.`); return res.redirect(303, '/users'); }
+      const updated = users.reactivate(target.id);
+      if (updated.kind === 'external' && !updated.hasPassword && mailer.mode !== 'off') {
+        notifier.externalAccount(updated, externalAuth.issueSetPasswordToken(updated.id), { reminder: true });
+      } else if (updated.kind !== 'external') {
+        notifier.roleAssigned(updated);
+      }
+      res.flash('success', `Reaktywowano konto: ${target.name}.${updated.kind === 'external' && !updated.hasPassword ? ' Wysłaliśmy nowy link do ustawienia hasła.' : ''}`);
+      return res.redirect(303, '/users');
+    },
+
+    /** Trwałe usunięcie: tylko konta bez audytów, ocen i oświadczeń; resztę należy dezaktywować. */
+    userDelete(req, res) {
+      const target = users.findById(paramId(req));
+      if (!target) throw httpError(404, 'Nie znaleziono użytkownika.');
+      if (target.id === req.user.id) { res.flash('error', 'Nie możesz usunąć własnego konta.'); return res.redirect(303, '/users'); }
+      if (target.roles.includes(ROLES.ADMIN) && target.active && users.countActiveAdmins() <= 1) {
+        res.flash('error', 'Nie można usunąć ostatniego aktywnego administratora.');
+        return res.redirect(303, '/users');
+      }
+      if (!users.remove(target.id)) {
+        res.flash('error', `Nie można usunąć konta ${target.name}: ma audyty, oceny lub złożone oświadczenie. Zamiast tego dezaktywuj konto.`);
+        return res.redirect(303, '/users');
+      }
+      res.flash('success', `Usunięto konto: ${target.name}.`);
+      return res.redirect(303, '/users');
+    },
+
     userUpdate(req, res) {
       const id = paramId(req);
       const target = users.findById(id);
