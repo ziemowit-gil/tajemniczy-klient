@@ -196,3 +196,11 @@ main:has(> .login-hero) { max-width: none; padding: 0; }
 @media (min-width: 64rem) { .login-hero { padding-top: 5rem; } .login-card { margin-left: max(8%, calc((100% - 72rem) / 2 + 1rem)); margin-right: auto; } }
 @media (max-width: 40rem) { .login-card { padding: 1.25rem; } }
 @media print { .login-hero { background: none; } }
+
+/* Edytor kroków scenariusza (src/public/js/steps-editor.js) */
+.steps-editor { max-width: 40rem; margin-bottom: .75rem; }
+.steps-editor-list { list-style: none; margin: 0 0 .75rem; padding: 0; }
+.steps-editor-list li { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-bottom: .6rem; }
+.steps-editor-list .step-no { min-width: 2rem; text-align: right; font-weight: 600; color: var(--muted); }
+.steps-editor-list input[type="text"] { flex: 1 1 14rem; width: auto; }
+.steps-editor-list button:disabled { opacity: 1; background: #e4e7ec; border-color: #c9ced6; color: #4a4a45; cursor: not-allowed; }

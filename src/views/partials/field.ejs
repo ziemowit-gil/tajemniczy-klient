@@ -1,11 +1,11 @@
 <%#
   Pole formularza z etykietą, podpowiedzią i komunikatem błędu (powiązanymi przez aria-describedby).
-  Parametry: name, label, kind ('input'|'textarea'|'select'), type, value, errors, hint, required, options [[value,label]], blank
+  Parametry: name, label, kind ('input'|'textarea'|'select'), type, value, errors, hint, required, options [[value,label]], blank, extraAttrs (stałe atrybuty HTML, np. data-*)
 %>
 <% const hint = locals.hint, required = locals.required, blank = locals.blank, type = locals.type || 'text', value = locals.value;
    const err = locals.errors && locals.errors[name];
    const describedby = [hint ? `${name}-hint` : '', err ? `${name}-err` : ''].filter(Boolean).join(' ');
-   const attrs = `id="${name}" name="${name}"${required ? ' required' : ''}${err ? ' aria-invalid="true"' : ''}${describedby ? ` aria-describedby="${describedby}"` : ''}`; %>
+   const attrs = `id="${name}" name="${name}"${required ? ' required' : ''}${err ? ' aria-invalid="true"' : ''}${describedby ? ` aria-describedby="${describedby}"` : ''}${locals.extraAttrs ? ` ${locals.extraAttrs}` : ''}`; %>
 <div class="field">
   <label for="<%= name %>"><%= label %><% if (required) { %> <span class="muted">(wymagane)</span><% } %></label>
   <% if (hint) { %><p class="hint" id="<%= name %>-hint"><%= hint %></p><% } %>
