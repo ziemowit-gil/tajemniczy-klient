@@ -257,3 +257,10 @@ main:has(> .login-hero) { max-width: none; padding: 0; }
 .login-tiles .tile:hover span, .login-tiles .tile:focus-visible span { color: #fff; }
 .login-tiles .tile[aria-current="true"] { background: var(--text); color: #fff; }
 .login-tiles .tile[aria-current="true"] span { color: #fff; }
+
+/* Logowanie kontem zewnętrznym: osobny, skupiony ekran z dwoma krokami. */
+.step-label { margin: 0 0 .25rem; color: var(--muted); font-size: .95rem; font-weight: 600; }
+.ext-form .field input, .login-card #code { font-size: 1.1rem; padding: .65rem .75rem; }
+.login-card #code { letter-spacing: .3em; max-width: 12rem; }
+.ext-form button[type="submit"], .login-card form[action="/login/verify"] button[type="submit"] { width: 100%; padding: .75rem 1rem; font-size: 1.05rem; }
+.login-back { margin: 1.25rem 0 0; }

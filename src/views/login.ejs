@@ -1,6 +1,20 @@
 <%- include('partials/header') %>
 <div class="login-hero">
+<% const extView = mode !== 'dev' && Boolean(locals.externalEnabled) && (locals.method === 'external' || Boolean(locals.externalError)); %>
 <div class="login-box login-card">
+  <% if (extView) { %>
+  <p class="step-label">Krok 1 z 2</p>
+  <h1 id="ext-login">Logowanie kontem zewnętrznym</h1>
+  <p>Podaj e-mail i hasło ustawione z linku w wiadomości od FEER. W kroku 2 wpiszesz kod z SMS-a.</p>
+  <% if (authError) { %><div class="error-summary" role="alert"><%= authError %></div><% } %>
+  <% if (locals.externalError) { %><div class="error-summary" role="alert"><%= externalError %></div><% } %>
+  <form method="post" action="/login/external" novalidate aria-labelledby="ext-login" class="ext-form">
+    <div class="field"><label for="ext-email">E-mail</label><input type="email" id="ext-email" name="email" value="<%= values.email || '' %>" autocomplete="username" required autofocus></div>
+    <div class="field"><label for="ext-password">Hasło</label><input type="password" id="ext-password" name="password" autocomplete="current-password" required></div>
+    <button type="submit">Dalej: kod SMS</button>
+  </form>
+  <p class="login-back"><a href="/login">Wróć do wyboru sposobu logowania</a></p>
+  <% } else { %>
   <h1>Tajemniczy Klient</h1>
   <p>Sprawdzamy, jak łatwo osoby z niepełnosprawnościami załatwiają sprawy w urzędach, bibliotekach, na uczelniach i w innych miejscach. Tajemniczy Klient wciela się w osobę korzystającą z usługi, przechodzi scenariusz krok po kroku i opisuje, co zadziałało, a co utrudniło sprawę. Z jego raportów powstają konkretne rekomendacje dla obiektu.</p>
   <p>Aplikacja prowadzi cały audyt: od przydziału zadania, przez wypełnienie scenariusza i raportu, po zatwierdzenie. Osobny moduł „Dostępność kształcenia” pozwala ocenić, jak uczelniane biuro wspiera osobę zainteresowaną wybranym kierunkiem.</p>
@@ -59,16 +73,7 @@
       <% } %>
     </ul>
     <% if (!szoHref) { %><p class="muted">Adres logowania Panelu Współpracownika nie jest skonfigurowany (SZO_LOGIN_URL). Skontaktuj się z administratorem.</p><% } %>
-    <% if (showExternal) { %>
-    <h2 id="ext-login">Logowanie kontem zewnętrznym</h2>
-    <% if (locals.externalError) { %><div class="error-summary" role="alert"><%= externalError %></div><% } %>
-    <form method="post" action="/login/external" novalidate aria-labelledby="ext-login">
-      <div class="field"><label for="ext-email">E-mail</label><input type="email" id="ext-email" name="email" value="<%= values.email || '' %>" autocomplete="username" required></div>
-      <div class="field"><label for="ext-password">Hasło</label><input type="password" id="ext-password" name="password" autocomplete="current-password" required></div>
-      <button type="submit">Dalej – kod SMS</button>
-      <p class="muted">Po podaniu hasła wyślemy kod SMS na numer zapisany w Twoim koncie.</p>
-    </form>
-    <% } %>
+  <% } %>
   <% } %>
 </div>
 </div>
