@@ -98,3 +98,15 @@ test('strona logowania opisuje aplikację; nagłówek ma jedną nazwę roli i et
   assert.ok(!/Admin \(/.test(header), 'rola nie jest dublowana w nawiasie przy nazwisku');
   assert.match(header, /aria-current="page"/);
 });
+
+test('strona audytu: etapy z aria-current, panel informacji z postępem, zwijane kategorie i pasek zapisu', async () => {
+  const { tk, audit } = setup();
+  const html = await (await (await as(tk, 'auditor'))('GET', `/audits/${audit.id}`)).text();
+  assert.match(html, /<ol class="stepper" aria-label="Etapy audytu">/);
+  assert.match(html, /<li class="step step-current" aria-current="step">[\s\S]*Przydzielony do TK/);
+  assert.match(html, /<aside class="audit-side"/);
+  assert.match(html, /<progress id="audit-progress" max="\d+" value="0">/);
+  assert.match(html, /<details class="cat" open>/);
+  assert.match(html, /class="actions save-bar"/);
+  assert.equal((html.match(/<details/g) || []).length, (html.match(/<\/details>/g) || []).length);
+});

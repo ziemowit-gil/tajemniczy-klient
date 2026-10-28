@@ -1,19 +1,38 @@
 <%- include('../partials/header') %>
-<div class="page-head">
-  <h1><%= audit.object_name %></h1>
-  <div class="actions">
-    <% if (canExport) { %>
-      <a class="btn btn-secondary" href="/audits/<%= audit.id %>/report.pdf">Pobierz PDF</a>
-      <a class="btn btn-secondary" href="/audits/<%= audit.id %>/report.csv">Pobierz CSV</a>
-    <% } %>
-    <% if (canManage && canAssign) { %>
-      <form method="post" action="/audits/<%= audit.id %>/delete" data-confirm="Usunąć ten audyt?"><button type="submit" class="btn btn-danger">Usuń audyt</button></form>
-    <% } %>
+<%
+  const stages = ['entered', 'assigned', 'in_progress', 'submitted', 'approved'];
+  const stageIdx = stages.indexOf(audit.status);
+  let totalItems = 0; let answeredItems = 0;
+  for (const g of groups) for (const cat of g.categories) for (const it of cat.items) { totalItems += 1; if (it.answer) answeredItems += 1; }
+%>
+<header class="audit-hero">
+  <p class="eyebrow">Audyt obiektu nr <%= audit.id %></p>
+  <div class="page-head">
+    <h1><%= audit.object_name %></h1>
+    <div class="actions">
+      <% if (canExport) { %>
+        <a class="btn btn-secondary" href="/audits/<%= audit.id %>/report.pdf">Pobierz PDF</a>
+        <a class="btn btn-secondary" href="/audits/<%= audit.id %>/report.csv">Pobierz CSV</a>
+      <% } %>
+      <% if (canManage && canAssign) { %>
+        <form method="post" action="/audits/<%= audit.id %>/delete" data-confirm="Usunąć ten audyt?"><button type="submit" class="btn btn-danger">Usuń audyt</button></form>
+      <% } %>
+    </div>
   </div>
-</div>
+  <ol class="stepper" aria-label="Etapy audytu">
+    <% stages.forEach((st, i) => { const state = i < stageIdx ? 'done' : (i === stageIdx ? 'current' : 'todo'); %>
+      <li class="step step-<%= state %>"<% if (state === 'current') { %> aria-current="step"<% } %>>
+        <span class="step-num" aria-hidden="true"><%= state === 'done' ? '✓' : i + 1 %></span>
+        <span class="step-label"><%= statusLabels[st] %><% if (state === 'done') { %><span class="sr-only"> (zakończony)</span><% } %></span>
+      </li>
+    <% }) %>
+  </ol>
+</header>
 
-<dl class="audit-meta">
-  <div><dt>Status</dt><dd><span class="status status-<%= audit.status %>"><%= statusLabels[audit.status] %></span></dd></div>
+<div class="audit-layout">
+<aside class="audit-side" aria-label="Informacje o audycie">
+  <h2 class="side-h">Informacje</h2>
+  <dl class="audit-meta">
   <div><dt>Scenariusze</dt><dd><%= scenarios.map((s) => s.title).join('; ') %></dd></div>
   <div><dt>Audytor / Tajemniczy Klient</dt><dd><%= audit.auditor_name || 'Nieprzydzielony' %></dd></div>
   <% if (audit.entered_by_name) { %><div><dt>Wprowadził(-a)</dt><dd><%= audit.entered_by_name %>, <%= fmtDateTime(audit.created_at) %></dd></div><% } %>
@@ -22,7 +41,14 @@
   <% if (audit.submitted_at) { %><div><dt>Złożono</dt><dd><%= fmtDateTime(audit.submitted_at) %></dd></div><% } %>
   <% if (audit.approved_at) { %><div><dt>Zatwierdzono</dt><dd><%= fmtDateTime(audit.approved_at) %><%= audit.reviewer_name ? `, ${audit.reviewer_name}` : '' %></dd></div><% } %>
 </dl>
-
+  <% if (totalItems) { %>
+  <div class="progress-box">
+    <label for="audit-progress">Odpowiedzi: <%= answeredItems %> z <%= totalItems %></label>
+    <progress id="audit-progress" max="<%= totalItems %>" value="<%= answeredItems %>"><%= answeredItems %> z <%= totalItems %></progress>
+  </div>
+  <% } %>
+</aside>
+<div class="audit-main">
 <% if (canAccept) { %>
 <section class="accept-box" aria-labelledby="accept-h">
   <h2 id="accept-h">Audyt czeka na przyjęcie</h2>
@@ -85,7 +111,9 @@
   <section aria-labelledby="area-<%= g.area %>">
     <h3 id="area-<%= g.area %>"><%= g.label %></h3>
     <% for (const cat of g.categories) { %>
-      <h4><%= cat.name %></h4>
+      <% const catDone = cat.items.filter((it) => it.answer).length; %>
+      <details class="cat" open>
+      <summary><span class="cat-name"><%= cat.name %></span><span class="cat-count"><%= catDone %> z <%= cat.items.length %><span class="sr-only"> odpowiedzi</span></span></summary>
       <% for (const item of cat.items) { const problem = problems[item.id]; %>
         <fieldset class="criterion<%= problem ? ' has-problem' : '' %>"<% if (problem) { %> aria-describedby="problem-<%= item.id %>"<% } %>>
           <legend><span class="code"><%= item.code %> · waga <%= item.weight %></span><br><%= item.text %></legend>
@@ -117,6 +145,7 @@
           <%- include('../partials/attachment-list', { files: item.files, base: `/audits/${audit.id}`, code: item.code, canEdit }) %>
         </fieldset>
       <% } %>
+      </details>
     <% } %>
   </section>
 <% } %>
@@ -126,7 +155,8 @@
     <label for="generalNotes">Uwagi ogólne</label>
     <textarea id="generalNotes" name="generalNotes"><%= audit.general_notes || '' %></textarea>
   </div>
-  <div class="actions">
+  <div class="actions save-bar">
+    <span class="save-progress"><%= answeredItems %> z <%= totalItems %> odpowiedzi</span>
     <button type="submit" name="intent" value="save" class="btn-secondary">Zapisz</button>
     <button type="submit" name="intent" value="submit" data-confirm="Po złożeniu audytu nie będzie można go edytować. Złożyć audyt?">Zapisz i złóż audyt</button>
   </div>
@@ -138,4 +168,6 @@
   <h3>Uwagi ogólne</h3><p><%= audit.general_notes %></p>
 <% } %>
 <%- include('../partials/history', { history, historyLabels }) %>
+</div>
+</div>
 <%- include('../partials/footer') %>
