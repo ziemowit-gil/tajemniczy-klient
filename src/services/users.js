@@ -14,7 +14,12 @@ function createUsersService(db, { defaultRole }) {
   const byExternal = db.prepare('SELECT * FROM users WHERE external_id = ?');
   const byId = db.prepare('SELECT * FROM users WHERE id = ?');
   const rolesOf = db.prepare('SELECT role FROM user_roles WHERE user_id = ?');
-  const hydrate = (row) => (row ? { ...row, roles: sortRoles(rolesOf.all(row.id).map((r) => r.role)) } : row);
+  // Skrót hasła i dane blokady nie opuszczają bazy: widoki dostają tylko `hasPassword`.
+  const hydrate = (row) => {
+    if (!row) return row;
+    const { password_hash: passwordHash, failed_logins: failed, ...rest } = row;
+    return { ...rest, hasPassword: Boolean(passwordHash), roles: sortRoles(rolesOf.all(row.id).map((r) => r.role)) };
+  };
 
   /** Ustawia komplet ról (Audytor zawsze), usuwając pozostałe. */
   function writeRoles(userId, extras) {

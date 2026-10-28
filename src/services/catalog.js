@@ -45,7 +45,7 @@ function createCatalogService(db) {
     /** Audyty i oceny, które korzystają ze scenariusza (do podglądu). */
     usageOf(id) {
       const audits = db.prepare(`SELECT a.id, a.status, o.name AS object_name, u.name AS auditor_name, x.version
-        FROM audit_scenarios x JOIN audits a ON a.id = x.audit_id JOIN objects o ON o.id = a.object_id JOIN users u ON u.id = a.auditor_id
+        FROM audit_scenarios x JOIN audits a ON a.id = x.audit_id JOIN objects o ON o.id = a.object_id LEFT JOIN users u ON u.id = a.auditor_id
         WHERE x.scenario_id = ? ORDER BY a.id DESC`).all(id);
       const reviews = db.prepare(`SELECT r.id, r.status, r.programme, o.name AS object_name, u.name AS auditor_name, x.version
         FROM office_review_scenarios x JOIN office_reviews r ON r.id = x.review_id JOIN objects o ON o.id = r.object_id JOIN users u ON u.id = r.auditor_id

@@ -40,6 +40,29 @@ function createSessionService(cfg) {
       }
     },
 
+    /** Krótkotrwały znacznik „hasło poprawne, czeka kod SMS” (nie jest sesją i nie daje dostępu do aplikacji). */
+    async issuePending(res, { userId, challengeId }) {
+      const token = await new SignJWT({ cid: challengeId, purpose: '2fa' })
+        .setProtectedHeader({ alg: 'HS256' }).setSubject(String(userId)).setIssuer(ISSUER).setIssuedAt().setExpirationTime('10m').sign(key);
+      res.cookie('tk_2fa', token, { httpOnly: true, sameSite: 'lax', secure: cfg.isProd, maxAge: 10 * 60 * 1000, path: '/login' });
+    },
+
+    async readPending(req) {
+      const token = req.cookies?.tk_2fa;
+      if (!token) return null;
+      try {
+        const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'], issuer: ISSUER });
+        const userId = Number(payload.sub);
+        return payload.purpose === '2fa' && Number.isInteger(userId) && typeof payload.cid === 'string' ? { userId, challengeId: payload.cid } : null;
+      } catch {
+        return null;
+      }
+    },
+
+    clearPending(res) {
+      res.clearCookie('tk_2fa', { path: '/login' });
+    },
+
     clear(res) {
       res.clearCookie(COOKIE_NAME, { path: '/' });
     },

@@ -65,7 +65,7 @@ const scenarioSchema = z.object({
 
 const auditCreateSchema = z.object({
   objectId: requiredId('Obiekt'),
-  auditorId: requiredId('Audytor'),
+  auditorId: idOrNull,
   scenarioIds: idList.pipe(z.array(z.number()).min(1, 'Scenariusze: wybierz co najmniej jeden')),
   dueDate: z.preprocess(
     (v) => (v === '' ? undefined : v),

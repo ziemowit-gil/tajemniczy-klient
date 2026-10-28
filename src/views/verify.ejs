@@ -1,0 +1,21 @@
+<%- include('partials/header') %>
+<div class="login-hero">
+<div class="login-box login-card">
+  <h1>Weryfikacja kodem SMS</h1>
+  <p>Wysłaliśmy kod na numer <strong><%= info.maskedPhone %></strong>. Kod jest ważny 5 minut. Pozostało prób: <%= info.attemptsLeft %>.</p>
+  <% if (error) { %><div class="error-summary" role="alert"><%= error %></div><% } %>
+  <form method="post" action="/login/verify" novalidate>
+    <div class="field">
+      <label for="code">Kod z SMS (6 cyfr)</label>
+      <input type="text" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" maxlength="7" required autofocus>
+    </div>
+    <button type="submit">Zaloguj</button>
+  </form>
+  <form method="post" action="/login/verify/resend" class="verify-resend">
+    <button type="submit" class="link-button">Wyślij kod ponownie</button>
+    <span class="muted">(najwcześniej po minucie od poprzedniego, maksymalnie trzy razy)</span>
+  </form>
+  <p><a href="/login">Wróć do logowania</a></p>
+</div>
+</div>
+<%- include('partials/footer') %>

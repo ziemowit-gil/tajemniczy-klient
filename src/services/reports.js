@@ -41,7 +41,7 @@ function createReportsService(db, { objects, audits, snapshots }) {
                   JOIN scenarios sc ON sc.id = x.scenario_id WHERE x.audit_id = a.id ORDER BY 1 COLLATE NOCASE)) AS scenario_title,
                au.name AS auditor_name
         FROM audits a JOIN objects o ON o.id = a.object_id
-        JOIN users au ON au.id = a.auditor_id
+        LEFT JOIN users au ON au.id = a.auditor_id
         WHERE a.status = ? AND a.object_id IN (${ids.map(() => '?').join(',')})
         ORDER BY a.approved_at DESC, a.id DESC`).all(STATUS.APPROVED, ...ids);
 

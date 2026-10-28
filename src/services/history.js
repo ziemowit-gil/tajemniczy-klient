@@ -1,9 +1,10 @@
 /** Dziennik zdarzeń audytów (`audit`) i ocen „Dostępność kształcenia” (`review`). */
 const ACTION_LABELS = {
-  assigned: 'Przydzielono audyt',
+  entered: 'Wprowadzono do systemu',
+  assigned: 'Przydzielono do TK',
   created: 'Rozpoczęto ocenę',
   started: 'Rozpoczęto wypełnianie',
-  submitted: 'Złożono do weryfikacji',
+  submitted: 'Uzupełniono raport',
   approved: 'Zatwierdzono',
   returned: 'Zwrócono do poprawy',
   scenarios_changed: 'Zmieniono scenariusze',

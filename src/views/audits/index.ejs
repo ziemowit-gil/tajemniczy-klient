@@ -1,7 +1,7 @@
 <%- include('../partials/header') %>
 <div class="page-head">
   <h1><%= title %></h1>
-  <% if (currentUser.role === 'administrator') { %><a class="btn" href="/audits/new">Przydziel audyt</a><% } %>
+  <% if (currentUser.role === 'administrator' || currentUser.role === 'coordinator') { %><a class="btn" href="/audits/new">Wprowadź audyt</a><% } %>
 </div>
 
 <form method="get" action="/audits" class="actions filter-form">
@@ -21,7 +21,7 @@
   <% for (const a of audits) { %>
     <tr>
       <th scope="row"><a href="/audits/<%= a.id %>"><%= a.object_name %></a></th>
-      <td><%= a.scenario_title %></td><td><%= a.auditor_name %></td>
+      <td><%= a.scenario_title %></td><td><%= a.auditor_name || 'Nieprzydzielony' %></td>
       <td><span class="status status-<%= a.status %>"><%= statusLabels[a.status] %></span></td>
       <td class="num"><%= a.answered_count %> / <%= a.item_count %></td>
       <td><%= a.due_date ? fmtDate(a.due_date) : '—' %></td>

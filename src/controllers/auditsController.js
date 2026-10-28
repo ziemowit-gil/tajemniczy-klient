@@ -1,5 +1,5 @@
 const { AREA_LABELS, ROLES, DISABILITIES } = require('../domain/constants');
-const { STATUS, STATUS_LABELS, isEditable } = require('../domain/workflow');
+const { STATUS, STATUS_LABELS, isEditable, isAssignable } = require('../domain/workflow');
 const { ANSWER_OPTIONS } = require('../domain/scoring');
 const { DomainError } = require('../services/audits');
 const {
@@ -27,15 +27,20 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
       canReview: audit.status === STATUS.SUBMITTED && [ROLES.COORDINATOR, ROLES.ADMIN].includes(req.user.role),
       canExport: req.user.role !== ROLES.AUDITOR || audit.auditor_id === req.user.id,
       isAdmin: req.user.role === ROLES.ADMIN,
+      canManage: [ROLES.ADMIN, ROLES.COORDINATOR].includes(req.user.role),
+      canAssign: [ROLES.ADMIN, ROLES.COORDINATOR].includes(req.user.role) && isAssignable(audit.status),
+      auditors: [ROLES.ADMIN, ROLES.COORDINATOR].includes(req.user.role) && isAssignable(audit.status) ? users.listByRole(ROLES.AUDITOR) : [],
       history: history.list('audit', audit.id), historyLabels: history.labels,
       problems: {}, errors: {}, ...extra,
     };
   };
 
-  const newFormData = ({ errors = {}, values = {} } = {}) => ({
-    title: 'Przydziel audyt', errors, values,
+  const newFormData = (req, { errors = {}, values = {} } = {}) => ({
+    title: 'Wprowadź audyt do systemu', errors, values,
     selectedScenarios: [].concat(values.scenarioIds ?? []),
-    objects: objects.list(), auditors: users.listByRole(ROLES.AUDITOR),
+    // Koordynator wprowadza audyty tylko dla obiektów, które koordynuje; administrator dla wszystkich.
+    objects: req.user.role === ROLES.COORDINATOR ? objects.list({ coordinatorId: req.user.id }) : objects.list(),
+    auditors: users.listByRole(ROLES.AUDITOR),
     scenarios: catalog.scenarios.list({ onlyActive: true, usage: 'audit' }),
   });
 
@@ -62,22 +67,48 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
     },
 
     newForm(req, res) {
-      res.render('audits/new', newFormData({ values: { objectId: req.query.objectId } }));
+      res.render('audits/new', newFormData(req, { values: { objectId: req.query.objectId } }));
     },
 
+    /** Wprowadza audyt (koordynator lub administrator); z wybranym audytorem od razu „Przydzielony do TK”. */
     create(req, res) {
       const { ok, data, errors } = parseForm(auditCreateSchema, req.body);
-      if (!ok) return res.status(422).render('audits/new', newFormData({ errors, values: req.body }));
+      if (!ok) return res.status(422).render('audits/new', newFormData(req, { errors, values: req.body }));
+      if (req.user.role === ROLES.COORDINATOR && !objects.isCoordinatedBy(data.objectId, req.user.id)) {
+        return res.status(422).render('audits/new', newFormData(req, { errors: { objectId: 'Możesz wprowadzać audyty tylko dla obiektów, które koordynujesz.' }, values: req.body }));
+      }
       try {
         const audit = audits.create(data, req.user.id);
-        history.log('audit', audit.id, req.user, 'assigned', `Audytor: ${audit.auditor_name}. Scenariusze: ${audit.scenario_title}.${audit.due_date ? ` Termin: ${audit.due_date}.` : ''}`);
-        notifier.auditAssigned(audit);
-        res.flash('success', `Przydzielono audyt obiektu „${audit.object_name}” audytorowi ${audit.auditor_name}.`);
+        history.log('audit', audit.id, req.user, 'entered', `Scenariusze: ${audit.scenario_title}.${audit.due_date ? ` Termin: ${audit.due_date}.` : ''}`);
+        if (audit.auditor_id) {
+          history.log('audit', audit.id, req.user, 'assigned', `Tajemniczy Klient: ${audit.auditor_name}.`);
+          notifier.auditAssigned(audit);
+        }
+        res.flash('success', audit.auditor_id
+          ? `Wprowadzono audyt obiektu „${audit.object_name}” i przydzielono go: ${audit.auditor_name}.`
+          : `Wprowadzono audyt obiektu „${audit.object_name}” (status: Wprowadzony do systemu). Przydziel mu Tajemniczego Klienta.`);
         return res.redirect(303, `/audits/${audit.id}`);
       } catch (err) {
         if (!(err instanceof DomainError)) throw err;
-        return res.status(422).render('audits/new', newFormData({ errors: { _form: err.message }, values: req.body }));
+        return res.status(422).render('audits/new', newFormData(req, { errors: { _form: err.message }, values: req.body }));
       }
+    },
+
+    /** Przydział lub zmiana Tajemniczego Klienta (do czasu rozpoczęcia pracy). */
+    assign(req, res) {
+      const auditorId = Number(req.body.auditorId);
+      if (!Number.isInteger(auditorId) || auditorId <= 0) { res.flash('error', 'Wybierz Tajemniczego Klienta.'); return res.redirect(303, `/audits/${req.audit.id}`); }
+      try {
+        const before = req.audit;
+        const audit = audits.assign(before, auditorId, req.user);
+        history.log('audit', audit.id, req.user, 'assigned', `Tajemniczy Klient: ${audit.auditor_name}${before.auditor_id && before.auditor_id !== auditorId ? ` (poprzednio: ${before.auditor_name})` : ''}.`);
+        notifier.auditAssigned(audit);
+        res.flash('success', `Przydzielono audyt: ${audit.auditor_name}.`);
+      } catch (err) {
+        if (!(err instanceof DomainError)) throw err;
+        res.flash('error', err.message);
+      }
+      res.redirect(303, `/audits/${req.audit.id}`);
     },
 
     show: (req, res) => res.render('audits/show', viewData(req, req.audit)),

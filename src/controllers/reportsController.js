@@ -56,13 +56,13 @@ function createReportsController({ reports, objects, audits }) {
       const counts = Object.fromEntries(Object.values(STATUS).map((s) => [s, mine.filter((a) => a.status === s).length]));
       const actionable = {
         [ROLES.AUDITOR]: [STATUS.ASSIGNED, STATUS.IN_PROGRESS],
-        [ROLES.COORDINATOR]: [STATUS.SUBMITTED],
-        [ROLES.ADMIN]: [STATUS.SUBMITTED],
+        [ROLES.COORDINATOR]: [STATUS.SUBMITTED, STATUS.ENTERED],
+        [ROLES.ADMIN]: [STATUS.SUBMITTED, STATUS.ENTERED],
       }[req.user.role];
       res.render('dashboard', {
         title: 'Pulpit', counts, statusLabels: STATUS_LABELS,
         todo: mine.filter((a) => actionable.includes(a.status)).slice(0, 10),
-        todoHeading: req.user.role === ROLES.AUDITOR ? 'Do wykonania' : 'Oczekują na weryfikację',
+        todoHeading: req.user.role === ROLES.AUDITOR ? 'Do wykonania' : 'Wymagają Twojej uwagi (do weryfikacji lub przydziału)',
       });
     },
   };

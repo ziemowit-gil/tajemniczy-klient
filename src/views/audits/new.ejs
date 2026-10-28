@@ -1,13 +1,14 @@
 <%- include('../partials/header') %>
-<h1>Przydziel audyt</h1>
+<h1>Wprowadź audyt do systemu</h1>
+<p class="muted">Audyt dostaje status „Wprowadzony do systemu”. Jeśli od razu wskażesz Tajemniczego Klienta, status zmieni się na „Przydzielony do TK”; w przeciwnym razie przydzielisz go później na stronie audytu.</p>
 <% if (errors._form) { %><div class="error-summary" role="alert"><%= errors._form %></div>
 <% } else if (Object.keys(errors).length) { %><div class="error-summary" role="alert">Formularz zawiera błędy. Popraw zaznaczone pola.</div><% } %>
 <% if (!auditors.length) { %><p class="note-box">Brak aktywnych audytorów. Audytor pojawi się na liście po pierwszym zalogowaniu przez SZO lub po nadaniu roli w sekcji Użytkownicy.</p><% } %>
 <form method="post" action="/audits" novalidate>
   <%- include('../partials/field', { name: 'objectId', label: 'Obiekt', kind: 'select', value: values.objectId, errors, required: true, blank: '— wybierz —', options: objects.map((o) => [o.id, o.name]) }) %>
-  <%- include('../partials/field', { name: 'auditorId', label: 'Audytor / Tajemniczy Klient', kind: 'select', value: values.auditorId, errors, required: true, blank: '— wybierz —', options: auditors.map((a) => [a.id, a.name]) }) %>
+  <%- include('../partials/field', { name: 'auditorId', label: 'Audytor / Tajemniczy Klient (opcjonalnie)', kind: 'select', value: values.auditorId, errors, blank: '— jeszcze nie przydzielony —', options: auditors.map((a) => [a.id, a.name]) }) %>
   <%- include('../partials/checkgroup', { name: 'scenarioIds', label: 'Scenariusze', required: true, errors, selected: selectedScenarios, hint: 'Możesz wybrać kilka. Do audytu trafią kryteria z zakresów wszystkich wybranych scenariuszy, bez powtórzeń.', options: scenarios.map((s) => ({ id: s.id, title: s.title, description: s.description })) }) %>
   <%- include('../partials/field', { name: 'dueDate', label: 'Termin wykonania', kind: 'input', type: 'date', value: values.dueDate, errors }) %>
-  <div class="actions"><button type="submit">Przydziel</button><a class="btn btn-secondary" href="/audits">Anuluj</a></div>
+  <div class="actions"><button type="submit">Wprowadź audyt</button><a class="btn btn-secondary" href="/audits">Anuluj</a></div>
 </form>
 <%- include('../partials/footer') %>

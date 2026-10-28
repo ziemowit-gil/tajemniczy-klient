@@ -38,7 +38,7 @@
   <tbody>
   <% for (const a of report.audits) { %>
     <tr>
-      <th scope="row"><a href="/audits/<%= a.id %>"><%= a.object_name %></a></th><td><%= a.scenario_title %></td><td><%= a.auditor_name %></td><td><%= fmtDateTime(a.approved_at) %></td>
+      <th scope="row"><a href="/audits/<%= a.id %>"><%= a.object_name %></a></th><td><%= a.scenario_title %></td><td><%= a.auditor_name || 'Nieprzydzielony' %></td><td><%= fmtDateTime(a.approved_at) %></td>
       <td class="num"><%= fmtPct(a.score.total.percent) %></td><td class="num"><%= fmtPct(a.score.areas.OZN.percent) %></td><td class="num"><%= fmtPct(a.score.areas.KSZTALCENIE.percent) %></td>
     </tr>
   <% } %>

@@ -9,6 +9,7 @@ const { ROLES } = require('../domain/constants');
 const { singleLine } = require('./mailer');
 
 const MAX_ATTEMPTS = 5;
+const REDACTED_BODY = '[Treść usunięta: zawierała jednorazowy link do ustawienia hasła]';
 const STALE_CLAIM_MINUTES = 10;
 const SUBJECT_PREFIX = '[Tajemniczy Klient] ';
 
@@ -113,10 +114,45 @@ function createNotifier(db, { config, mailer, users, objects }) {
       return queued;
     },
 
+    /**
+     * E-mail o nowym koncie użytkownika zewnętrznego z jednorazowym linkiem do ustawienia hasła (ważnym 72 godziny).
+     * Treść zawiera link, więc po wysłaniu jest z kolejki usuwana. `reminder` = ponowne wysłanie linku.
+     */
+    externalAccount(user, token, { reminder = false } = {}) {
+      const link = `${base || 'https://audytor.feer.org.pl'}/ext/set-password?token=${token}`;
+      const phone = user.phone ? `kończy się na ${String(user.phone).slice(-3)}` : 'zapisany w koncie';
+      const body = [
+        'Dzień dobry,',
+        '',
+        reminder
+          ? 'Przesyłamy nowy link do ustawienia hasła do konta w aplikacji „Tajemniczy Klient” Fundacji Edukacji Empatii Rozwoju „FEER”.'
+          : 'Informujemy, że założyliśmy dla Ciebie konto w aplikacji „Tajemniczy Klient” Fundacji Edukacji Empatii Rozwoju „FEER”, służącej do przeprowadzania audytów dostępności. Masz w niej rolę Audytora dostępności / Tajemniczego klienta.',
+        '',
+        `Aby aktywować konto, ustaw hasło. Link jest ważny ${72} godziny i działa tylko raz:`,
+        link,
+        '',
+        `Adres aplikacji: ${base || 'https://audytor.feer.org.pl'}`,
+        `Login: ${user.email}`,
+        '',
+        `Logowanie wymaga hasła oraz kodu SMS wysyłanego na numer telefonu zapisany w koncie (${phone}). Przy pierwszym logowaniu poprosimy też o złożenie oświadczenia o poufności.`,
+        '',
+        'Jeśli nie spodziewałeś(-aś) się tej wiadomości, zignoruj ją i skontaktuj się z zespołem technicznym.',
+        '',
+        'Z poważaniem,',
+        '',
+        'Fundacja Edukacji Empatii Rozwoju „FEER”',
+        '',
+      ].join('\n');
+      const subject = reminder ? 'Nowy link do ustawienia hasła: Tajemniczy Klient' : 'Konto w aplikacji Tajemniczy Klient: ustaw hasło';
+      const queued = enqueueRaw(user, reminder ? 'external_link' : 'external_account', subject, body);
+      if (queued) flushSoon();
+      return queued;
+    },
+
     /* ----- zdarzenia audytów obiektów ----- */
     auditAssigned(audit) {
       queueAll([users.findById(audit.auditor_id)], 'audit_assigned', `Przydzielono Ci audyt: ${audit.object_name}`, [
-        `Administrator przydzielił Ci audyt obiektu „${audit.object_name}”.`,
+        `Przydzielono Ci do wykonania audyt obiektu „${audit.object_name}” (status: Przydzielony do TK).`,
         `Scenariusze: ${audit.scenario_title}.`,
         audit.due_date ? `Termin wykonania: ${audit.due_date}.` : 'Termin wykonania nie został ustalony.',
         '', `Otwórz audyt: ${link(`/audits/${audit.id}`)}`,
@@ -220,12 +256,14 @@ function createNotifier(db, { config, mailer, users, objects }) {
         const n = db.prepare('SELECT * FROM notifications WHERE id = ?').get(id);
         try {
           await mailer.send({ to: n.to_email, subject: n.subject, text: n.body });
-          db.prepare(`UPDATE notifications SET status = 'sent', sent_at = datetime('now'), last_error = NULL WHERE id = ?`).run(id);
+          db.prepare(`UPDATE notifications SET status = 'sent', sent_at = datetime('now'), last_error = NULL,
+            body = CASE WHEN event IN ('external_account', 'external_link') THEN ? ELSE body END WHERE id = ?`).run(REDACTED_BODY, id);
           stats.sent += 1;
         } catch (err) {
           const message = String(err.message || err).slice(0, 500);
           if (err.permanent || n.attempts >= MAX_ATTEMPTS) {
-            db.prepare(`UPDATE notifications SET status = 'failed', last_error = ? WHERE id = ?`).run(message, id);
+            db.prepare(`UPDATE notifications SET status = 'failed', last_error = ?,
+              body = CASE WHEN event IN ('external_account', 'external_link') THEN ? ELSE body END WHERE id = ?`).run(message, REDACTED_BODY, id);
             stats.failed += 1;
           } else {
             db.prepare(`UPDATE notifications SET status = 'pending', last_error = ?, next_attempt_at = datetime('now', ?) WHERE id = ?`)

@@ -36,7 +36,7 @@ function auditCsv(report) {
     ['Raport z audytu dostępności'],
     ['Obiekt', audit.object_name],
     ['Scenariusze', audit.scenario_title],
-    ['Audytor', audit.auditor_name],
+    ['Audytor', audit.auditor_name || 'Nieprzydzielony'],
     ['Status', STATUS_LABELS[audit.status] + (report.preliminary ? ' (raport wstępny)' : '')],
     ['Wynik ogólny', pct(score.total.percent)],
     [AREA_LABELS.OZN, pct(score.areas.OZN.percent)],
@@ -68,7 +68,7 @@ function objectCsv(report) {
     [],
     ['Audyt', 'Obiekt', 'Scenariusze', 'Audytor', 'Zatwierdzono', 'Wynik ogólny', AREA_LABELS.OZN, AREA_LABELS.KSZTALCENIE],
     ...audits.map((a) => [
-      a.id, a.object_name, a.scenario_title, a.auditor_name, a.approved_at,
+      a.id, a.object_name, a.scenario_title, a.auditor_name || 'Nieprzydzielony', a.approved_at,
       pct(a.score.total.percent), pct(a.score.areas.OZN.percent), pct(a.score.areas.KSZTALCENIE.percent),
     ]),
   ];
@@ -184,7 +184,7 @@ function auditPdf(report) {
   doc.font('regular').fontSize(10).moveDown(0.5);
   doc.text(`Obiekt: ${audit.object_name}${audit.object_address ? `, ${audit.object_address}` : ''}`);
   doc.text(`Scenariusze: ${audit.scenario_title}`);
-  doc.text(`Audytor: ${audit.auditor_name}`);
+  doc.text(`Audytor: ${audit.auditor_name || 'Nieprzydzielony'}`);
   doc.text(`Status: ${STATUS_LABELS[audit.status]}`);
   if (audit.approved_at) doc.text(`Zatwierdzono: ${audit.approved_at} UTC${audit.reviewer_name ? ` (${audit.reviewer_name})` : ''}`);
 
@@ -250,7 +250,7 @@ function objectPdf(report) {
     ensureSpace(doc, 45);
     doc.font('bold').text(`#${a.id} ${a.object_name} – ${a.scenario_title}`).font('regular');
     doc.fillColor(COLORS.muted).text(
-      `Audytor: ${a.auditor_name} · ogółem ${pct(a.score.total.percent)} · OZN ${pct(a.score.areas.OZN.percent)} · kształcenie ${pct(a.score.areas.KSZTALCENIE.percent)}`,
+      `Audytor: ${a.auditor_name || 'Nieprzydzielony'} · ogółem ${pct(a.score.total.percent)} · OZN ${pct(a.score.areas.OZN.percent)} · kształcenie ${pct(a.score.areas.KSZTALCENIE.percent)}`,
     ).fillColor(COLORS.text).moveDown(0.4);
   }
 

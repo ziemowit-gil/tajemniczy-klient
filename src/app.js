@@ -34,6 +34,9 @@ const { createReportsController } = require('./controllers/reportsController');
 const { createOfficeController } = require('./controllers/officeController');
 const { createDeclarationController } = require('./controllers/declarationController');
 const { createSettingsController } = require('./controllers/settingsController');
+const { createExternalAuthController } = require('./controllers/externalAuthController');
+const { createExternalAuth } = require('./services/externalAuth');
+const { createSmsSender } = require('./services/smsSender');
 const { createStatsController } = require('./controllers/statsController');
 const { buildRouter } = require('./routes');
 const { ROLE_LABELS, AREA_LABELS, OBJECT_TYPES } = require('./domain/constants');
@@ -69,6 +72,8 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
   const declarations = createDeclarationsService(db);
   const history = createHistoryService(db);
   const notifier = createNotifier(db, { config, mailer, users, objects });
+  const sms = createSmsSender(config, { fetchImpl, getApiKey: () => settings.szoApiKey() });
+  const externalAuth = createExternalAuth(db, { config, users, sms });
 
   /* --- adresy plików statycznych z odciskiem treści (?v=…): po wdrożeniu przeglądarka i CDN (Cloudflare) pobierają nową wersję --- */
   const assetHashes = new Map();
@@ -110,8 +115,9 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
   /* --- routing --- */
   app.use(buildRouter({
     config, declarations,
-    auth: createAuthController({ config, szo, szoPkce, users, sessions, notifier, declarations }),
-    admin: createAdminController({ objects, catalog, users, szoDirectory, notifier, importDomains: config.szo.importDomains, declarations, declarationRequired: config.declarationRequired }),
+    auth: createAuthController({ config, szo, szoPkce, users, sessions, notifier, declarations, externalEnabled: () => externalAuth.enabled }),
+    extAuth: createExternalAuthController({ externalAuth, sessions, config, enabled: () => externalAuth.enabled }),
+    admin: createAdminController({ objects, catalog, users, szoDirectory, notifier, externalAuth, mailer, importDomains: config.szo.importDomains, declarations, declarationRequired: config.declarationRequired }),
     settingsCtl: createSettingsController({ settings, szoDirectory, config }),
     declarationCtl: createDeclarationController({ declarations }),
     auditsCtl: createAuditsController({ audits, objects, users, catalog, attachments, reports, history, notifier }),
@@ -137,7 +143,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
     return res.status(status).render('error', { title: 'Błąd', status, message });
   });
 
-  return { app, db, services: { users, objects, catalog, audits, attachments, reports, office, snapshots, sessions, history, notifier, stats, settings, declarations } };
+  return { app, db, services: { users, objects, catalog, audits, attachments, reports, office, snapshots, sessions, history, notifier, stats, settings, declarations, externalAuth, sms } };
 }
 
 module.exports = { createApp };

@@ -21,13 +21,26 @@ function migrate(db) {
   for (const file of files) {
     if (applied.has(file)) continue;
     const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8');
-    // BEGIN IMMEDIATE blokuje zapis dla innych procesów; po zdobyciu blokady sprawdzamy ponownie, czy migracji
-    // nie wykonał w międzyczasie równoległy proces (Passenger może uruchomić kilka procesów naraz).
-    transaction(db, () => {
-      if (db.prepare('SELECT 1 FROM schema_migrations WHERE name = ?').get(file)) return;
-      db.exec(sql);
-      db.prepare('INSERT INTO schema_migrations (name) VALUES (?)').run(file);
-    }, { immediate: true });
+    // Migracja przebudowująca tabelę (SQLite nie zmienia ograniczeń CHECK) oznacza się linią `-- migrate: foreign_keys=off`.
+    // Klucze obce muszą być wyłączone POZA transakcją (inaczej DROP TABLE skasowałby powiązane wiersze kaskadą);
+    // spójność jest sprawdzana jeszcze przed zatwierdzeniem, więc błąd wycofuje całą migrację.
+    const rebuilds = /^--\s*migrate:\s*foreign_keys=off/m.test(sql);
+    if (rebuilds) db.exec('PRAGMA foreign_keys = OFF');
+    try {
+      // BEGIN IMMEDIATE blokuje zapis dla innych procesów; po zdobyciu blokady sprawdzamy ponownie, czy migracji
+      // nie wykonał w międzyczasie równoległy proces (Passenger może uruchomić kilka procesów naraz).
+      transaction(db, () => {
+        if (db.prepare('SELECT 1 FROM schema_migrations WHERE name = ?').get(file)) return;
+        db.exec(sql);
+        if (rebuilds) {
+          const broken = db.prepare('PRAGMA foreign_key_check').all();
+          if (broken.length) throw new Error(`Migracja ${file} naruszyła klucze obce (${broken.length}); wycofano.`);
+        }
+        db.prepare('INSERT INTO schema_migrations (name) VALUES (?)').run(file);
+      }, { immediate: true });
+    } finally {
+      if (rebuilds) db.exec('PRAGMA foreign_keys = ON');
+    }
   }
 }
 

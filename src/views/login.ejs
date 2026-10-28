@@ -54,6 +54,16 @@
       <p class="muted">Adres logowania Panelu Współpracownika nie jest skonfigurowany (SZO_LOGIN_URL). Skontaktuj się z administratorem.</p>
     <% } %>
   <% } %>
+  <% if (locals.externalEnabled) { %>
+    <h2 id="ext-login">Konto zewnętrzne (spoza Panelu Współpracownika)</h2>
+    <% if (locals.externalError) { %><div class="error-summary" role="alert"><%= externalError %></div><% } %>
+    <form method="post" action="/login/external" novalidate aria-labelledby="ext-login">
+      <div class="field"><label for="ext-email">E-mail</label><input type="email" id="ext-email" name="email" value="<%= values.email || '' %>" autocomplete="username" required></div>
+      <div class="field"><label for="ext-password">Hasło</label><input type="password" id="ext-password" name="password" autocomplete="current-password" required></div>
+      <button type="submit" class="btn-secondary">Dalej – kod SMS</button>
+      <p class="muted">Po podaniu hasła wyślemy kod SMS na numer zapisany w Twoim koncie.</p>
+    </form>
+  <% } %>
 </div>
 </div>
 <%- include('partials/footer') %>

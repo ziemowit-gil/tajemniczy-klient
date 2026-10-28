@@ -35,7 +35,7 @@
     <caption>Audyty obiektów</caption>
     <thead><tr><th scope="col">Obiekt</th><th scope="col">Audytor</th><th scope="col">Status</th><th scope="col" class="num">Wersja scenariusza</th></tr></thead>
     <tbody><% for (const a of usageOf.audits) { %>
-      <tr><th scope="row"><a href="/audits/<%= a.id %>"><%= a.object_name %></a></th><td><%= a.auditor_name %></td>
+      <tr><th scope="row"><a href="/audits/<%= a.id %>"><%= a.object_name %></a></th><td><%= a.auditor_name || 'Nieprzydzielony' %></td>
         <td><span class="status status-<%= a.status %>"><%= statusLabels[a.status] %></span></td><td class="num"><%= a.version %></td></tr>
     <% } %></tbody>
   </table></div>

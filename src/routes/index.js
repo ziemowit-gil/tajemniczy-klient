@@ -4,12 +4,19 @@ const { ROLES } = require('../domain/constants');
 
 const { ADMIN, AUDITOR, COORDINATOR } = ROLES;
 
-function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, settingsCtl, declarationCtl, declarations, attachments, config }) {
+function buildRouter({ auth, extAuth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, settingsCtl, declarationCtl, declarations, attachments, config }) {
   const r = express.Router();
 
   /* --- publiczne --- */
   r.get('/healthz', (req, res) => res.json({ status: 'ok' }));
   r.get('/login', auth.showLogin);
+  /* logowanie użytkowników zewnętrznych: e-mail + hasło, potem kod SMS */
+  r.post('/login/external', extAuth.login);
+  r.get('/login/verify', extAuth.showVerify);
+  r.post('/login/verify', extAuth.verify);
+  r.post('/login/verify/resend', extAuth.resend);
+  r.get('/ext/set-password', extAuth.showSetPassword);
+  r.post('/ext/set-password', extAuth.setPassword);
   r.get('/auth/callback', auth.szoCallback);
   r.get('/auth/szo/start', auth.szoStart);
   r.get('/auth/szo/callback', auth.szoReturn);
@@ -58,6 +65,9 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, 
   r.get('/users/import', requireRole(ADMIN), admin.usersImportForm);
   r.post('/users/import', requireRole(ADMIN), admin.usersImport);
   r.post('/users/import/email', requireRole(ADMIN), admin.usersImportByEmail);
+  r.post('/users/external', requireRole(ADMIN), admin.externalCreate);
+  r.post('/users/:id/external/link', requireRole(ADMIN), admin.externalResendLink);
+  r.post('/users/:id/external/phone', requireRole(ADMIN), admin.externalPhone);
   r.post('/users/:id', requireRole(ADMIN), admin.userUpdate);
 
   /* --- ustawienia: integracja z SZO (klucz API) --- */
@@ -68,8 +78,8 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, 
 
   /* --- audyty --- */
   r.get('/audits', auditsCtl.index);
-  r.get('/audits/new', requireRole(ADMIN), auditsCtl.newForm);
-  r.post('/audits', requireRole(ADMIN), auditsCtl.create);
+  r.get('/audits/new', requireRole(ADMIN, COORDINATOR), auditsCtl.newForm);
+  r.post('/audits', requireRole(ADMIN, COORDINATOR), auditsCtl.create);
   r.get('/audits/:id', auditsCtl.load, auditsCtl.show);
 
   // Kolejność: uprawnienia → sprawdzenie edycji → dopiero potem zapis plików na dysk.
@@ -87,7 +97,8 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, 
 
   r.post('/audits/:id/approve', requireRole(COORDINATOR, ADMIN), auditsCtl.load, auditsCtl.approve);
   r.post('/audits/:id/return', requireRole(COORDINATOR, ADMIN), auditsCtl.load, auditsCtl.returnForCorrection);
-  r.post('/audits/:id/delete', requireRole(ADMIN), auditsCtl.load, auditsCtl.remove);
+  r.post('/audits/:id/assign', requireRole(ADMIN, COORDINATOR), auditsCtl.load, auditsCtl.assign);
+  r.post('/audits/:id/delete', requireRole(ADMIN, COORDINATOR), auditsCtl.load, auditsCtl.remove);
   r.get('/audits/:id/attachments/:attId', auditsCtl.load, auditsCtl.download);
   r.post('/audits/:id/attachments/:attId/delete', requireRole(AUDITOR), auditsCtl.load, auditsCtl.ensureEditable, auditsCtl.deleteAttachment);
   r.get('/audits/:id/report.csv', auditsCtl.load, reportsCtl.auditCsv);

@@ -122,10 +122,11 @@ test('powiadomienia: złożenie → koordynator, zatwierdzenie i zwrot → audyt
 
   // historia: pełna ścieżka z wykonawcami i komentarzami
   const events = services.history.list('audit', auditId);
-  assert.deepEqual(events.map((e) => e.action), ['assigned', 'started', 'submitted', 'returned', 'submitted', 'approved']);
+  assert.deepEqual(events.map((e) => e.action), ['entered', 'assigned', 'started', 'submitted', 'returned', 'submitted', 'approved']);
   assert.equal(events[0].actor_name, 'adm');
-  assert.equal(events[3].actor_name, 'koord');
-  assert.equal(events[3].note, 'Dodaj zdjęcia wejścia');
+  assert.equal(events[1].actor_name, 'adm');
+  assert.equal(events[4].actor_name, 'koord');
+  assert.equal(events[4].note, 'Dodaj zdjęcia wejścia');
   const html = await (await aud.get(`/audits/${auditId}`)).text();
   assert.match(html, /Historia zmian/);
   assert.match(html, /Zwrócono do poprawy/);

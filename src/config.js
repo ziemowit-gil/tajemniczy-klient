@@ -24,6 +24,8 @@ const envSchema = z.object({
   // Domeny adresów e-mail dozwolone przy imporcie osoby po adresie (panel Użytkownicy). Pusta wartość = dowolna domena.
   // Wymóg złożenia oświadczenia o poufności po zalogowaniu. Domyślnie włączony (poza testami automatycznymi).
   DECLARATION_REQUIRED: z.enum(['true', 'false']).optional(),
+  // Wysyłka SMS (kody logowania użytkowników zewnętrznych): szo = przez SZO, log = tylko konsola (zabronione w produkcji).
+  SMS_MODE: z.enum(['off', 'log', 'szo']).default('off'),
   IMPORT_EMAIL_DOMAINS: z.string().default('feer.org.pl'),
   SZO_LOGIN_URL: optional(z.url()),
   SZO_JWT_SECRET: optional(z.string().min(16)),
@@ -70,6 +72,8 @@ function loadConfig(env = process.env) {
   if (e.SZO_AUTH_MODE === 'jwt' && !e.SZO_JWT_SECRET && !e.SZO_JWT_PUBLIC_KEY) {
     problems.push('Tryb jwt wymaga SZO_JWT_SECRET albo SZO_JWT_PUBLIC_KEY');
   }
+  if (isProd && e.SMS_MODE === 'log') problems.push('SMS_MODE=log jest zabroniony w produkcji (kody trafiałyby do logów)');
+  if (e.SMS_MODE === 'szo' && !e.SZO_BASE_URL) problems.push('Tryb szo wysyłki SMS wymaga SZO_BASE_URL');
   if (e.MAIL_MODE === 'smtp' && (!e.SMTP_HOST || !e.MAIL_FROM)) problems.push('Tryb smtp wymaga SMTP_HOST i MAIL_FROM');
   // Klucz API SZO może pochodzić z .env albo zostać wklejony w panelu (Administracja → Integracja z SZO), więc nie jest wymagany przy starcie.
   if (e.MAIL_MODE === 'szo' && !e.SZO_BASE_URL) problems.push('Tryb szo (wysyłka przez SZO / Microsoft Graph) wymaga SZO_BASE_URL');
@@ -100,6 +104,7 @@ function loadConfig(env = process.env) {
     sessionSecret: e.SESSION_SECRET || 'dev-only-secret-change-me-dev-only-secret',
     sessionTtlSeconds: Math.round(e.SESSION_TTL_HOURS * 3600),
     declarationRequired: e.DECLARATION_REQUIRED ? e.DECLARATION_REQUIRED === 'true' : e.NODE_ENV !== 'test',
+    sms: { mode: e.SMS_MODE },
     mail: {
       mode: e.MAIL_MODE,
       from: e.MAIL_FROM,

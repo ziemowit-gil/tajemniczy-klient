@@ -8,8 +8,9 @@ const {
 const { STATUS_LABELS } = require('../domain/workflow');
 const { DirectoryError } = require('../services/szoDirectory');
 const { paramId, httpError } = require('./helpers');
+const { ExternalAuthError } = require('../services/externalAuth');
 
-function createAdminController({ objects, catalog, users, szoDirectory, notifier, importDomains = [], declarations, declarationRequired = true }) {
+function createAdminController({ objects, catalog, users, szoDirectory, notifier, externalAuth, mailer, importDomains = [], declarations, declarationRequired = true }) {
   const objectFormData = (extra = {}) => ({
     title: 'Obiekt', objectTypes: OBJECT_TYPES, errors: {}, values: {}, object: null,
     coordinators: users.listByRole(ROLES.COORDINATOR, ROLES.ADMIN), parents: objects.parentOptions(), ...extra,
@@ -178,7 +179,7 @@ function createAdminController({ objects, catalog, users, szoDirectory, notifier
     },
 
     /* ---------- Użytkownicy ---------- */
-    usersIndex: (req, res) => res.render('users/index', { title: 'Użytkownicy', users: users.list(), roleLabels: ROLE_LABELS, roleSetLabels: ROLE_SET_LABELS, importEnabled: szoDirectory.enabled, declared: declarations.acceptedMap(), declarationRequired }),
+    usersIndex: (req, res) => res.render('users/index', { title: 'Użytkownicy', users: users.list(), roleLabels: ROLE_LABELS, roleSetLabels: ROLE_SET_LABELS, importEnabled: szoDirectory.enabled, declared: declarations.acceptedMap(), declarationRequired, externalEnabled: externalAuth.enabled, mailEnabled: mailer.mode !== 'off' }),
 
     /** Import osób z SZO: lista kont z uprawnieniem „Tajemniczy Klient”, których jeszcze nie ma w aplikacji. */
     async usersImportForm(req, res) {
@@ -272,6 +273,37 @@ function createAdminController({ objects, catalog, users, szoDirectory, notifier
         : 'Nie zaimportowano nikogo (osoby są już w aplikacji albo SZO ich nie zwróciło).');
       return res.redirect(303, '/users');
     },
+    /** Konto użytkownika zewnętrznego (spoza SZO): wymaga działającej wysyłki SMS i e-maila, bo hasło i kody idą tymi kanałami. */
+    externalCreate(req, res) {
+      if (!externalAuth.enabled) { res.flash('error', 'Wysyłka SMS jest wyłączona (SMS_MODE) albo SZO nie ma klucza API. Użytkownicy zewnętrzni nie mogliby się zalogować.'); return res.redirect(303, '/users'); }
+      if (mailer.mode === 'off') { res.flash('error', 'Wysyłka e-mail jest wyłączona (MAIL_MODE). Nowa osoba nie dostałaby linku do ustawienia hasła.'); return res.redirect(303, '/users'); }
+      try {
+        const { user, token } = externalAuth.createUser({ name: req.body.name, email: req.body.email, phone: req.body.phone });
+        notifier.externalAccount(user, token);
+        res.flash('success', `Utworzono konto zewnętrzne: ${user.name}. Wysłaliśmy e-mail z linkiem do ustawienia hasła (ważny 72 godziny).`);
+      } catch (err) {
+        if (!(err instanceof ExternalAuthError)) throw err;
+        res.flash('error', err.message);
+      }
+      return res.redirect(303, '/users');
+    },
+
+    externalResendLink(req, res) {
+      const target = users.findById(paramId(req));
+      if (!target || target.kind !== 'external') throw httpError(404, 'Nie znaleziono użytkownika zewnętrznego.');
+      notifier.externalAccount(target, externalAuth.issueSetPasswordToken(target.id), { reminder: true });
+      res.flash('success', `Wysłaliśmy ${target.name} nowy link do ustawienia hasła. Poprzednie linki przestały działać.`);
+      return res.redirect(303, '/users');
+    },
+
+    externalPhone(req, res) {
+      const target = users.findById(paramId(req));
+      if (!target || target.kind !== 'external') throw httpError(404, 'Nie znaleziono użytkownika zewnętrznego.');
+      try { externalAuth.setPhone(target.id, req.body.phone); res.flash('success', `Zapisano numer telefonu: ${target.name}.`); }
+      catch (err) { if (!(err instanceof ExternalAuthError)) throw err; res.flash('error', err.message); }
+      return res.redirect(303, '/users');
+    },
+
     userUpdate(req, res) {
       const id = paramId(req);
       const target = users.findById(id);
@@ -287,6 +319,7 @@ function createAdminController({ objects, catalog, users, szoDirectory, notifier
         res.flash('error', 'Nie można odebrać uprawnień ostatniemu aktywnemu administratorowi.');
         return res.redirect(303, '/users');
       }
+      if (target.kind === 'external' && extras.length) { res.flash('error', 'Użytkownik zewnętrzny może mieć tylko rolę Audytor / Tajemniczy Klient.'); return res.redirect(303, '/users'); }
       const updated = users.setRoles(id, { extras, active: data.active, activeRole: data.role });
       const gainedRole = updated.roles.some((r) => !target.roles.includes(r));
       if (updated.active && (gainedRole || target.role !== updated.role || !target.active)) notifier.roleAssigned(updated);

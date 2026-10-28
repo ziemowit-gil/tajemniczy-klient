@@ -6,7 +6,7 @@
       <a class="btn btn-secondary" href="/audits/<%= audit.id %>/report.pdf">Pobierz PDF</a>
       <a class="btn btn-secondary" href="/audits/<%= audit.id %>/report.csv">Pobierz CSV</a>
     <% } %>
-    <% if (isAdmin && audit.status === 'assigned') { %>
+    <% if (canManage && canAssign) { %>
       <form method="post" action="/audits/<%= audit.id %>/delete" data-confirm="Usunąć ten audyt?"><button type="submit" class="btn btn-danger">Usuń audyt</button></form>
     <% } %>
   </div>
@@ -15,7 +15,9 @@
 <dl class="audit-meta">
   <div><dt>Status</dt><dd><span class="status status-<%= audit.status %>"><%= statusLabels[audit.status] %></span></dd></div>
   <div><dt>Scenariusze</dt><dd><%= scenarios.map((s) => s.title).join('; ') %></dd></div>
-  <div><dt>Audytor</dt><dd><%= audit.auditor_name %></dd></div>
+  <div><dt>Audytor / Tajemniczy Klient</dt><dd><%= audit.auditor_name || 'Nieprzydzielony' %></dd></div>
+  <% if (audit.entered_by_name) { %><div><dt>Wprowadził(-a)</dt><dd><%= audit.entered_by_name %>, <%= fmtDateTime(audit.created_at) %></dd></div><% } %>
+  <% if (audit.assigned_at) { %><div><dt>Przydzielono</dt><dd><%= fmtDateTime(audit.assigned_at) %></dd></div><% } %>
   <div><dt>Termin</dt><dd><%= audit.due_date ? fmtDate(audit.due_date) : '—' %></dd></div>
   <% if (audit.submitted_at) { %><div><dt>Złożono</dt><dd><%= fmtDateTime(audit.submitted_at) %></dd></div><% } %>
   <% if (audit.approved_at) { %><div><dt>Zatwierdzono</dt><dd><%= fmtDateTime(audit.approved_at) %><%= audit.reviewer_name ? `, ${audit.reviewer_name}` : '' %></dd></div><% } %>
@@ -27,6 +29,22 @@
   <div class="note-box"><strong>Komentarz koordynatora:</strong> <%= audit.review_comment %></div>
 <% } %>
 <% if (errors._form) { %><div class="error-summary" role="alert"><%= errors._form %></div><% } %>
+
+<% if (canAssign) { %>
+<section aria-labelledby="assign-h">
+  <h2 id="assign-h"><%= audit.auditor_id ? 'Zmień Tajemniczego Klienta' : 'Przydziel Tajemniczego Klienta' %></h2>
+  <form method="post" action="/audits/<%= audit.id %>/assign">
+    <div class="field">
+      <label for="assign-auditor">Audytor / Tajemniczy Klient</label>
+      <select id="assign-auditor" name="auditorId" required>
+        <option value="">— wybierz —</option>
+        <% for (const a of auditors) { %><option value="<%= a.id %>"<% if (a.id === audit.auditor_id) { %> selected<% } %>><%= a.name %></option><% } %>
+      </select>
+    </div>
+    <button type="submit"><%= audit.auditor_id ? 'Zmień przydział' : 'Przydziel do TK' %></button>
+  </form>
+</section>
+<% } %>
 
 <section aria-labelledby="summary-h">
   <h2 id="summary-h">Wstępne podsumowanie</h2>

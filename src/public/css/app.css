@@ -230,3 +230,4 @@ main:has(> .login-hero) { max-width: none; padding: 0; }
 .role-set { display: grid; gap: .3rem; }
 .role-fixed { font-weight: 600; }
 .check-inline { display: flex; gap: .4rem; align-items: center; font-weight: 500; margin: 0; }
+.status-entered { color: #3d4a5c; }

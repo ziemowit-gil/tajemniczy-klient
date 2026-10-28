@@ -9,7 +9,7 @@ const devLoginSchema = z.object({
   role: z.enum(Object.values(ROLES), { error: 'Wybierz rolę' }),
 });
 
-function createAuthController({ config, szo, szoPkce, users, sessions, notifier, declarations }) {
+function createAuthController({ config, szo, szoPkce, users, sessions, notifier, declarations, externalEnabled }) {
   const ssoEnabled = config.szo.mode === 'jwt' || config.szo.mode === 'api';
 
   return {
@@ -19,6 +19,7 @@ function createAuthController({ config, szo, szoPkce, users, sessions, notifier,
         title: 'Logowanie',
         mode: config.szo.mode,
         loginUrl: config.szo.loginUrl,
+        externalEnabled: Boolean(externalEnabled?.()), externalError: null,
         errors: {},
         values: {},
         demoUsers: config.szo.mode === 'dev' ? users.list().filter((u) => u.active && u.external_id.startsWith('dev:')) : [],

@@ -6,26 +6,49 @@
 <p class="muted">Konta powstają automatycznie przy pierwszym logowaniu przez SZO. Każdy ma obowiązkową rolę Audytora / Tajemniczego Klienta; Koordynator i Administrator to role dodatkowe, między którymi użytkownik przełącza się w nagłówku strony. Rola przekazana w tokenie SZO jest dodawana do przyznanych przy logowaniu.</p>
 <div class="table-wrap"><table>
   <caption class="sr-only">Lista użytkowników</caption>
-  <thead><tr><th scope="col">Użytkownik</th><th scope="col">E-mail</th><th scope="col">Rola</th><th scope="col">Aktywny</th><th scope="col">Ostatnie logowanie</th><% if (declarationRequired) { %><th scope="col">Oświadczenie</th><% } %><th scope="col">Zapis</th></tr></thead>
+  <thead><tr><th scope="col">Użytkownik</th><th scope="col">E-mail</th><th scope="col">Typ konta</th><th scope="col">Rola</th><th scope="col">Aktywny</th><th scope="col">Ostatnie logowanie</th><% if (declarationRequired) { %><th scope="col">Oświadczenie</th><% } %><th scope="col">Zapis</th></tr></thead>
   <tbody>
   <% for (const u of users) { %>
     <tr>
       <th scope="row"><%= u.name %></th><td><%= u.email || '—' %></td>
+      <td><% if (u.kind === 'external') { %>Zewnętrzne (hasło + SMS)<br><span class="muted"><%= u.hasPassword ? 'Hasło ustawione' : 'Czeka na ustawienie hasła' %>; telefon: <%= u.phone ? u.phone.slice(0, 3) + ' ••• ••• ' + u.phone.slice(-3) : 'brak' %></span><% } else { %>Panel Współpracownika<% } %></td>
       <td>
         
         <fieldset class="role-set">
           <legend class="sr-only">Role: <%= u.name %></legend>
           <span class="role-fixed">Audytor / Tajemniczy Klient <span class="muted">(zawsze)</span></span>
+          <% if (u.kind === 'external') { %><span class="muted">Konto zewnętrzne ma wyłącznie tę rolę.</span><% } else { %>
           <label class="check-inline"><input type="checkbox" name="coordinator" form="user-<%= u.id %>"<% if (u.roles.includes('coordinator')) { %> checked<% } %>> Koordynator</label>
-          <label class="check-inline"><input type="checkbox" name="administrator" form="user-<%= u.id %>"<% if (u.roles.includes('administrator')) { %> checked<% } %>> Administrator</label>
+          <label class="check-inline"><input type="checkbox" name="administrator" form="user-<%= u.id %>"<% if (u.roles.includes('administrator')) { %> checked<% } %>> Administrator</label><% } %>
         </fieldset>
       </td>
       <td class="check"><input type="checkbox" id="active-<%= u.id %>" name="active" form="user-<%= u.id %>"<% if (u.active) { %> checked<% } %>><label for="active-<%= u.id %>">Aktywny<span class="sr-only">: <%= u.name %></span></label></td>
       <td><%= fmtDateTime(u.last_login_at) %></td>
       <% if (declarationRequired) { %><td><%= declared.has(u.id) ? `Złożone ${fmtDateTime(declared.get(u.id))}` : 'Brak' %></td><% } %>
-      <td><form id="user-<%= u.id %>" method="post" action="/users/<%= u.id %>"><button type="submit" class="btn-small">Zapisz<span class="sr-only">: <%= u.name %></span></button></form></td>
+      <td><form id="user-<%= u.id %>" method="post" action="/users/<%= u.id %>"><button type="submit" class="btn-small">Zapisz<span class="sr-only">: <%= u.name %></span></button></form>
+        <% if (u.kind === 'external') { %>
+          <form method="post" action="/users/<%= u.id %>/external/link"><button type="submit" class="btn-small btn-secondary">Wyślij link do hasła<span class="sr-only">: <%= u.name %></span></button></form>
+          <form method="post" action="/users/<%= u.id %>/external/phone" class="inline-form">
+            <label for="phone-<%= u.id %>" class="sr-only">Nowy numer telefonu: <%= u.name %></label>
+            <input type="tel" id="phone-<%= u.id %>" name="phone" autocomplete="off" placeholder="Nowy numer" required>
+            <button type="submit" class="btn-small btn-secondary">Zmień numer</button>
+          </form>
+        <% } %></td>
     </tr>
   <% } %>
   </tbody>
 </table></div>
+
+<h2 id="ext-heading">Dodaj użytkownika zewnętrznego</h2>
+<p class="muted">Dla osób spoza Panelu Współpracownika. Dostają rolę Audytora / Tajemniczego Klienta, e-mail z linkiem do ustawienia hasła (ważnym 72 godziny), a przy każdym logowaniu podają hasło i kod SMS wysłany na zapisany numer.</p>
+<% if (!externalEnabled || !mailEnabled) { %>
+  <p class="note-box" role="note">Dodawanie jest wyłączone: <%= !externalEnabled ? 'wysyłka SMS nie jest skonfigurowana (SMS_MODE=szo i klucz API SZO).' : 'wysyłka e-mail jest wyłączona (MAIL_MODE).' %></p>
+<% } else { %>
+<form method="post" action="/users/external" aria-labelledby="ext-heading" novalidate class="stack-form">
+  <div class="field"><label for="ext-name">Imię i nazwisko</label><input type="text" id="ext-name" name="name" autocomplete="off" required maxlength="100"></div>
+  <div class="field"><label for="ext-email">Adres e-mail (login)</label><input type="email" id="ext-email" name="email" autocomplete="off" required maxlength="200"></div>
+  <div class="field"><label for="ext-phone">Telefon komórkowy dla kodów SMS</label><p class="hint" id="ext-phone-hint">Np. 600 100 200 albo +48600100200.</p><input type="tel" id="ext-phone" name="phone" autocomplete="off" required aria-describedby="ext-phone-hint"></div>
+  <button type="submit">Utwórz konto i wyślij e-mail</button>
+</form>
+<% } %>
 <%- include('../partials/footer') %>

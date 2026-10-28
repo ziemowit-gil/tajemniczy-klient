@@ -1,6 +1,6 @@
 const { transaction } = require('../db');
 const { ROLES } = require('../domain/constants');
-const { STATUS, canTransition, isEditable } = require('../domain/workflow');
+const { STATUS, canTransition, isEditable, isAssignable } = require('../domain/workflow');
 const { isValidAnswer, validateForSubmit } = require('../domain/scoring');
 
 class DomainError extends Error {
@@ -27,7 +27,7 @@ function resolveAnswer(entry, item) {
 function createAuditsService(db, { objects, users, snapshots }) {
   const select = `
     SELECT a.*, o.name AS object_name, o.type AS object_type, o.address AS object_address,
-           au.name AS auditor_name,
+           au.name AS auditor_name, eb.name AS entered_by_name,
            (SELECT GROUP_CONCAT(title, '; ') FROM (SELECT COALESCE(x.title, s.title) AS title FROM audit_scenarios x
               JOIN scenarios s ON s.id = x.scenario_id WHERE x.audit_id = a.id ORDER BY 1 COLLATE NOCASE)) AS scenario_title,
            rv.name AS reviewer_name,
@@ -35,7 +35,8 @@ function createAuditsService(db, { objects, users, snapshots }) {
            (SELECT COUNT(*) FROM audit_items i WHERE i.audit_id = a.id AND i.answer IS NOT NULL) AS answered_count
     FROM audits a
     JOIN objects o ON o.id = a.object_id
-    JOIN users au ON au.id = a.auditor_id
+    LEFT JOIN users au ON au.id = a.auditor_id
+    LEFT JOIN users eb ON eb.id = a.entered_by
     LEFT JOIN users rv ON rv.id = a.reviewer_id`;
 
   const svc = {
@@ -64,7 +65,7 @@ function createAuditsService(db, { objects, users, snapshots }) {
       }
       if (status) { where.push('a.status = ?'); params.push(status); }
       return db.prepare(`${select} ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-        ORDER BY CASE a.status WHEN 'submitted' THEN 0 WHEN 'in_progress' THEN 1 WHEN 'assigned' THEN 2 ELSE 3 END,
+        ORDER BY CASE a.status WHEN 'submitted' THEN 0 WHEN 'entered' THEN 1 WHEN 'in_progress' THEN 2 WHEN 'assigned' THEN 3 ELSE 4 END,
                  a.due_date IS NULL, a.due_date, a.id DESC`).all(...params);
     },
 
@@ -75,17 +76,24 @@ function createAuditsService(db, { objects, users, snapshots }) {
     items: (auditId) => db.prepare('SELECT * FROM audit_items WHERE audit_id = ? ORDER BY area DESC, position, id').all(auditId),
     scoringItems: (auditId) => svc.items(auditId).map(toScoringItem),
 
-    /**
-     * Przydziela audyt: tworzy migawkę aktywnych kryteriów z obszarów wszystkich wybranych scenariuszy
-     * (kryteria się nie powtarzają, nawet gdy zakresy scenariuszy na siebie zachodzą).
-     */
-    create({ objectId, auditorId, scenarioIds, dueDate }, assignedBy) {
-      const object = objects.get(objectId);
-      if (!object) throw new DomainError('Wybrany obiekt nie istnieje.');
+    /** Aktywny użytkownik z rolą Audytora albo wyjątek (każdy użytkownik ma tę rolę, ale konto może być nieaktywne). */
+    requireAuditor(auditorId) {
       const auditor = users.findById(auditorId);
       if (!auditor || !auditor.active || !auditor.roles.includes(ROLES.AUDITOR)) {
         throw new DomainError('Wybrany użytkownik nie jest aktywnym audytorem.');
       }
+      return auditor;
+    },
+
+    /**
+     * Wprowadza audyt do systemu (koordynator lub administrator): tworzy migawkę aktywnych kryteriów z obszarów wszystkich
+     * wybranych scenariuszy (bez powtórzeń). Bez wskazanego Tajemniczego Klienta audyt ma status „Wprowadzony do systemu”,
+     * z audytorem od razu „Przydzielony do TK”.
+     */
+    create({ objectId, auditorId, scenarioIds, dueDate }, enteredBy) {
+      const object = objects.get(objectId);
+      if (!object) throw new DomainError('Wybrany obiekt nie istnieje.');
+      if (auditorId) svc.requireAuditor(auditorId);
       const ids = [...new Set(scenarioIds)];
       if (!ids.length) throw new DomainError('Wybierz co najmniej jeden scenariusz.');
       const scenarios = db.prepare(
@@ -102,8 +110,9 @@ function createAuditsService(db, { objects, users, snapshots }) {
 
       return transaction(db, () => {
         const info = db.prepare(
-          'INSERT INTO audits (object_id, auditor_id, scenario_id, assigned_by, due_date) VALUES (?, ?, ?, ?, ?)',
-        ).run(objectId, auditorId, primary, assignedBy, dueDate);
+          `INSERT INTO audits (object_id, auditor_id, scenario_id, entered_by, assigned_by, status, assigned_at, due_date)
+           VALUES (?, ?, ?, ?, ?, ?, ${auditorId ? "datetime('now')" : 'NULL'}, ?)`,
+        ).run(objectId, auditorId || null, primary, enteredBy, auditorId ? enteredBy : null, auditorId ? STATUS.ASSIGNED : STATUS.ENTERED, dueDate);
         snapshots.add('audit', info.lastInsertRowid, ids);
         const insert = db.prepare(`INSERT INTO audit_items
           (audit_id, criterion_id, code, area, category, text, hint, weight, answer_type, position)
@@ -113,6 +122,17 @@ function createAuditsService(db, { objects, users, snapshots }) {
         }
         return svc.get(info.lastInsertRowid);
       });
+    },
+
+    /** Przydział (lub zmiana) Tajemniczego Klienta: możliwy, dopóki audytor nie zaczął pracy. */
+    assign(audit, auditorId, byUser) {
+      if (!isAssignable(audit.status) || !canTransition(audit.status, STATUS.ASSIGNED, byUser.role)) {
+        throw new DomainError('Tajemniczego Klienta można przydzielić tylko do audytu, nad którym nie rozpoczęto pracy.', 409);
+      }
+      svc.requireAuditor(auditorId);
+      db.prepare(`UPDATE audits SET auditor_id = ?, assigned_by = ?, assigned_at = datetime('now'), status = ? WHERE id = ?`)
+        .run(auditorId, byUser.id, STATUS.ASSIGNED, audit.id);
+      return svc.get(audit.id);
     },
 
     /** Zapisuje (częściowo lub w całości) odpowiedzi audytora. Pierwszy zapis zmienia status na „W trakcie”. */
@@ -171,7 +191,7 @@ function createAuditsService(db, { objects, users, snapshots }) {
 
     /** Audyt można usunąć tylko przed rozpoczęciem pracy. */
     remove(audit) {
-      if (audit.status !== STATUS.ASSIGNED) throw new DomainError('Można usunąć tylko audyt w statusie „Przypisany”.', 409);
+      if (!isAssignable(audit.status)) throw new DomainError('Można usunąć tylko audyt, nad którym nie rozpoczęto pracy (statusy „Wprowadzony do systemu” i „Przydzielony do TK”).', 409);
       db.prepare('DELETE FROM audits WHERE id = ?').run(audit.id);
     },
   };
