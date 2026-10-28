@@ -23,6 +23,14 @@
   <% if (audit.approved_at) { %><div><dt>Zatwierdzono</dt><dd><%= fmtDateTime(audit.approved_at) %><%= audit.reviewer_name ? `, ${audit.reviewer_name}` : '' %></dd></div><% } %>
 </dl>
 
+<% if (canAccept) { %>
+<section class="accept-box" aria-labelledby="accept-h">
+  <h2 id="accept-h">Audyt czeka na przyjęcie</h2>
+  <p>Przydzielono Ci ten audyt<%= audit.due_date ? ` z terminem ${fmtDate(audit.due_date)}` : '' %>. Przyjmij go, gdy możesz go wykonać; status zmieni się na „W trakcie”, a koordynator zobaczy to w historii.</p>
+  <form method="post" action="/audits/<%= audit.id %>/accept"><button type="submit">Przyjmij audyt</button></form>
+</section>
+<% } %>
+
 <%- include('../partials/scenario-steps', { scenarios, editable: canEdit, formId: 'audit-form', personaLabels: disabilityLabels }) %>
 
 <% if (audit.review_comment && audit.status !== 'submitted') { %>

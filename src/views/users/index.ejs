@@ -10,7 +10,7 @@
   <tbody>
   <% for (const u of users) { %>
     <tr>
-      <th scope="row"><%= u.name %></th><td><%= u.email || '—' %></td>
+      <th scope="row"><%= u.name %></th><td><%= u.email || '—' %><% if (u.email && duplicates.has(u.email.toLowerCase())) { %><br><strong>Uwaga: ten adres jest też na innym koncie (możliwy duplikat).</strong><% } %></td>
       <td><% if (u.kind === 'external') { %>Zewnętrzne (hasło + SMS)<br><span class="muted"><%= u.hasPassword ? 'Hasło ustawione' : 'Czeka na ustawienie hasła' %>; telefon: <%= u.phone ? u.phone.slice(0, 3) + ' ••• ••• ' + u.phone.slice(-3) : 'brak' %></span><% } else { %>Panel Współpracownika<% } %></td>
       <td>
         

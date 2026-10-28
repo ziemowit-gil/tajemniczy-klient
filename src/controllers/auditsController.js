@@ -28,6 +28,7 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
       canExport: req.user.role !== ROLES.AUDITOR || audit.auditor_id === req.user.id,
       isAdmin: req.user.role === ROLES.ADMIN,
       canManage: [ROLES.ADMIN, ROLES.COORDINATOR].includes(req.user.role),
+      canAccept: req.user.role === ROLES.AUDITOR && audit.status === STATUS.ASSIGNED && audit.auditor_id === req.user.id,
       canAssign: [ROLES.ADMIN, ROLES.COORDINATOR].includes(req.user.role) && isAssignable(audit.status),
       auditors: [ROLES.ADMIN, ROLES.COORDINATOR].includes(req.user.role) && isAssignable(audit.status) ? users.listByRole(ROLES.AUDITOR) : [],
       history: history.list('audit', audit.id), historyLabels: history.labels,
@@ -112,6 +113,19 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
     },
 
     show: (req, res) => res.render('audits/show', viewData(req, req.audit)),
+
+    /** „Przyjmij audyt”: potwierdzenie przez Tajemniczego Klienta, że bierze przydzielony audyt do realizacji. */
+    accept(req, res) {
+      try {
+        audits.accept(req.audit, req.user);
+        history.log('audit', req.audit.id, req.user, 'accepted');
+        res.flash('success', 'Audyt przyjęty do realizacji. Status: W trakcie.');
+      } catch (err) {
+        if (!(err instanceof DomainError)) throw err;
+        res.flash('error', err.message);
+      }
+      res.redirect(303, `/audits/${req.audit.id}`);
+    },
 
     /** Zapis formularza (przycisk „Zapisz”) lub zapis + złożenie (przycisk „Złóż audyt”). */
     async save(req, res) {

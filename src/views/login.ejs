@@ -1,7 +1,10 @@
 <%- include('partials/header') %>
 <div class="login-hero">
 <div class="login-box login-card">
-  <h1>Logowanie</h1>
+  <h1>Tajemniczy Klient</h1>
+  <p>Aplikacja Fundacji Edukacji Empatii Rozwoju „FEER” do audytów dostępności metodą Tajemniczego Klienta. Audytorzy sprawdzają w niej obiekty, a także uczelniane biura ds. osób z niepełnosprawnościami („Dostępność kształcenia”), wypełniają scenariusze i raporty. Koordynatorzy przydzielają i weryfikują audyty, a administratorzy zarządzają kryteriami, scenariuszami i użytkownikami.</p>
+  <p>Konto nadaje FEER. Pracownicy i współpracownicy logują się przez Panel Współpracownika<% if (locals.externalEnabled) { %>, osoby spoza FEER kontem zewnętrznym z kodem SMS<% } %>. Jeśli nie masz dostępu, napisz do administratora aplikacji w FEER.</p>
+  <h2 id="login-h">Logowanie</h2>
   <% if (authError) { %><div class="error-summary" role="alert"><%= authError %></div><% } %>
 
   <% if (mode === 'dev') { %>

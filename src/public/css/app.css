@@ -231,3 +231,19 @@ main:has(> .login-hero) { max-width: none; padding: 0; }
 .role-fixed { font-weight: 600; }
 .check-inline { display: flex; gap: .4rem; align-items: center; font-weight: 500; margin: 0; }
 .status-entered { color: #3d4a5c; }
+
+/* Nagłówek: nawigacja po lewej, zwarta strefa konta po prawej (jeden rząd na szerokich ekranach; na węższych: logo i konto w pierwszym rzędzie, menu pod spodem). */
+.site-header .inner { gap: .4rem 1rem; }
+.site-header .brand { order: 1; }
+.site-header nav { order: 3; flex: 1 1 100%; }
+.site-header .user-box { order: 2; margin-left: auto; flex-wrap: wrap; gap: .4rem .9rem; justify-content: flex-end; }
+.site-header .role-switch { gap: .4rem; }
+.site-header .role-switch select { max-width: 14rem; }
+@media (min-width: 90rem) {
+  .site-header .inner { max-width: 96rem; flex-wrap: nowrap; }
+  .site-header nav { order: 2; flex: 1 1 auto; min-width: 0; }
+  .site-header .user-box { order: 3; flex-shrink: 0; flex-wrap: nowrap; }
+}
+@media (max-width: 40rem) { .site-header .user-box { margin-left: auto; } }
+.accept-box { border-left: 4px solid var(--accent); background: var(--surface); padding: .75rem 1rem; margin: 1rem 0; }
+.accept-box h2 { margin-top: 0; }

@@ -51,7 +51,16 @@ function createUsersService(db, { defaultRole }) {
      * bez niej role nadane lokalnie przez administratora pozostają bez zmian.
      */
     upsertFromIdentity(identity) {
-      const existing = byExternal.get(identity.externalId);
+      let existing = byExternal.get(identity.externalId);
+      // To samo konto SZO mogło wcześniej powstać pod innym identyfikatorem (np. z dawnego logowania): jedyny pasujący
+      // adres e-mail wśród kont z SZO przejmuje nowy identyfikator zamiast tworzyć zdublowane konto bez przypisanych audytów.
+      if (!existing && identity.email && identity.externalId.startsWith('szo:')) {
+        const same = db.prepare(`SELECT * FROM users WHERE lower(email) = ? AND kind = 'szo' AND external_id NOT LIKE 'dev:%'`).all(identity.email.trim().toLowerCase());
+        if (same.length === 1) {
+          db.prepare('UPDATE users SET external_id = ? WHERE id = ?').run(identity.externalId, same[0].id);
+          existing = byExternal.get(identity.externalId);
+        }
+      }
       if (!existing) {
         const initial = identity.role || defaultRole;
         const info = db.prepare(
@@ -104,6 +113,9 @@ function createUsersService(db, { defaultRole }) {
     setNotify: (id, enabled) => db.prepare('UPDATE users SET notify_email = ? WHERE id = ?').run(enabled ? 1 : 0, id),
 
     exists: (externalId) => byExternal.get(externalId) !== undefined,
+
+    /** Adresy e-mail powtarzające się na kilku kontach (możliwe zdublowane konta) – małymi literami. */
+    duplicateEmails: () => new Set(db.prepare(`SELECT lower(email) AS e FROM users WHERE email IS NOT NULL GROUP BY lower(email) HAVING COUNT(*) > 1`).all().map((r) => r.e)),
     existingExternalIds: () => new Set(db.prepare('SELECT external_id FROM users').all().map((r) => r.external_id)),
 
     countActiveAdmins: () => db.prepare(`SELECT COUNT(DISTINCT u.id) AS n FROM users u JOIN user_roles r ON r.user_id = u.id

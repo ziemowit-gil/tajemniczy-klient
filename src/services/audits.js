@@ -164,6 +164,15 @@ function createAuditsService(db, { objects, users, snapshots }) {
       return svc.get(audit.id);
     },
 
+    /** Tajemniczy Klient przyjmuje przydzielony mu audyt do realizacji: „Przydzielony do TK” → „W trakcie”. */
+    accept(audit, user) {
+      if (audit.status !== STATUS.ASSIGNED || audit.auditor_id !== user.id || user.role !== ROLES.AUDITOR) {
+        throw new DomainError('Tego audytu nie można teraz przyjąć.', 409);
+      }
+      db.prepare(`UPDATE audits SET status = ?, started_at = datetime('now') WHERE id = ? AND status = ?`).run(STATUS.IN_PROGRESS, audit.id, STATUS.ASSIGNED);
+      return svc.get(audit.id);
+    },
+
     submit(audit, user) {
       if (!canTransition(audit.status, STATUS.SUBMITTED, user.role) || audit.auditor_id !== user.id) {
         throw new DomainError('Tego audytu nie można teraz złożyć.', 409);

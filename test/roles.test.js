@@ -96,7 +96,7 @@ test('usługa: Audytor obowiązkowy, role dodatkowe, przełączanie i rola z SZO
 test('przełącznik ról: widoczny tylko przy kilku rolach, zmienia uprawnienia sesji i jest zapamiętywany', async () => {
   const adm = await new Browser().login('adm1', 'a');
   let html = header(await (await adm.get('/')).text());
-  assert.match(html, /\(Administrator\)/);
+  assert.doesNotMatch(html, /\(Administrator\)/, 'rola nie jest dublowana w nawiasie przy nazwisku');
   assert.match(html, /<form method="post" action="\/role" class="role-switch">/);
   assert.match(html, /<option value="auditor">Audytor \/ Tajemniczy Klient<\/option>/);
   assert.match(html, /<option value="administrator" selected>Administrator<\/option>/);
@@ -109,7 +109,7 @@ test('przełącznik ról: widoczny tylko przy kilku rolach, zmienia uprawnienia 
   assert.equal(sw.headers.get('location'), '/');
   assert.match(flashOf(adm), /Przełączono na rolę: Audytor/);
   html = header(await (await adm.get('/')).text());
-  assert.match(html, /\(Audytor \/ Tajemniczy Klient\)/);
+  assert.doesNotMatch(html, /\(Audytor \/ Tajemniczy Klient\)/);
   assert.match(html, /<option value="auditor" selected>/);
   assert.equal((await adm.get('/users')).status, 403);
   assert.equal((await adm.get('/criteria')).status, 403);

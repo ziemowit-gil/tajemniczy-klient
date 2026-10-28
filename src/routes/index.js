@@ -95,6 +95,7 @@ function buildRouter({ auth, extAuth, admin, auditsCtl, reportsCtl, officeCtl, s
   const handleOfficeUpload = uploadWith('/office');
   r.post('/audits/:id', requireRole(AUDITOR), auditsCtl.load, auditsCtl.ensureEditable, handleUpload, auditsCtl.save);
 
+  r.post('/audits/:id/accept', requireRole(AUDITOR), auditsCtl.load, auditsCtl.accept);
   r.post('/audits/:id/approve', requireRole(COORDINATOR, ADMIN), auditsCtl.load, auditsCtl.approve);
   r.post('/audits/:id/return', requireRole(COORDINATOR, ADMIN), auditsCtl.load, auditsCtl.returnForCorrection);
   r.post('/audits/:id/assign', requireRole(ADMIN, COORDINATOR), auditsCtl.load, auditsCtl.assign);

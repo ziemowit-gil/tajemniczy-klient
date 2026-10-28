@@ -179,7 +179,7 @@ function createAdminController({ objects, catalog, users, szoDirectory, notifier
     },
 
     /* ---------- Użytkownicy ---------- */
-    usersIndex: (req, res) => res.render('users/index', { title: 'Użytkownicy', users: users.list(), roleLabels: ROLE_LABELS, roleSetLabels: ROLE_SET_LABELS, importEnabled: szoDirectory.enabled, declared: declarations.acceptedMap(), declarationRequired, externalEnabled: externalAuth.enabled, mailEnabled: mailer.mode !== 'off' }),
+    usersIndex: (req, res) => res.render('users/index', { title: 'Użytkownicy', users: users.list(), roleLabels: ROLE_LABELS, roleSetLabels: ROLE_SET_LABELS, importEnabled: szoDirectory.enabled, declared: declarations.acceptedMap(), declarationRequired, duplicates: users.duplicateEmails(), externalEnabled: externalAuth.enabled, mailEnabled: mailer.mode !== 'off' }),
 
     /** Import osób z SZO: lista kont z uprawnieniem „Tajemniczy Klient”, których jeszcze nie ma w aplikacji. */
     async usersImportForm(req, res) {

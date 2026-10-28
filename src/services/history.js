@@ -2,6 +2,7 @@
 const ACTION_LABELS = {
   entered: 'Wprowadzono do systemu',
   assigned: 'Przydzielono do TK',
+  accepted: 'Przyjęto audyt do realizacji',
   created: 'Rozpoczęto ocenę',
   started: 'Rozpoczęto wypełnianie',
   submitted: 'Uzupełniono raport',

@@ -49,10 +49,10 @@
     </nav>
     <% } %>
     <div class="user-box">
-      <a href="/account" class="account-link"<% if (currentPath === '/account') { %> aria-current="page"<% } %>><%= currentUser.name %> (<%= roleLabels[currentUser.role] %>)</a>
+      <a href="/account" class="account-link"<% if (currentPath === '/account') { %> aria-current="page"<% } %>><%= currentUser.name %><% if (!(currentUser.roles && currentUser.roles.length > 1)) { %><span class="sr-only"> (<%= roleLabels[currentUser.role] %>)</span><% } %></a>
       <% if (currentUser.roles && currentUser.roles.length > 1) { %>
         <form method="post" action="/role" class="role-switch">
-          <label for="role-switch">Aktywna rola</label>
+          <label for="role-switch" class="sr-only">Aktywna rola</label>
           <select id="role-switch" name="role">
             <% for (const r of currentUser.roles) { %><option value="<%= r %>"<% if (r === currentUser.role) { %> selected<% } %>><%= roleLabels[r] %></option><% } %>
           </select>
