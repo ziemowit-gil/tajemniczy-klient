@@ -351,3 +351,8 @@ body:has(.login-hero) .site-header { display: none; }
 .login-card .note-box { border-radius: 8px; }
 .login-card a { color: #0e43a6; text-decoration: underline; text-underline-offset: 3px; }
 @media print { .login-brand { display: none; } }
+.login-help { margin-top: 1.25rem; }
+.login-help > summary { cursor: pointer; font-weight: 700; color: #0e43a6; width: fit-content; }
+.login-help > summary:focus-visible { outline: 3px solid #1d1d1a; outline-offset: 3px; }
+.login-help h3 { font-size: 1rem; margin: 1rem 0 .3rem; }
+.login-help ol { margin: 0 0 .5rem; padding-left: 1.4rem; }

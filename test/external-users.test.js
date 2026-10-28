@@ -384,3 +384,12 @@ test('rejestracja kodem jest niedostępna przy wyłączonym SMS', async () => {
   assert.equal(get.headers.get('location'), '/login');
   s.close();
 });
+
+test('logowanie: instrukcja krok po kroku jest rozwijana, zawiera wszystkie ścieżki i wskazówki o klawiaturze', async () => {
+  const html = await (await new Browser().get('/login')).text();
+  assert.match(html, /<details class="login-help">\s*<summary>Jak się zalogować\? Instrukcja krok po kroku<\/summary>/);
+  assert.match(html, /Panel Współpracownika \(pracownicy i współpracownicy FEER\)/);
+  assert.match(html, /Konto zewnętrzne \(osoby spoza FEER\)/);
+  assert.match(html, /7-cyfrowy kod rejestracyjny/);
+  assert.match(html, /wystarczy klawiatura/);
+});

@@ -74,6 +74,32 @@
       <li><a class="tile" href="/register"><strong>Mam kod rejestracyjny</strong><span>Zakładasz konto zewnętrzne kodem od administratora FEER.</span></a></li>
       <% } %>
     </ul>
+  <details class="login-help">
+    <summary>Jak się zalogować? Instrukcja krok po kroku</summary>
+    <h3>Panel Współpracownika (pracownicy i współpracownicy FEER)</h3>
+    <ol>
+      <li>Wybierz kafelek „Panel Współpracownika”.</li>
+      <li>Zaloguj się kontem Microsoft 365 i potwierdź dostęp aplikacji.</li>
+      <li>Po powrocie jesteś już w aplikacji. Za pierwszym razem złożysz oświadczenie o poufności.</li>
+    </ol>
+    <% if (locals.externalEnabled) { %>
+    <h3>Konto zewnętrzne (osoby spoza FEER)</h3>
+    <ol>
+      <li>Wybierz kafelek „Konto zewnętrzne”.</li>
+      <li>Wpisz e-mail i hasło, a potem wybierz „Dalej: kod SMS”.</li>
+      <li>Na telefon przyjdzie 6-cyfrowy kod ważny 5 minut. Wpisz go na następnym ekranie.</li>
+      <li>Kod nie dotarł? Po minucie wybierz „Wyślij kod ponownie” (maksymalnie trzy razy).</li>
+    </ol>
+    <h3>Nie masz jeszcze konta zewnętrznego</h3>
+    <ol>
+      <li>Poproś administratora FEER o 7-cyfrowy kod rejestracyjny.</li>
+      <li>Wybierz kafelek „Mam kod rejestracyjny”.</li>
+      <li>Wpisz kod, e-mail, imię i nazwisko, telefon oraz hasło (co najmniej 12 znaków).</li>
+      <li>Po założeniu konta zaloguj się jak wyżej.</li>
+    </ol>
+    <% } %>
+    <p>Do obsługi wystarczy klawiatura: Tab przechodzi do kolejnego elementu, Enter wybiera kafelek lub przycisk. Problem z logowaniem zgłoś administratorowi aplikacji w FEER.</p>
+  </details>
     <% if (!szoHref) { %><p class="muted">Adres logowania Panelu Współpracownika nie jest skonfigurowany (SZO_LOGIN_URL). Skontaktuj się z administratorem.</p><% } %>
   <% } %>
   <% } %>
