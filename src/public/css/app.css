@@ -333,3 +333,8 @@ main:has(> .login-hero) { max-width: none; padding: 0; }
 .edit-box > summary { cursor: pointer; font-weight: 600; width: fit-content; }
 .edit-box form { margin-top: .75rem; }
 .decline-section { margin: 1rem 0; }
+.login-tiles li:nth-child(3) .tile { background: #1d1d1a; color: #fff; }
+.login-tiles li:nth-child(3) .tile span { color: #fff; }
+.login-tiles li:nth-child(3) .tile:hover, .login-tiles li:nth-child(3) .tile:focus-visible { background: #00bcf2; color: #1d1d1a; }
+.login-tiles li:nth-child(3) .tile:hover span, .login-tiles li:nth-child(3) .tile:focus-visible span { color: #1d1d1a; }
+.reg-code { font-size: 2.6rem; font-weight: 300; letter-spacing: .35em; margin: .5rem 0; }

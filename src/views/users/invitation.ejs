@@ -1,0 +1,9 @@
+<%- include('../partials/header') %>
+<h1>Kod rejestracyjny</h1>
+<div class="note-box" role="status">
+  <p>Kod dla <strong><%= inv.email %></strong> jest widoczny tylko teraz. Przekaż go osobie bezpiecznym kanałem (np. telefonicznie); po zamknięciu strony nie da się go odczytać, można tylko wystawić nowy.</p>
+  <p class="reg-code" aria-label="Kod rejestracyjny: <%= inv.code.split('').join(' ') %>"><span aria-hidden="true"><%= inv.code %></span></p>
+  <p>Ważny <%= inv.days %> dni, jednorazowy. Osoba wpisuje go na stronie <strong>/register</strong> (kafelek „Mam kod rejestracyjny” na ekranie logowania) razem z tym adresem e-mail.</p>
+</div>
+<p><a class="btn" href="/users">Wróć do użytkowników</a></p>
+<%- include('../partials/footer') %>

@@ -65,6 +65,24 @@ function createExternalAuthController({ externalAuth, sessions, config, enabled 
       return res.redirect(303, '/login/verify');
     },
 
+    showRegister(req, res) {
+      if (!enabled()) return res.redirect(303, '/login');
+      return res.render('register', { title: 'Rejestracja', error: null, values: { email: String(req.query.email || '').slice(0, 200) } });
+    },
+
+    register(req, res) {
+      if (!enabled()) return res.redirect(303, '/login');
+      const values = { email: String(req.body.email || '').slice(0, 200), name: String(req.body.name || '').slice(0, 100), phone: String(req.body.phone || '').slice(0, 30) };
+      try {
+        externalAuth.register({ ...req.body });
+        res.flash('success', 'Konto założone. Zaloguj się e-mailem i hasłem; potwierdzisz numer telefonu kodem SMS.');
+        return res.redirect(303, '/login?metoda=zewnetrzne');
+      } catch (err) {
+        if (!(err instanceof ExternalAuthError)) throw err;
+        return res.status(err.code === 'code' ? 401 : 422).render('register', { title: 'Rejestracja', error: err.message, values });
+      }
+    },
+
     showSetPassword(req, res) {
       const found = externalAuth.userForToken(String(req.query.token || ''));
       if (!found) return res.status(400).render('set-password', { title: 'Ustaw hasło', valid: false, token: '', person: null, error: null });

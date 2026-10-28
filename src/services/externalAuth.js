@@ -14,6 +14,7 @@ const { smsText, SmsError } = require('./smsSender');
 const LIMITS = Object.freeze({
   tokenHours: 72, codeMinutes: 5, maxAttempts: 5, resendCooldownSeconds: 60, maxSends: 3,
   maxChallengesPerHour: 8, maxFailedLogins: 5, lockMinutes: 15,
+  inviteDays: 7, inviteAttempts: 5,
 });
 
 class ExternalAuthError extends Error {
@@ -57,6 +58,60 @@ function createExternalAuth(db, { config, users, sms }) {
       db.prepare('INSERT INTO user_roles (user_id, role) VALUES (?, ?)').run(info.lastInsertRowid, ROLES.AUDITOR);
       const user = users.findById(info.lastInsertRowid);
       return { user, token: svc.issueSetPasswordToken(user.id) };
+    },
+
+    /**
+     * Zaproszenie do rejestracji: administrator podaje adres e-mail (opcjonalnie imię i nazwisko), a aplikacja zwraca
+     * jednorazowy 7-cyfrowy kod ważny 7 dni. Kod widać tylko raz, w bazie jest sam HMAC. Poprzednie niewykorzystane
+     * zaproszenia dla tego adresu przestają działać.
+     */
+    createInvitation({ email, name, createdBy }) {
+      const cleanEmail = String(email ?? '').trim().toLowerCase();
+      if (!EMAIL_RE.test(cleanEmail) || cleanEmail.length > 200) throw new ExternalAuthError('Podaj poprawny adres e-mail.', 'validation');
+      if (db.prepare('SELECT 1 FROM users WHERE lower(email) = ?').get(cleanEmail)) throw new ExternalAuthError('Konto z tym adresem e-mail już istnieje.', 'duplicate');
+      const cleanName = String(name ?? '').trim().slice(0, 100) || null;
+      db.prepare(`UPDATE registration_codes SET used_at = datetime('now') WHERE lower(email) = ? AND used_at IS NULL`).run(cleanEmail);
+      const id = crypto.randomBytes(12).toString('base64url');
+      const code = String(crypto.randomInt(0, 10000000)).padStart(7, '0');
+      db.prepare(`INSERT INTO registration_codes (id, email, name, code_hash, expires_at, created_by) VALUES (?, ?, ?, ?, datetime('now', ?), ?)`)
+        .run(id, cleanEmail, cleanName, codeHash(id, code), `+${LIMITS.inviteDays} days`, createdBy ?? null);
+      return { id, code, email: cleanEmail, days: LIMITS.inviteDays };
+    },
+
+    listInvitations: () => db.prepare(`SELECT id, email, name, expires_at, attempts, created_at FROM registration_codes
+      WHERE used_at IS NULL AND expires_at > datetime('now') ORDER BY created_at DESC`).all(),
+
+    revokeInvitation: (id) => db.prepare(`UPDATE registration_codes SET used_at = datetime('now') WHERE id = ? AND used_at IS NULL`).run(id).changes === 1,
+
+    /**
+     * Samodzielna rejestracja z kodem. Jedna odpowiedź dla błędnego kodu, nieznanego adresu, wygasłego i zablokowanego
+     * zaproszenia; 5 błędnych prób unieważnia zaproszenie. Po sukcesie konto ma hasło, rolę Audytora i numer telefonu,
+     * a pierwsze logowanie potwierdza numer kodem SMS.
+     */
+    register({ code, email, name, phone, password, repeat }) {
+      const generic = new ExternalAuthError('Nieprawidłowy kod lub adres e-mail, albo zaproszenie wygasło. Poproś administratora o nowy kod.', 'code');
+      const cleanEmail = String(email ?? '').trim().toLowerCase();
+      const inv = db.prepare(`SELECT * FROM registration_codes WHERE lower(email) = ? AND used_at IS NULL AND expires_at > datetime('now') ORDER BY created_at DESC LIMIT 1`).get(cleanEmail);
+      const given = String(code ?? '').replace(/\s/g, '');
+      if (!inv || inv.attempts >= LIMITS.inviteAttempts) throw generic;
+      db.prepare('UPDATE registration_codes SET attempts = attempts + 1 WHERE id = ?').run(inv.id);
+      const ok = /^\d{7}$/.test(given) && crypto.timingSafeEqual(Buffer.from(codeHash(inv.id, given), 'hex'), Buffer.from(inv.code_hash, 'hex'));
+      if (!ok) throw generic;
+
+      const cleanName = String(name ?? '').trim() || inv.name || '';
+      const cleanPhone = normalizePhone(phone);
+      if (cleanName.length < 2 || cleanName.length > 100) throw new ExternalAuthError('Imię i nazwisko: 2–100 znaków.', 'validation');
+      if (!cleanPhone) throw new ExternalAuthError('Podaj poprawny numer telefonu komórkowego (np. 600 100 200).', 'validation');
+      if (password !== repeat) throw new ExternalAuthError('Hasła nie są takie same.', 'validation');
+      const problem = validatePassword(password, { email: cleanEmail, name: cleanName });
+      if (problem) throw new ExternalAuthError(problem, 'validation');
+      if (db.prepare('SELECT 1 FROM users WHERE lower(email) = ?').get(cleanEmail)) throw generic;
+
+      const info = db.prepare(`INSERT INTO users (external_id, name, email, role, kind, phone, password_hash, password_set_at) VALUES (?, ?, ?, ?, 'external', ?, ?, datetime('now'))`)
+        .run(`ext:${crypto.randomUUID()}`, cleanName, cleanEmail, ROLES.AUDITOR, cleanPhone, hashPassword(password));
+      db.prepare('INSERT INTO user_roles (user_id, role) VALUES (?, ?)').run(info.lastInsertRowid, ROLES.AUDITOR);
+      db.prepare(`UPDATE registration_codes SET used_at = datetime('now') WHERE id = ?`).run(inv.id);
+      return users.findById(info.lastInsertRowid);
     },
 
     setPhone(userId, phone) {

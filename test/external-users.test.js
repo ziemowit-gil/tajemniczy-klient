@@ -300,3 +300,87 @@ test('ekran logowania pokazuje formularz konta zewnętrznego tylko przy włączo
   assert.equal(post.status, 303);
   s.close();
 });
+
+const codeFrom = async (res) => /<span aria-hidden="true">(\d{7})<\/span>/.exec(await res.text())?.[1];
+
+test('rejestracja kodem: administrator generuje 7-cyfrowy kod (widoczny raz, w bazie tylko skrót), osoba zakłada konto i loguje się z SMS', async () => {
+  reset();
+  const admin = await adminBrowser();
+  const res = await admin.post('/users/invitations', { email: 'Nowa.Osoba@Example.pl', name: 'Nowa Osoba' });
+  assert.equal(res.status, 200);
+  const code = await codeFrom(res);
+  assert.match(code, /^\d{7}$/);
+  const row = db.prepare(`SELECT * FROM registration_codes WHERE email = 'nowa.osoba@example.pl'`).get();
+  assert.ok(row && row.code_hash.length === 64 && !row.code_hash.includes(code), 'w bazie jest skrót, nie kod');
+  assert.equal(JSON.stringify(row).includes(code), false);
+  // lista zaproszeń nie ujawnia kodu
+  assert.ok(!(await (await admin.get('/users')).text()).includes(code));
+
+  const b = new Browser();
+  assert.match(await (await b.get('/register')).text(), /Załóż konto kodem/);
+  assert.match(await (await b.get('/login')).text(), /href="\/register"/);
+  const base = { email: 'nowa.osoba@example.pl', name: 'Nowa Osoba', phone: '601 111 222', password: PASSWORD, repeat: PASSWORD };
+  // słabe hasło: kod nie jest zużyty
+  assert.equal((await b.post('/register', { ...base, code, password: 'krotkie', repeat: 'krotkie' })).status, 422);
+  assert.equal(db.prepare('SELECT used_at FROM registration_codes WHERE id = ?').get(row.id).used_at, null);
+  assert.equal((await b.post('/register', { ...base, code })).status, 303);
+  const user = db.prepare(`SELECT * FROM users WHERE email = 'nowa.osoba@example.pl'`).get();
+  assert.equal(user.kind, 'external');
+  assert.equal(user.phone, '+48601111222');
+  assert.ok(user.password_hash && !user.password_hash.includes(PASSWORD));
+  assert.deepEqual(services.users.findById(user.id).roles, ['auditor']);
+  // kod jednorazowy
+  assert.equal((await b.post('/register', { ...base, code, email: 'nowa.osoba@example.pl' })).status, 401);
+
+  // logowanie: hasło + SMS
+  const login = await b.post('/login/external', { email: 'nowa.osoba@example.pl', password: PASSWORD });
+  assert.equal(login.status, 303);
+  assert.equal(szo.sms.at(-1).phone, '+48601111222');
+  assert.equal((await b.post('/login/verify', { code: lastCode() })).status, 303);
+  assert.equal((await b.get('/')).status, 200);
+});
+
+test('rejestracja kodem: zły kod, cudzy adres, 5 prób, wygaśnięcie i unieważnienie dają tę samą odpowiedź; tylko administrator; zajęty adres', async () => {
+  reset();
+  const admin = await adminBrowser();
+  const code = await codeFrom(await admin.post('/users/invitations', { email: 'proby2@example.pl' }));
+  const b = new Browser();
+  const body = (o) => ({ code, email: 'proby2@example.pl', name: 'Jan Próby', phone: '602000000', password: PASSWORD, repeat: PASSWORD, ...o });
+  const wrong = code === '1234567' ? '7654321' : '1234567';
+  const r1 = await b.post('/register', body({ code: wrong }));
+  const r2 = await b.post('/register', body({ email: 'nieznany@example.pl' }));
+  assert.equal(r1.status, 401); assert.equal(r2.status, 401);
+  const strip = (h) => h.replace(/value="[^"]*"/g, '');
+  assert.equal(strip(await r1.text()), strip(await r2.text()), 'jednakowa odpowiedź');
+  for (let i = 0; i < 3; i += 1) await b.post('/register', body({ code: wrong }));   // razem 4 błędne
+  assert.equal((await b.post('/register', body({ code: wrong }))).status, 401);       // 5. błędna
+  assert.equal((await b.post('/register', body({}))).status, 401, 'po 5 próbach nawet dobry kod nie działa');
+  assert.equal(db.prepare(`SELECT COUNT(*) n FROM users WHERE email = 'proby2@example.pl'`).get().n, 0);
+
+  // wygaśnięcie i unieważnienie
+  const c2 = await codeFrom(await admin.post('/users/invitations', { email: 'proby2@example.pl' }));
+  db.exec(`UPDATE registration_codes SET expires_at = datetime('now', '-1 minutes') WHERE used_at IS NULL`);
+  assert.equal((await b.post('/register', body({ code: c2 }))).status, 401);
+  const c3 = await codeFrom(await admin.post('/users/invitations', { email: 'proby2@example.pl' }));
+  const id = db.prepare(`SELECT id FROM registration_codes WHERE used_at IS NULL`).get().id;
+  await admin.post(`/users/invitations/${id}/revoke`);
+  assert.equal((await b.post('/register', body({ code: c3 }))).status, 401);
+
+  // uprawnienia i zajęty adres
+  assert.notEqual((await new Browser().post('/users/invitations', { email: 'x@example.pl' })).status, 200);
+  await admin.post('/users/invitations', { email: 'bad' });
+  assert.equal(db.prepare(`SELECT COUNT(*) n FROM registration_codes WHERE email = 'bad'`).get().n, 0);
+  await createExternal('zajety@example.pl');
+  await admin.post('/users/invitations', { email: 'zajety@example.pl' });
+  assert.equal(db.prepare(`SELECT COUNT(*) n FROM registration_codes WHERE email = 'zajety@example.pl'`).get().n, 0);
+});
+
+test('rejestracja kodem jest niedostępna przy wyłączonym SMS', async () => {
+  const off = createApp(loadConfig({ ...baseEnv, SMS_MODE: 'off' }), { mailer: mailbox });
+  const s = await new Promise((r) => { const x = off.app.listen(0, '127.0.0.1', () => r(x)); });
+  const root = `http://127.0.0.1:${s.address().port}`;
+  const get = await fetch(`${root}/register`, { redirect: 'manual' });
+  assert.equal(get.status, 303);
+  assert.equal(get.headers.get('location'), '/login');
+  s.close();
+});

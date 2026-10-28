@@ -11,6 +11,8 @@ function buildRouter({ auth, extAuth, admin, auditsCtl, reportsCtl, officeCtl, s
   r.get('/healthz', (req, res) => res.json({ status: 'ok' }));
   r.get('/login', auth.showLogin);
   /* logowanie użytkowników zewnętrznych: e-mail + hasło, potem kod SMS */
+  r.get('/register', extAuth.showRegister);
+  r.post('/register', extAuth.register);
   r.post('/login/external', extAuth.login);
   r.get('/login/verify', extAuth.showVerify);
   r.post('/login/verify', extAuth.verify);
@@ -65,6 +67,8 @@ function buildRouter({ auth, extAuth, admin, auditsCtl, reportsCtl, officeCtl, s
   r.get('/users/import', requireRole(ADMIN), admin.usersImportForm);
   r.post('/users/import', requireRole(ADMIN), admin.usersImport);
   r.post('/users/import/email', requireRole(ADMIN), admin.usersImportByEmail);
+  r.post('/users/invitations', requireRole(ADMIN), admin.invitationCreate);
+  r.post('/users/invitations/:id/revoke', requireRole(ADMIN), admin.invitationRevoke);
   r.post('/users/external', requireRole(ADMIN), admin.externalCreate);
   r.post('/users/:id/external/link', requireRole(ADMIN), admin.externalResendLink);
   r.post('/users/:id/external/phone', requireRole(ADMIN), admin.externalPhone);

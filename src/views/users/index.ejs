@@ -48,7 +48,31 @@
   </tbody>
 </table></div>
 
-<h2 id="ext-heading">Dodaj użytkownika zewnętrznego</h2>
+<h2 id="inv-heading">Zaproś użytkownika zewnętrznego kodem</h2>
+<p class="muted">Wygenerujesz 7-cyfrowy kod (ważny 7 dni, jednorazowy). Osoba spoza FEER zakłada konto sama na stronie rejestracji: podaje kod, e-mail, imię i nazwisko, telefon i hasło. Kod widzisz tylko raz.</p>
+<% if (!externalEnabled) { %>
+  <p class="note-box" role="note">Zaproszenia są wyłączone: wysyłka SMS nie jest skonfigurowana (SMS_MODE=szo i klucz API SZO), więc nowa osoba nie mogłaby się zalogować.</p>
+<% } else { %>
+<form method="post" action="/users/invitations" aria-labelledby="inv-heading" novalidate class="stack-form">
+  <div class="field"><label for="inv-email">Adres e-mail, na który wystawiasz kod</label><input type="email" id="inv-email" name="email" autocomplete="off" required maxlength="200"></div>
+  <div class="field"><label for="inv-name">Imię i nazwisko (opcjonalnie, podpowiedź dla osoby)</label><input type="text" id="inv-name" name="name" autocomplete="off" maxlength="100"></div>
+  <button type="submit">Wygeneruj kod</button>
+</form>
+<% if (invitations.length) { %>
+<div class="table-wrap"><table>
+  <caption>Aktywne zaproszenia</caption>
+  <thead><tr><th scope="col">E-mail</th><th scope="col">Wystawiono</th><th scope="col">Ważne do</th><th scope="col">Błędne próby</th><th scope="col">Akcja</th></tr></thead>
+  <tbody>
+  <% for (const i of invitations) { %>
+    <tr><th scope="row"><%= i.email %></th><td><%= fmtDateTime(i.created_at) %></td><td><%= fmtDateTime(i.expires_at) %></td><td class="num"><%= i.attempts %> z 5</td>
+      <td><form method="post" action="/users/invitations/<%= i.id %>/revoke" data-confirm="Unieważnić kod dla <%= i.email %>?"><button type="submit" class="btn-small btn-danger">Unieważnij<span class="sr-only">: <%= i.email %></span></button></form></td></tr>
+  <% } %>
+  </tbody>
+</table></div>
+<% } %>
+<% } %>
+
+<h2 id="ext-heading">Dodaj użytkownika zewnętrznego (z linkiem w e-mailu)</h2>
 <p class="muted">Dla osób spoza Panelu Współpracownika. Dostają rolę Audytora / Tajemniczego Klienta, e-mail z linkiem do ustawienia hasła (ważnym 72 godziny), a przy każdym logowaniu podają hasło i kod SMS wysłany na zapisany numer.</p>
 <% if (!externalEnabled || !mailEnabled) { %>
   <p class="note-box" role="note">Dodawanie jest wyłączone: <%= !externalEnabled ? 'wysyłka SMS nie jest skonfigurowana (SMS_MODE=szo i klucz API SZO).' : 'wysyłka e-mail jest wyłączona (MAIL_MODE).' %></p>

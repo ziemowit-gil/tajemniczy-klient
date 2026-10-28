@@ -1,0 +1,20 @@
+<%- include('partials/header') %>
+<div class="login-hero">
+<div class="login-box login-card">
+  <p class="step-label">Rejestracja konta zewnętrznego</p>
+  <h1 id="reg-h">Załóż konto kodem</h1>
+  <p>Wpisz 7-cyfrowy kod od administratora FEER oraz adres e-mail, na który został wystawiony. Przy pierwszym logowaniu potwierdzisz numer telefonu kodem SMS.</p>
+  <% if (error) { %><div class="error-summary" role="alert"><%= error %></div><% } %>
+  <form method="post" action="/register" novalidate aria-labelledby="reg-h" class="ext-form">
+    <div class="field"><label for="reg-code">Kod rejestracyjny (7 cyfr)</label><input type="text" id="reg-code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" maxlength="9" required autofocus></div>
+    <div class="field"><label for="reg-email">E-mail</label><input type="email" id="reg-email" name="email" value="<%= values.email || '' %>" autocomplete="username" required></div>
+    <div class="field"><label for="reg-name">Imię i nazwisko</label><input type="text" id="reg-name" name="name" value="<%= values.name || '' %>" autocomplete="name" required></div>
+    <div class="field"><label for="reg-phone">Telefon komórkowy dla kodów SMS</label><p class="hint" id="reg-phone-hint">Np. 600 100 200 albo +48600100200.</p><input type="tel" id="reg-phone" name="phone" value="<%= values.phone || '' %>" autocomplete="tel" required aria-describedby="reg-phone-hint"></div>
+    <div class="field"><label for="reg-pw">Hasło</label><p class="hint" id="reg-pw-hint">Co najmniej 12 znaków. Może to być fraza z kilku słów. Bez swojego e-maila, imienia i nazwiska.</p><input type="password" id="reg-pw" name="password" autocomplete="new-password" minlength="12" required aria-describedby="reg-pw-hint"></div>
+    <div class="field"><label for="reg-pw2">Powtórz hasło</label><input type="password" id="reg-pw2" name="repeat" autocomplete="new-password" minlength="12" required></div>
+    <button type="submit">Załóż konto</button>
+  </form>
+  <p class="login-back"><a href="/login">Wróć do wyboru sposobu logowania</a></p>
+</div>
+</div>
+<%- include('partials/footer') %>

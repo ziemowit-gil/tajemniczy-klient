@@ -179,7 +179,7 @@ function createAdminController({ objects, catalog, users, szoDirectory, notifier
     },
 
     /* ---------- Użytkownicy ---------- */
-    usersIndex: (req, res) => res.render('users/index', { title: 'Użytkownicy', users: users.list(), roleLabels: ROLE_LABELS, roleSetLabels: ROLE_SET_LABELS, importEnabled: szoDirectory.enabled, declared: declarations.acceptedMap(), declarationRequired, duplicates: users.duplicateEmails(), externalEnabled: externalAuth.enabled, mailEnabled: mailer.mode !== 'off' }),
+    usersIndex: (req, res) => res.render('users/index', { title: 'Użytkownicy', users: users.list(), roleLabels: ROLE_LABELS, roleSetLabels: ROLE_SET_LABELS, importEnabled: szoDirectory.enabled, declared: declarations.acceptedMap(), declarationRequired, duplicates: users.duplicateEmails(), invitations: externalAuth.listInvitations(), externalEnabled: externalAuth.enabled, mailEnabled: mailer.mode !== 'off' }),
 
     /** Import osób z SZO: lista kont z uprawnieniem „Tajemniczy Klient”, których jeszcze nie ma w aplikacji. */
     async usersImportForm(req, res) {
@@ -285,6 +285,25 @@ function createAdminController({ objects, catalog, users, szoDirectory, notifier
         if (!(err instanceof ExternalAuthError)) throw err;
         res.flash('error', err.message);
       }
+      return res.redirect(303, '/users');
+    },
+
+    /** Zaproszenie 7-cyfrowym kodem: kod jest pokazany tylko na tej stronie (nie trafia do ciasteczek ani do dziennika). */
+    invitationCreate(req, res) {
+      if (!externalAuth.enabled) { res.flash('error', 'Wysyłka SMS jest wyłączona (SMS_MODE) albo SZO nie ma klucza API. Użytkownik zewnętrzny nie mógłby się zalogować.'); return res.redirect(303, '/users'); }
+      try {
+        const inv = externalAuth.createInvitation({ email: req.body.email, name: req.body.name, createdBy: req.user.id });
+        return res.render('users/invitation', { title: 'Kod rejestracyjny', inv });
+      } catch (err) {
+        if (!(err instanceof ExternalAuthError)) throw err;
+        res.flash('error', err.message);
+        return res.redirect(303, '/users');
+      }
+    },
+
+    invitationRevoke(req, res) {
+      const revoked = externalAuth.revokeInvitation(String(req.params.id));
+      res.flash(revoked ? 'success' : 'error', revoked ? 'Zaproszenie unieważnione.' : 'Nie znaleziono aktywnego zaproszenia.');
       return res.redirect(303, '/users');
     },
 
