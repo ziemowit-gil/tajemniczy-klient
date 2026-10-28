@@ -305,7 +305,7 @@ main:has(> .login-hero) { max-width: none; padding: 0; }
 .decline-box form { margin-top: .75rem; }
 
 /* ===== Logowanie w stylu Metro: płasko, kafle, cyan, bez zaokrągleń. Tekst ciemny na jasnych polach (≥ 7:1), biały na ciemnych (≥ 15:1). ===== */
-.login-hero { background: #00bcf2; }
+.login-hero { background: #00bcf2 url("/img/login-metro.svg") center / cover no-repeat; }
 .login-card { border-radius: 0; background: #fff; padding: 2.25rem 2.25rem 2rem; box-shadow: none; }
 .login-card h1 { font-weight: 300; font-size: 2.4rem; line-height: 1.1; letter-spacing: -.01em; margin-bottom: 1rem; }
 .login-card h2 { font-weight: 600; font-size: 1.15rem; text-transform: uppercase; letter-spacing: .04em; }
