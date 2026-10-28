@@ -1,19 +1,18 @@
 <%- include('partials/header') %>
-<h1>Pulpit</h1>
-<p>Witaj, <%= currentUser.name %>.</p>
-
-<h2>Audyty według statusu</h2>
-<div class="cards">
-  <% for (const [status, label] of Object.entries(statusLabels)) { %>
-    <a class="card" href="/audits?status=<%= status %>">
-      <span class="big"><%= counts[status] %></span><%= label %>
-    </a>
-  <% } %>
+<div class="page-head">
+  <div>
+    <h1>Pulpit</h1>
+    <p class="lead">Witaj, <%= currentUser.name %>. <%= todo.length ? `Masz ${todo.length} ${todo.length === 1 ? 'pozycję' : 'pozycji'} wymagających uwagi.` : 'Nic nie czeka na Twoje działanie.' %></p>
+  </div>
+  <div class="actions">
+    <% if (currentUser.role === 'administrator' || currentUser.role === 'coordinator') { %><a class="btn" href="/audits/new">Wprowadź audyt</a><% } %>
+    <% if (currentUser.role === 'auditor' || currentUser.role === 'administrator') { %><a class="btn btn-secondary" href="/office/new">Nowa ocena kształcenia</a><% } %>
+  </div>
 </div>
 
 <h2><%= todoHeading %></h2>
 <% if (!todo.length) { %>
-  <p>Brak pozycji.</p>
+  <p class="empty">Brak pozycji. Gdy pojawi się coś do zrobienia, zobaczysz to tutaj.</p>
 <% } else { %>
   <div class="table-wrap"><table>
     <thead><tr><th scope="col">Obiekt</th><th scope="col">Rodzaj</th><th scope="col">Zakres</th><th scope="col">Audytor</th><th scope="col">Status</th><th scope="col">Termin</th></tr></thead>
@@ -29,4 +28,13 @@
     </tbody>
   </table></div>
 <% } %>
+
+<h2>Wszystkie pozycje według statusu</h2>
+<div class="cards">
+  <% for (const [status, label] of Object.entries(statusLabels)) { %>
+    <a class="card" href="/audits?status=<%= status %>">
+      <span class="big"><%= counts[status] %></span><%= label %>
+    </a>
+  <% } %>
+</div>
 <%- include('partials/footer') %>

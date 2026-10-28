@@ -356,3 +356,21 @@ body:has(.login-hero) .site-header { display: none; }
 .login-help > summary:focus-visible { outline: 3px solid #1d1d1a; outline-offset: 3px; }
 .login-help h3 { font-size: 1rem; margin: 1rem 0 .3rem; }
 .login-help ol { margin: 0 0 .5rem; padding-left: 1.4rem; }
+
+/* ===== Wygląd aplikacji spójny z logowaniem: granatowy pasek z logo, nawigacja z wyraźnym stanem aktywnym, karty. ===== */
+.site-header { background: #1457d1; border-bottom: 4px solid var(--accent); }
+.brand { display: inline-flex; align-items: center; gap: .55rem; font-size: 1.15rem; letter-spacing: -.01em; }
+.brand .logo-mark { flex: none; }
+.site-header nav a:hover, .nav-group > summary:hover { background: rgba(255, 255, 255, .14); color: #fff; }
+.site-header nav a[aria-current="page"], .nav-group.is-current > summary { background: #fff; color: #0e43a6; font-weight: 700; }
+.nav-group > ul { background: #0e2f73; }
+.nav-group > ul a:hover { background: rgba(255, 255, 255, .14); }
+.lead { margin: .25rem 0 0; color: var(--muted); font-size: 1.05rem; }
+.empty { background: var(--surface); padding: 1rem 1.1rem; border-radius: 10px; margin: 0 0 1rem; }
+.cards { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .75rem; }
+.card { border-radius: 10px; color: var(--text); text-decoration: none; display: block; }
+a.card:hover, a.card:focus-visible { background: #1457d1; color: #fff; }
+a.card:hover .big, a.card:focus-visible .big { color: #fff; }
+.card .big { color: #0e43a6; }
+h2 { margin-top: 2rem; }
+.table-wrap { border-radius: 10px; }
