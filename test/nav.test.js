@@ -86,8 +86,8 @@ test('strona logowania w trybie szo nazywa SZO „Panelem Współpracownika”',
   try {
     const b = `http://127.0.0.1:${srv.address().port}`;
     const html = await (await fetch(`${b}/login`)).text();
-    assert.match(html, /<a class="tile" href="\/auth\/szo\/start"><strong>Panel Współpracownika<\/strong>/);
-    assert.match(html, /<h2 id="login-h">Wybierz sposób logowania<\/h2>/);
+    assert.match(html, /<a class="btn btn-outline" href="\/auth\/szo\/start"[^>]*>Panel Współpracownika<\/a>/);
+    assert.match(html, /<h2 id="alt-h">Zaloguj się przez:<\/h2>/);
     assert.doesNotMatch(html, /SZO/, 'na ekranie logowania nie ma nazwy SZO');
     const denied = await (await fetch(`${b}/login?error=denied`)).text();
     assert.match(denied, /administratora Panelu Współpracownika/);
@@ -96,13 +96,13 @@ test('strona logowania w trybie szo nazywa SZO „Panelem Współpracownika”',
   } finally { srv.close(); }
 });
 
-test('nowa strona logowania w układzie portalu: baner z opisem i kartą logowania, sekcja „Co możesz tu zrobić”, pasek z logo bez menu', async () => {
+test('logowanie w układzie centralnego punktu: logo i niebieski pas z h1, karta z formularzem i panel informacji, bez menu i bez logowania państwowego', async () => {
   const html = await (await fetch(`${base}/login`)).text();
-  assert.match(html, /<header class="site-header">[\s\S]*<span>Tajemniczy Klient<\/span>/);
+  assert.match(html, /<div class="login-top">[\s\S]*<p class="login-top-name">Tajemniczy Klient<\/p>/);
+  assert.match(html, /<div class="login-band">\s*<h1>Logowanie<\/h1>/);
+  assert.match(html, /<div class="login-hero">\s*<div class="login-box login-card">[\s\S]*<aside class="login-info" aria-labelledby="info-h">/);
   assert.doesNotMatch(html, /<nav aria-label="Główna">/, 'bez menu przed zalogowaniem');
-  assert.match(html, /<aside class="login-brand">[\s\S]*<div class="login-box login-card">/);
-  assert.match(html, /<section class="login-below" aria-labelledby="about-h">\s*<h2 id="about-h"[^>]*>Co możesz tu zrobić<\/h2>/);
-  for (const t of ['Audyty obiektów', 'Dostępność kształcenia', 'Raporty i rekomendacje']) assert.ok(html.includes(t), t);
-  // kolejność nagłówków: h1 przed h2
+  assert.doesNotMatch(html, /mObywatel|login\.gov|Login\.gov/i);
   assert.ok(html.indexOf('<h1>') < html.indexOf('<h2'), 'h1 przed h2');
+  assert.equal((html.match(/<h1/g) || []).length, 1, 'jeden nagłówek h1');
 });

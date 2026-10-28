@@ -281,20 +281,20 @@ test('administrator: ponowny link unieważnia poprzedni, zmiana numeru, brak ró
   assert.ok(!html.includes('+48700800900'), 'numer na liście jest zamaskowany');
 });
 
-test('ekran logowania pokazuje formularz konta zewnętrznego tylko przy włączonym SMS', async () => {
+test('ekran logowania pokazuje formularz konta zewnętrznego i link do rejestracji tylko przy włączonym SMS', async () => {
   const html = await (await new Browser().get('/login')).text();
-  assert.match(html, /<a class="tile" href="\/login\?metoda=zewnetrzne#ext-login"><strong>Konto zewnętrzne<\/strong>/);
-  assert.ok(!html.includes('action="/login/external"'), 'formularz pojawia się dopiero po wyborze kafelka');
-  const chosen = await (await new Browser().get('/login?metoda=zewnetrzne')).text();
-  assert.match(chosen, /action="\/login\/external"/);
-  assert.match(chosen, /<h1 id="ext-login">Logowanie kontem zewnętrznym<\/h1>/);
-  assert.match(chosen, /Krok 1 z 2/);
-  assert.match(chosen, /href="\/login">Wróć do wyboru sposobu logowania/);
-  assert.ok(!chosen.includes('class="tile"'), 'na ekranie logowania zewnętrznego nie ma kafelków wyboru');
+  assert.match(html, /<form method="post" action="\/login\/external"/);
+  assert.match(html, /<label for="ext-email">E-mail:<\/label>/);
+  assert.match(html, /<button type="submit">Zaloguj<\/button>\s*<button type="reset">Wyczyść<\/button>\s*<a href="#nie-pamietam">Nie pamiętam hasła<\/a>/);
+  assert.match(html, /<h2 id="alt-h">Lub zaloguj przez:<\/h2>/);
+  assert.match(html, /href="\/register">Załóż konto kodem rejestracyjnym/);
+  assert.match(html, /<h3 id="nie-pamietam">Nie pamiętam hasła<\/h3>/);
+  assert.doesNotMatch(html, /mObywatel|login\.gov/i);
   const off = createApp(loadConfig({ ...baseEnv, SMS_MODE: 'off' }), { mailer: mailbox });
   const s = await new Promise((r) => { const x = off.app.listen(0, '127.0.0.1', () => r(x)); });
   const page = await (await fetch(`http://127.0.0.1:${s.address().port}/login`)).text();
-  assert.ok(!page.includes('/login/external'));
+  assert.ok(!page.includes('/login/external') && !page.includes('/register"'));
+  assert.match(page, /<h2 id="alt-h">Zaloguj się przez:<\/h2>/);
   assert.equal((await fetch(`http://127.0.0.1:${s.address().port}/ext/set-password?token=x`)).status, 400);
   const post = await fetch(`http://127.0.0.1:${s.address().port}/login/external`, { method: 'POST', body: new URLSearchParams({ email: 'a@b.pl', password: 'x' }), redirect: 'manual' });
   assert.equal(post.status, 303);
@@ -385,11 +385,11 @@ test('rejestracja kodem jest niedostępna przy wyłączonym SMS', async () => {
   s.close();
 });
 
-test('logowanie: instrukcja krok po kroku jest rozwijana, zawiera wszystkie ścieżki i wskazówki o klawiaturze', async () => {
+test('logowanie: instrukcja krok po kroku w panelu informacji zawiera wszystkie ścieżki i wskazówkę o klawiaturze', async () => {
   const html = await (await new Browser().get('/login')).text();
-  assert.match(html, /<details class="login-help">\s*<summary>Jak się zalogować\? Instrukcja krok po kroku<\/summary>/);
-  assert.match(html, /Panel Współpracownika \(pracownicy i współpracownicy FEER\)/);
-  assert.match(html, /Konto zewnętrzne \(osoby spoza FEER\)/);
+  assert.match(html, /<details class="login-help">\s*<summary>Instrukcja logowania krok po kroku<\/summary>/);
+  assert.match(html, /<h3>Panel Współpracownika<\/h3>/);
+  assert.match(html, /<h3>Konto zewnętrzne<\/h3>/);
   assert.match(html, /7-cyfrowy kod rejestracyjny/);
   assert.match(html, /wystarczy klawiatura/);
 });

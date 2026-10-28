@@ -1,0 +1,9 @@
+<%# Górna część ekranów logowania: logo na środku i niebieski pas z tytułem. Parametr asHeading: czy tytuł jest nagłówkiem h1 (ekran wyboru) czy zwykłym tekstem (inne ekrany mają własne h1). %>
+<div class="login-top">
+  <svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="27" cy="27" r="19" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="27" cy="21" r="6" fill="currentColor"/><path d="M15.5 38.5c1.6-6.2 6.4-9.5 11.5-9.5s9.9 3.3 11.5 9.5" fill="currentColor"/><path d="M41 41l15 15" stroke="#ea8f00" stroke-width="7" stroke-linecap="round"/></svg>
+  <p class="login-top-name">Tajemniczy Klient</p>
+</div>
+<div class="login-band">
+  <% if (locals.asHeading) { %><h1><%= title %></h1><% } else { %><p class="band-title"><%= title %></p><% } %>
+  <p>Audyty dostępności metodą Tajemniczego Klienta</p>
+</div>

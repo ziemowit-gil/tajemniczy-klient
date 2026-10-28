@@ -1,6 +1,6 @@
 <%- include('partials/header') %>
+<%- include('partials/login-top', { title: 'Weryfikacja kodem SMS' }) %>
 <div class="login-hero">
-<%- include('partials/login-brand') %>
 <div class="login-box login-card">
   <p class="step-label">Krok 2 z 2</p>
   <h1>Kod z SMS-a</h1>
@@ -19,5 +19,6 @@
   </form>
   <p><a href="/login">Wróć do logowania</a></p>
 </div>
+<%- include('partials/login-info') %>
 </div>
 <%- include('partials/footer') %>
