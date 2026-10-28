@@ -192,3 +192,22 @@ test('edycja audytu: koordynator/administrator zmienia termin i scenariusze, TK 
   await adm('POST', `/audits/${audit.id}/edit`, { dueDate: '2030-01-01', scenarioIds: String(audit.scenario_id) });
   assert.equal(services.audits.get(audit.id).due_date, '2027-03-15', 'po złożeniu raportu edycja jest zablokowana');
 });
+
+test('zapis formularza: do 60 plików w jednym zapisie przechodzi, powyżej limitu komunikat podaje limit', async () => {
+  const { tk, audit } = setup();
+  let cookie = ''; await services.sessions.issue({ cookie: (n, v) => { cookie = `${n}=${v}`; } }, tk.id, 'auditor');
+  const itemId = services.audits.items(audit.id)[0].id;
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(32)]);
+  const send = async (n) => {
+    const form = new FormData();
+    form.append('intent', 'save');
+    for (let i = 0; i < n; i += 1) form.append(`files_${itemId}`, new Blob([png], { type: 'image/png' }), `z${i}.png`);
+    return fetch(`${base}/audits/${audit.id}`, { method: 'POST', headers: { cookie }, body: form, redirect: 'manual' });
+  };
+  assert.equal((await send(40)).status, 303);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM attachments').get().n >= 40, true, '40 plików zostało zapisanych');
+  const over = await send(61);
+  assert.equal(over.status, 303);
+  const flash = decodeURIComponent((over.headers.getSetCookie().find((c) => c.startsWith('tk_flash')) || '').replace(/\+/g, ' '));
+  assert.match(flash, /maksymalnie 60/);
+});

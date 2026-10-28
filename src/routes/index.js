@@ -94,7 +94,8 @@ function buildRouter({ auth, extAuth, admin, auditsCtl, reportsCtl, officeCtl, s
     if (!err) return next();
     const message = err.code === 'LIMIT_FILE_SIZE'
       ? `Plik jest za duży (maks. ${Math.round(config.maxUploadBytes / 1048576)} MB).`
-      : err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE' ? 'Za dużo plików w jednym zapisie.' : err.message;
+      : err.code === 'LIMIT_FILE_COUNT' ? `Za dużo plików w jednym zapisie (maksymalnie ${config.maxUploadFiles}). Dodaj część zdjęć w kolejnym zapisie.`
+      : err.code === 'LIMIT_UNEXPECTED_FILE' ? 'Formularz zawiera nieoczekiwane pole pliku. Odśwież stronę i spróbuj ponownie.' : err.message;
     res.flash('error', `Nie zapisano formularza. ${message}`);
     return res.redirect(303, `${base}/${(req.audit || req.review).id}`);
   });

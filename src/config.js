@@ -13,6 +13,7 @@ const envSchema = z.object({
   DATABASE_PATH: z.string().default('./data/tajemniczy-klient.sqlite'),
   UPLOAD_DIR: z.string().default('./data/uploads'),
   MAX_UPLOAD_MB: z.coerce.number().positive().default(8),
+  MAX_UPLOAD_FILES: z.coerce.number().int().min(1).max(200).default(60),
 
   SESSION_SECRET: optional(z.string().min(32, 'SESSION_SECRET musi mieć min. 32 znaki')),
   SESSION_TTL_HOURS: z.coerce.number().positive().default(8),
@@ -100,6 +101,7 @@ function loadConfig(env = process.env) {
     databasePath: e.DATABASE_PATH === ':memory:' ? e.DATABASE_PATH : path.resolve(e.DATABASE_PATH),
     uploadDir: path.resolve(e.UPLOAD_DIR),
     maxUploadBytes: Math.round(e.MAX_UPLOAD_MB * 1024 * 1024),
+    maxUploadFiles: e.MAX_UPLOAD_FILES,
     // Poza produkcją wolno użyć stałego sekretu, aby restart nie wylogowywał developera.
     sessionSecret: e.SESSION_SECRET || 'dev-only-secret-change-me-dev-only-secret',
     sessionTtlSeconds: Math.round(e.SESSION_TTL_HOURS * 3600),

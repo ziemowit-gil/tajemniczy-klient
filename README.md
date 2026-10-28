@@ -116,7 +116,7 @@ Panel **Statystyki** (administrator i koordynator, w swoim zakresie): ranking ob
 
 - Do audytu można przypisać **kilka scenariuszy**. Przy przydziale aktywne kryteria z zakresów wszystkich wybranych scenariuszy są **kopiowane do audytu** (migawka, bez powtórzeń); instrukcje scenariuszy widać na stronie audytu. Późniejsza zmiana kryteriów nie zmienia trwających ani zatwierdzonych wyników.
 - Złożenie wymaga odpowiedzi na wszystkie kryteria. „Nie dotyczy” wymaga uzasadnienia w komentarzu.
-- Załączniki: JPEG, PNG, WebP, PDF (limit `MAX_UPLOAD_MB`). Typ jest sprawdzany także po sygnaturze pliku. Pliki trafiają poza katalog publiczny i są serwowane tylko po autoryzacji.
+- Załączniki: JPEG, PNG, WebP, PDF (limit rozmiaru `MAX_UPLOAD_MB`, liczba plików w jednym zapisie `MAX_UPLOAD_FILES`, domyślnie 60). Typ jest sprawdzany także po sygnaturze pliku. Pliki trafiają poza katalog publiczny i są serwowane tylko po autoryzacji.
 
 ## Moduł „Dostępność kształcenia”
 

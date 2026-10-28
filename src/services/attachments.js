@@ -10,7 +10,6 @@ const ALLOWED = {
   'application/pdf': { ext: '.pdf', magic: (b) => b.subarray(0, 5).toString('latin1') === '%PDF-' },
 };
 
-const MAX_FILES_PER_REQUEST = 20;
 
 /** Rodzaje załączników: audyty obiektów (kryterium) i oceny „Dostępność kształcenia” (pytanie). */
 const KINDS = {
@@ -33,7 +32,7 @@ function createAttachmentsService(db, cfg) {
 
   const upload = multer({
     storage,
-    limits: { fileSize: cfg.maxUploadBytes, files: MAX_FILES_PER_REQUEST },
+    limits: { fileSize: cfg.maxUploadBytes, files: cfg.maxUploadFiles ?? 60 },
     fileFilter: (req, file, cb) => {
       if (!ALLOWED[file.mimetype]) {
         const err = new Error('Dozwolone załączniki: JPEG, PNG, WebP lub PDF.');
