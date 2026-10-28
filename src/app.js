@@ -35,6 +35,7 @@ const { createOfficeController } = require('./controllers/officeController');
 const { createDeclarationController } = require('./controllers/declarationController');
 const { createSettingsController } = require('./controllers/settingsController');
 const { createExternalAuthController } = require('./controllers/externalAuthController');
+const { createWorkItems } = require('./services/workItems');
 const { createExternalAuth } = require('./services/externalAuth');
 const { createSmsSender } = require('./services/smsSender');
 const { createStatsController } = require('./controllers/statsController');
@@ -72,6 +73,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
   const declarations = createDeclarationsService(db);
   const history = createHistoryService(db);
   const notifier = createNotifier(db, { config, mailer, users, objects });
+  const workItems = createWorkItems({ audits, office });
   const sms = createSmsSender(config, { fetchImpl, getApiKey: () => settings.szoApiKey() });
   const externalAuth = createExternalAuth(db, { config, users, sms });
 
@@ -120,8 +122,8 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
     admin: createAdminController({ objects, catalog, users, szoDirectory, notifier, externalAuth, mailer, importDomains: config.szo.importDomains, declarations, declarationRequired: config.declarationRequired }),
     settingsCtl: createSettingsController({ settings, szoDirectory, config }),
     declarationCtl: createDeclarationController({ declarations }),
-    auditsCtl: createAuditsController({ audits, objects, users, catalog, attachments, reports, history, notifier }),
-    reportsCtl: createReportsController({ reports, objects, audits }),
+    auditsCtl: createAuditsController({ workItems, audits, objects, users, catalog, attachments, reports, history, notifier }),
+    reportsCtl: createReportsController({ reports, objects, audits, workItems }),
     statsCtl: createStatsController({ stats }),
     officeCtl: createOfficeController({ office, objects, catalog, users, attachments, history, notifier }),
     attachments,

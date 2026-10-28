@@ -16,12 +16,12 @@
   <p>Brak pozycji.</p>
 <% } else { %>
   <div class="table-wrap"><table>
-    <thead><tr><th scope="col">Obiekt</th><th scope="col">Scenariusze</th><th scope="col">Audytor</th><th scope="col">Status</th><th scope="col">Termin</th></tr></thead>
+    <thead><tr><th scope="col">Obiekt</th><th scope="col">Rodzaj</th><th scope="col">Zakres</th><th scope="col">Audytor</th><th scope="col">Status</th><th scope="col">Termin</th></tr></thead>
     <tbody>
     <% for (const a of todo) { %>
       <tr>
-        <th scope="row"><a href="/audits/<%= a.id %>"><%= a.object_name %></a></th>
-        <td><%= a.scenario_title %></td><td><%= a.auditor_name || 'Nieprzydzielony' %></td>
+        <th scope="row"><a href="<%= a.href %>"><%= a.title %></a></th>
+        <td><%= a.kindLabel %></td><td><%= a.detail || '—' %></td><td><%= a.auditor_name || 'Nieprzydzielony' %></td>
         <td><span class="status status-<%= a.status %>"><%= statusLabels[a.status] %></span></td>
         <td><%= a.due_date ? fmtDate(a.due_date) : '—' %></td>
       </tr>

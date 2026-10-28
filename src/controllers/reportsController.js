@@ -7,7 +7,7 @@ const { paramId, httpError } = require('./helpers');
 const slug = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/gi, 'l')
   .replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 40) || 'raport';
 
-function createReportsController({ reports, objects, audits }) {
+function createReportsController({ reports, objects, audits, workItems }) {
   const loadObject = (req) => {
     const id = paramId(req);
     const object = objects.get(id);
@@ -52,7 +52,7 @@ function createReportsController({ reports, objects, audits }) {
     },
 
     dashboard(req, res) {
-      const mine = audits.list(req.user);
+      const mine = workItems.list(req.user);
       const counts = Object.fromEntries(Object.values(STATUS).map((s) => [s, mine.filter((a) => a.status === s).length]));
       const actionable = {
         [ROLES.AUDITOR]: [STATUS.ASSIGNED, STATUS.IN_PROGRESS],

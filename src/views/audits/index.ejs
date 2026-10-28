@@ -13,15 +13,16 @@
   <button type="submit" class="btn-secondary">Filtruj</button>
 </form>
 
-<% if (!audits.length) { %><p>Brak audytów.</p><% } else { %>
+<% if (!items.length) { %><p>Brak audytów.</p><% } else { %>
 <div class="table-wrap"><table>
-  <caption class="sr-only">Lista audytów</caption>
-  <thead><tr><th scope="col">Obiekt</th><th scope="col">Scenariusze</th><th scope="col">Audytor</th><th scope="col">Status</th><th scope="col" class="num">Postęp</th><th scope="col">Termin</th></tr></thead>
+  <caption class="sr-only">Lista audytów i ocen dostępności kształcenia</caption>
+  <thead><tr><th scope="col">Obiekt</th><th scope="col">Rodzaj</th><th scope="col">Zakres</th><th scope="col">Audytor</th><th scope="col">Status</th><th scope="col" class="num">Postęp</th><th scope="col">Termin</th></tr></thead>
   <tbody>
-  <% for (const a of audits) { %>
+  <% for (const a of items) { %>
     <tr>
-      <th scope="row"><a href="/audits/<%= a.id %>"><%= a.object_name %></a></th>
-      <td><%= a.scenario_title %></td><td><%= a.auditor_name || 'Nieprzydzielony' %></td>
+      <th scope="row"><a href="<%= a.href %>"><%= a.title %></a></th>
+      <td><%= a.kindLabel %></td>
+      <td><%= a.detail || '—' %></td><td><%= a.auditor_name || 'Nieprzydzielony' %></td>
       <td><span class="status status-<%= a.status %>"><%= statusLabels[a.status] %></span></td>
       <td class="num"><%= a.answered_count %> / <%= a.item_count %></td>
       <td><%= a.due_date ? fmtDate(a.due_date) : '—' %></td>

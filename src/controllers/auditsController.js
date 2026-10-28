@@ -7,7 +7,7 @@ const {
 } = require('../validation/schemas');
 const { paramId, httpError, collectAnswers, collectDoneSteps } = require('./helpers');
 
-function createAuditsController({ audits, objects, users, catalog, attachments, reports, history, notifier }) {
+function createAuditsController({ workItems, audits, objects, users, catalog, attachments, reports, history, notifier }) {
   const viewData = (req, audit, extra = {}) => {
     const items = audits.items(audit.id);
     const files = attachments.list('audit', audit.id);
@@ -64,7 +64,7 @@ function createAuditsController({ audits, objects, users, catalog, attachments, 
 
     index(req, res) {
       const status = Object.hasOwn(STATUS_LABELS, req.query.status) ? req.query.status : undefined;
-      res.render('audits/index', { title: req.user.role === ROLES.AUDITOR ? 'Moje audyty' : 'Audyty', audits: audits.list(req.user, { status }), statusLabels: STATUS_LABELS, filter: status || '' });
+      res.render('audits/index', { title: req.user.role === ROLES.AUDITOR ? 'Moje audyty' : 'Audyty', items: workItems.list(req.user, { status }), statusLabels: STATUS_LABELS, filter: status || '' });
     },
 
     newForm(req, res) {
