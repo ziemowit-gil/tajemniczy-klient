@@ -283,7 +283,11 @@ test('administrator: ponowny link unieważnia poprzedni, zmiana numeru, brak ró
 
 test('ekran logowania pokazuje formularz konta zewnętrznego tylko przy włączonym SMS', async () => {
   const html = await (await new Browser().get('/login')).text();
-  assert.match(html, /action="\/login\/external"/);
+  assert.match(html, /<a class="tile" href="\/login\?metoda=zewnetrzne#ext-login"><strong>Konto zewnętrzne<\/strong>/);
+  assert.ok(!html.includes('action="/login/external"'), 'formularz pojawia się dopiero po wyborze kafelka');
+  const chosen = await (await new Browser().get('/login?metoda=zewnetrzne')).text();
+  assert.match(chosen, /action="\/login\/external"/);
+  assert.match(chosen, /aria-current="true"/);
   const off = createApp(loadConfig({ ...baseEnv, SMS_MODE: 'off' }), { mailer: mailbox });
   const s = await new Promise((r) => { const x = off.app.listen(0, '127.0.0.1', () => r(x)); });
   const page = await (await fetch(`http://127.0.0.1:${s.address().port}/login`)).text();

@@ -4,7 +4,7 @@ const { ExternalAuthError } = require('../services/externalAuth');
 function createExternalAuthController({ externalAuth, sessions, config, enabled }) {
   const loginView = (extra = {}) => ({
     title: 'Logowanie', mode: config.szo.mode, loginUrl: config.szo.loginUrl, errors: {}, values: {}, demoUsers: [],
-    authError: null, externalEnabled: true, externalError: null, ...extra,
+    authError: null, externalEnabled: true, externalError: null, method: 'external', ...extra,
   });
   const GENERIC = 'Nieprawidłowy e-mail lub hasło albo konto jest tymczasowo zablokowane.';
 

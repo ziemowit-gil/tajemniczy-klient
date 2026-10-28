@@ -2,9 +2,10 @@
 <div class="login-hero">
 <div class="login-box login-card">
   <h1>Tajemniczy Klient</h1>
-  <p>Aplikacja Fundacji Edukacji Empatii Rozwoju „FEER” do audytów dostępności metodą Tajemniczego Klienta. Audytorzy sprawdzają w niej obiekty, a także uczelniane biura ds. osób z niepełnosprawnościami („Dostępność kształcenia”), wypełniają scenariusze i raporty. Koordynatorzy przydzielają i weryfikują audyty, a administratorzy zarządzają kryteriami, scenariuszami i użytkownikami.</p>
-  <p>Konto nadaje FEER. Pracownicy i współpracownicy logują się przez Panel Współpracownika<% if (locals.externalEnabled) { %>, osoby spoza FEER kontem zewnętrznym z kodem SMS<% } %>. Jeśli nie masz dostępu, napisz do administratora aplikacji w FEER.</p>
-  <h2 id="login-h">Logowanie</h2>
+  <p>Sprawdzamy, jak łatwo osoby z niepełnosprawnościami załatwiają sprawy w urzędach, bibliotekach, na uczelniach i w innych miejscach. Tajemniczy Klient wciela się w osobę korzystającą z usługi, przechodzi scenariusz krok po kroku i opisuje, co zadziałało, a co utrudniło sprawę. Z jego raportów powstają konkretne rekomendacje dla obiektu.</p>
+  <p>Aplikacja prowadzi cały audyt: od przydziału zadania, przez wypełnienie scenariusza i raportu, po zatwierdzenie. Osobny moduł „Dostępność kształcenia” pozwala ocenić, jak uczelniane biuro wspiera osobę zainteresowaną wybranym kierunkiem.</p>
+  <p>Konto nadaje FEER. Jeśli nie masz dostępu, napisz do administratora aplikacji w FEER.</p>
+  <h2 id="login-h">Wybierz sposób logowania</h2>
   <% if (authError) { %><div class="error-summary" role="alert"><%= authError %></div><% } %>
 
   <% if (mode === 'dev') { %>
@@ -46,26 +47,28 @@
       </div>
       <button type="submit">Zaloguj (test)</button>
     </form>
-  <% } else { %>
-    <p>Aplikacja korzysta z konta w Panelu Współpracownika. Zaloguj się w Panelu Współpracownika – po powrocie zostaniesz automatycznie zalogowany.</p>
-    <% if (mode === 'szo') { %>
-      <a class="btn" href="/auth/szo/start">Zaloguj przez Panel Współpracownika</a>
-      <p class="muted">Zalogujesz się kontem Microsoft 365 w Panelu Współpracownika i potwierdzisz dostęp aplikacji.</p>
-    <% } else if (loginUrl) { %>
-      <a class="btn" href="<%= loginUrl %>">Zaloguj przez Panel Współpracownika</a>
-    <% } else { %>
-      <p class="muted">Adres logowania Panelu Współpracownika nie jest skonfigurowany (SZO_LOGIN_URL). Skontaktuj się z administratorem.</p>
-    <% } %>
-  <% } %>
-  <% if (locals.externalEnabled) { %>
-    <h2 id="ext-login">Konto zewnętrzne (spoza Panelu Współpracownika)</h2>
+  <% } else {
+       const szoHref = mode === 'szo' ? '/auth/szo/start' : (loginUrl || null);
+       const showExternal = Boolean(locals.externalEnabled) && (locals.method === 'external' || Boolean(locals.externalError)); %>
+    <ul class="login-tiles" aria-labelledby="login-h">
+      <% if (szoHref) { %>
+      <li><a class="tile" href="<%= szoHref %>"><strong>Panel Współpracownika</strong><span>Dla pracowników i współpracowników FEER. Logujesz się kontem Microsoft 365.</span></a></li>
+      <% } %>
+      <% if (locals.externalEnabled) { %>
+      <li><a class="tile" href="/login?metoda=zewnetrzne#ext-login"<% if (showExternal) { %> aria-current="true"<% } %>><strong>Konto zewnętrzne</strong><span>Dla osób spoza FEER. E-mail, hasło i kod SMS.</span></a></li>
+      <% } %>
+    </ul>
+    <% if (!szoHref) { %><p class="muted">Adres logowania Panelu Współpracownika nie jest skonfigurowany (SZO_LOGIN_URL). Skontaktuj się z administratorem.</p><% } %>
+    <% if (showExternal) { %>
+    <h2 id="ext-login">Logowanie kontem zewnętrznym</h2>
     <% if (locals.externalError) { %><div class="error-summary" role="alert"><%= externalError %></div><% } %>
     <form method="post" action="/login/external" novalidate aria-labelledby="ext-login">
       <div class="field"><label for="ext-email">E-mail</label><input type="email" id="ext-email" name="email" value="<%= values.email || '' %>" autocomplete="username" required></div>
       <div class="field"><label for="ext-password">Hasło</label><input type="password" id="ext-password" name="password" autocomplete="current-password" required></div>
-      <button type="submit" class="btn-secondary">Dalej – kod SMS</button>
+      <button type="submit">Dalej – kod SMS</button>
       <p class="muted">Po podaniu hasła wyślemy kod SMS na numer zapisany w Twoim koncie.</p>
     </form>
+    <% } %>
   <% } %>
 </div>
 </div>

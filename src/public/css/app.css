@@ -247,3 +247,13 @@ main:has(> .login-hero) { max-width: none; padding: 0; }
 @media (max-width: 40rem) { .site-header .user-box { margin-left: auto; } }
 .accept-box { border-left: 4px solid var(--accent); background: var(--surface); padding: .75rem 1rem; margin: 1rem 0; }
 .accept-box h2 { margin-top: 0; }
+
+/* Wybór sposobu logowania: płaskie kafelki (bez obramowań); kontrast ≥ 4,5:1 w każdym stanie. */
+.login-tiles { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+.login-tiles .tile { display: block; height: 100%; padding: 1rem 1.1rem; background: var(--surface); color: var(--text); text-decoration: none; border-radius: var(--radius); }
+.login-tiles .tile strong { display: block; font-size: 1.05rem; margin-bottom: .25rem; }
+.login-tiles .tile span { color: var(--muted); font-size: .95rem; }
+.login-tiles .tile:hover, .login-tiles .tile:focus-visible { background: var(--primary); color: #fff; }
+.login-tiles .tile:hover span, .login-tiles .tile:focus-visible span { color: #fff; }
+.login-tiles .tile[aria-current="true"] { background: var(--text); color: #fff; }
+.login-tiles .tile[aria-current="true"] span { color: #fff; }

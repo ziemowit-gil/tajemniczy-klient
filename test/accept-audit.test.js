@@ -88,8 +88,9 @@ test('logowanie z SZO przejmuje istniejące konto o tym samym adresie e-mail zam
 test('strona logowania opisuje aplikację; nagłówek ma jedną nazwę roli i etykietę przełącznika tylko dla czytników ekranu', async () => {
   const login = await (await fetch(`${base}/login`)).text();
   assert.match(login, /<h1>Tajemniczy Klient<\/h1>/);
-  assert.match(login, /audytów dostępności metodą Tajemniczego Klienta/);
-  assert.match(login, /<h2 id="login-h">Logowanie<\/h2>/);
+  assert.match(login, /Sprawdzamy, jak łatwo osoby z niepełnosprawnościami/);
+  assert.match(login, /Dostępność kształcenia/);
+  assert.match(login, /<h2 id="login-h">Wybierz sposób logowania<\/h2>/);
   const admin = mk('dev:adm', 'Admin', 'administrator');
   const page = await (await (await as(admin, 'administrator'))('GET', '/')).text();
   const header = /<header class="site-header">([\s\S]*?)<\/header>/.exec(page)[1];

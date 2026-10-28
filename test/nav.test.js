@@ -124,8 +124,8 @@ test('strona logowania w trybie szo nazywa SZO „Panelem Współpracownika”',
   try {
     const b = `http://127.0.0.1:${srv.address().port}`;
     const html = await (await fetch(`${b}/login`)).text();
-    assert.match(html, />Zaloguj przez Panel Współpracownika</);
-    assert.match(html, /w Panelu Współpracownika/);
+    assert.match(html, /<a class="tile" href="\/auth\/szo\/start"><strong>Panel Współpracownika<\/strong>/);
+    assert.match(html, /<h2 id="login-h">Wybierz sposób logowania<\/h2>/);
     assert.doesNotMatch(html, /SZO/, 'na ekranie logowania nie ma nazwy SZO');
     const denied = await (await fetch(`${b}/login?error=denied`)).text();
     assert.match(denied, /administratora Panelu Współpracownika/);
