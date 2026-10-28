@@ -8,6 +8,14 @@ const {
 const { paramId, httpError, collectAnswers, collectDoneSteps } = require('./helpers');
 
 function createAuditsController({ workItems, audits, objects, users, catalog, attachments, reports, history, notifier }) {
+  /** Scenariusze do wyboru przy edycji audytu: aktywne dla audytów oraz te, które audyt już ma (nawet gdy zdezaktywowano je w słowniku). */
+  const scenarioOptions = (audit, req) => {
+    if (![ROLES.ADMIN, ROLES.COORDINATOR].includes(req.user.role)) return [];
+    const byId = new Map(catalog.scenarios.list({ onlyActive: true, usage: 'audit' }).map((sc) => [sc.id, sc]));
+    for (const sc of audits.scenarios(audit.id)) if (!byId.has(sc.id)) byId.set(sc.id, sc);
+    return [...byId.values()].map((sc) => ({ id: sc.id, title: sc.title, description: sc.description }));
+  };
+
   const viewData = (req, audit, extra = {}) => {
     const items = audits.items(audit.id);
     const files = attachments.list('audit', audit.id);
@@ -29,6 +37,9 @@ function createAuditsController({ workItems, audits, objects, users, catalog, at
       isAdmin: req.user.role === ROLES.ADMIN,
       canManage: [ROLES.ADMIN, ROLES.COORDINATOR].includes(req.user.role),
       canAccept: req.user.role === ROLES.AUDITOR && audit.status === STATUS.ASSIGNED && audit.auditor_id === req.user.id,
+      canDecline: req.user.role === ROLES.AUDITOR && [STATUS.ASSIGNED, STATUS.IN_PROGRESS].includes(audit.status) && audit.auditor_id === req.user.id,
+      canEditData: [ROLES.ADMIN, ROLES.COORDINATOR].includes(req.user.role) && ![STATUS.SUBMITTED, STATUS.APPROVED].includes(audit.status),
+      scenarioOptions: scenarioOptions(audit, req),
       canAssign: [ROLES.ADMIN, ROLES.COORDINATOR].includes(req.user.role) && isAssignable(audit.status),
       auditors: [ROLES.ADMIN, ROLES.COORDINATOR].includes(req.user.role) && isAssignable(audit.status) ? users.listByRole(ROLES.AUDITOR) : [],
       history: history.list('audit', audit.id), historyLabels: history.labels,
@@ -114,13 +125,30 @@ function createAuditsController({ workItems, audits, objects, users, catalog, at
 
     show: (req, res) => res.render('audits/show', viewData(req, req.audit)),
 
+    /** Edycja terminu i scenariuszy audytu (koordynator lub administrator). */
+    update(req, res) {
+      const ids = [].concat(req.body.scenarioIds ?? []).map(Number).filter(Number.isInteger);
+      const due = String(req.body.dueDate || '');
+      if (due && !/^\d{4}-\d{2}-\d{2}$/.test(due)) { res.flash('error', 'Termin: podaj datę w formacie RRRR-MM-DD.'); return res.redirect(303, `/audits/${req.audit.id}`); }
+      try {
+        const before = `${req.audit.scenario_title}; termin: ${req.audit.due_date || 'brak'}`;
+        const updated = audits.update(req.audit, { scenarioIds: ids, dueDate: due });
+        history.log('audit', updated.id, req.user, 'edited', `Było: ${before}. Jest: ${updated.scenario_title}; termin: ${updated.due_date || 'brak'}.`);
+        res.flash('success', 'Zapisano zmiany w audycie.');
+      } catch (err) {
+        if (!(err instanceof DomainError)) throw err;
+        res.flash('error', err.message);
+      }
+      return res.redirect(303, `/audits/${req.audit.id}`);
+    },
+
     /** „Odrzuć audyt”: TK oddaje przydzielony audyt z uzasadnieniem; wraca do koordynatora/administratora do ponownego przydziału. */
     decline(req, res) {
       const auditorName = req.audit.auditor_name;
       try {
-        const { audit, reason } = audits.decline(req.audit, req.user, req.body.reason);
-        history.log('audit', audit.id, req.user, 'declined', reason);
-        notifier.auditDeclined(audit, auditorName, reason);
+        const { audit, reason, ...info } = audits.decline(req.audit, req.user, req.body.reason);
+        history.log('audit', audit.id, req.user, 'declined', `${info.wasInProgress ? `(w trakcie, odpowiedzi: ${info.answered} z ${info.total}) ` : ''}${reason}`);
+        notifier.auditDeclined(audit, auditorName, reason, info);
         res.flash('success', 'Audyt odrzucony. Wrócił do koordynatora lub administratora do ponownego przydziału.');
         return res.redirect(303, '/audits');
       } catch (err) {

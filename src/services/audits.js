@@ -164,6 +164,24 @@ function createAuditsService(db, { objects, users, snapshots }) {
       return svc.get(audit.id);
     },
 
+    /**
+     * Edycja danych audytu przez koordynatora lub administratora: termin i zestaw scenariuszy (do czasu złożenia raportu).
+     * Zachowuje migawki i odhaczenia kroków scenariuszy, które zostają; nie zmienia migawki kryteriów.
+     */
+    update(audit, { scenarioIds, dueDate }) {
+      if ([STATUS.SUBMITTED, STATUS.APPROVED].includes(audit.status)) throw new DomainError('Audytu po złożeniu raportu nie można edytować. Zwróć go do poprawy.', 409);
+      const ids = [...new Set(scenarioIds || [])];
+      if (!ids.length) throw new DomainError('Wybierz co najmniej jeden scenariusz.', 422);
+      const found = db.prepare(`SELECT COUNT(*) AS n FROM scenarios WHERE usage IN ('audit', 'both') AND id IN (${ids.map(() => '?').join(',')})
+        AND (active = 1 OR id IN (SELECT scenario_id FROM audit_scenarios WHERE audit_id = ?))`).get(...ids, audit.id).n;
+      if (found !== ids.length) throw new DomainError('Wybrany scenariusz nie istnieje, jest nieaktywny albo nie dotyczy audytów obiektów.', 422);
+      transaction(db, () => {
+        snapshots.replace('audit', audit.id, ids);
+        db.prepare('UPDATE audits SET scenario_id = ?, due_date = ? WHERE id = ?').run(ids[0], dueDate || null, audit.id);
+      });
+      return svc.get(audit.id);
+    },
+
     /** Tajemniczy Klient przyjmuje przydzielony mu audyt do realizacji: „Przydzielony do TK” → „W trakcie”. */
     accept(audit, user) {
       if (audit.status !== STATUS.ASSIGNED || audit.auditor_id !== user.id || user.role !== ROLES.AUDITOR) {
@@ -174,19 +192,20 @@ function createAuditsService(db, { objects, users, snapshots }) {
     },
 
     /**
-     * Tajemniczy Klient odrzuca przydzielony mu audyt (np. nie może go wykonać). Audyt wraca do statusu „Wprowadzony do systemu”
+     * Tajemniczy Klient odrzuca przydzielony mu audyt (np. nie może go wykonać), także rozpoczęty („W trakcie”). Audyt wraca do statusu „Wprowadzony do systemu”
      * bez audytora, żeby koordynator lub administrator mógł przydzielić go komuś innemu. Uzasadnienie jest wymagane.
      */
     decline(audit, user, reason) {
-      if (audit.status !== STATUS.ASSIGNED || audit.auditor_id !== user.id || user.role !== ROLES.AUDITOR) {
+      if (![STATUS.ASSIGNED, STATUS.IN_PROGRESS].includes(audit.status) || audit.auditor_id !== user.id || user.role !== ROLES.AUDITOR) {
         throw new DomainError('Tego audytu nie można teraz odrzucić.', 409);
       }
       const text = String(reason ?? '').trim();
       if (text.length < 3) throw new DomainError('Podaj powód odrzucenia audytu (co najmniej 3 znaki).', 422);
       if (text.length > 1000) throw new DomainError('Powód odrzucenia jest za długi (maksymalnie 1000 znaków).', 422);
-      db.prepare(`UPDATE audits SET status = ?, auditor_id = NULL, assigned_by = NULL, assigned_at = NULL WHERE id = ? AND status = ?`)
-        .run(STATUS.ENTERED, audit.id, STATUS.ASSIGNED);
-      return { audit: svc.get(audit.id), reason: text };
+      // Wprowadzone odpowiedzi i załączniki zostają przy audycie; koordynator decyduje, komu go przydzielić.
+      db.prepare(`UPDATE audits SET status = ?, auditor_id = NULL, assigned_by = NULL, assigned_at = NULL, started_at = NULL WHERE id = ? AND status = ?`)
+        .run(STATUS.ENTERED, audit.id, audit.status);
+      return { audit: svc.get(audit.id), reason: text, wasInProgress: audit.status === STATUS.IN_PROGRESS, answered: audit.answered_count, total: audit.item_count };
     },
 
     submit(audit, user) {

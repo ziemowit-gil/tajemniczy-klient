@@ -143,3 +143,52 @@ test('Odrzuć audyt: tylko przydzielony TK z uzasadnieniem; audyt wraca do „Wp
   // po odrzuceniu TK już go nie widzi
   assert.equal((await (await as(tk, 'auditor'))('GET', `/audits/${audit.id}`)).status, 404);
 });
+
+test('Odrzuć audyt w trakcie: odpowiedzi zostają, audyt wraca do „Wprowadzony”, wpis w historii z liczbą odpowiedzi', async () => {
+  const { tk, audit, admin } = setup();
+  await (await as(tk, 'auditor'))('POST', `/audits/${audit.id}/accept`);
+  const item = services.audits.items(audit.id)[0];
+  db.prepare(`UPDATE audit_items SET answer = 'nd', comment = 'test', answered_at = datetime('now') WHERE id = ?`).run(item.id);
+  const html = await (await (await as(tk, 'auditor'))('GET', `/audits/${audit.id}`)).text();
+  assert.match(html, /Rezygnuję z tego audytu \(jest w trakcie\)/);
+  assert.ok(!html.includes('Przyjmij audyt'));
+  assert.equal((await (await as(tk, 'auditor'))('POST', `/audits/${audit.id}/decline`, { reason: 'Choroba' })).status, 303);
+  const after = services.audits.get(audit.id);
+  assert.equal(after.status, 'entered');
+  assert.equal(after.auditor_id, null);
+  assert.equal(after.answered_count, 1, 'odpowiedzi zostają przy audycie');
+  assert.match(services.history.list('audit', audit.id).at(-1).note, /^\(w trakcie, odpowiedzi: 1 z \d+\) Choroba$/);
+  // przydział innej osobie
+  const next = mk('dev:nastepny', 'Następny TK', null);
+  assert.equal((await (await as(admin, 'administrator'))('POST', `/audits/${audit.id}/assign`, { auditorId: String(next.id) })).status, 303);
+  assert.equal(services.audits.get(audit.id).status, 'assigned');
+});
+
+test('edycja audytu: koordynator/administrator zmienia termin i scenariusze, TK nie, po złożeniu nie', async () => {
+  const { tk, audit, admin } = setup();
+  const second = db.prepare(`SELECT id FROM scenarios WHERE active = 1 AND usage IN ('audit','both') AND id != ? ORDER BY id LIMIT 1`).get(audit.scenario_id);
+  assert.ok(second, 'w seedzie są co najmniej dwa scenariusze audytowe');
+  const adm = await as(admin, 'administrator');
+  const html = await (await adm('GET', `/audits/${audit.id}`)).text();
+  assert.match(html, /Edytuj audyt \(termin i scenariusze\)/);
+  assert.ok(!(await (await (await as(tk, 'auditor'))('GET', `/audits/${audit.id}`)).text()).includes('Edytuj audyt'));
+  assert.equal((await (await as(tk, 'auditor'))('POST', `/audits/${audit.id}/edit`, { dueDate: '2027-01-01' })).status, 403);
+
+  const body = new URLSearchParams(); body.append('dueDate', '2027-03-15'); body.append('scenarioIds', String(audit.scenario_id)); body.append('scenarioIds', String(second.id));
+  let cookie = ''; await services.sessions.issue({ cookie: (n, v) => { cookie = `${n}=${v}`; } }, admin.id, 'administrator');
+  const res = await fetch(`${base}/audits/${audit.id}/edit`, { method: 'POST', headers: { cookie }, body, redirect: 'manual' });
+  assert.equal(res.status, 303);
+  const after = services.audits.get(audit.id);
+  assert.equal(after.due_date, '2027-03-15');
+  assert.equal(services.audits.scenarios(audit.id).length, 2);
+  assert.equal(services.history.list('audit', audit.id).at(-1).action, 'edited');
+
+  await adm('POST', `/audits/${audit.id}/edit`, { dueDate: 'zle', scenarioIds: String(audit.scenario_id) });
+  assert.equal(services.audits.get(audit.id).due_date, '2027-03-15', 'zła data nie zmienia terminu');
+  await adm('POST', `/audits/${audit.id}/edit`, { dueDate: '2027-03-15' });
+  assert.equal(services.audits.scenarios(audit.id).length, 2, 'brak scenariuszy nie kasuje wszystkich');
+
+  db.prepare(`UPDATE audits SET status = 'submitted' WHERE id = ?`).run(audit.id);
+  await adm('POST', `/audits/${audit.id}/edit`, { dueDate: '2030-01-01', scenarioIds: String(audit.scenario_id) });
+  assert.equal(services.audits.get(audit.id).due_date, '2027-03-15', 'po złożeniu raportu edycja jest zablokowana');
+});

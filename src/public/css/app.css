@@ -330,3 +330,6 @@ main:has(> .login-hero) { max-width: none; padding: 0; }
 .login-card .field-error { color: #8c0f1a; font-weight: 600; }
 .login-card .note-box { border-radius: 0; }
 .login-card a { color: #004e6c; text-decoration: underline; text-underline-offset: 3px; }
+.edit-box > summary { cursor: pointer; font-weight: 600; width: fit-content; }
+.edit-box form { margin-top: .75rem; }
+.decline-section { margin: 1rem 0; }

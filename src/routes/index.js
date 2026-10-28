@@ -99,6 +99,7 @@ function buildRouter({ auth, extAuth, admin, auditsCtl, reportsCtl, officeCtl, s
   r.post('/audits/:id', requireRole(AUDITOR), auditsCtl.load, auditsCtl.ensureEditable, handleUpload, auditsCtl.save);
 
   r.post('/audits/:id/accept', requireRole(AUDITOR), auditsCtl.load, auditsCtl.accept);
+  r.post('/audits/:id/edit', requireRole(ADMIN, COORDINATOR), auditsCtl.load, auditsCtl.update);
   r.post('/audits/:id/decline', requireRole(AUDITOR), auditsCtl.load, auditsCtl.decline);
   r.post('/audits/:id/approve', requireRole(COORDINATOR, ADMIN), auditsCtl.load, auditsCtl.approve);
   r.post('/audits/:id/return', requireRole(COORDINATOR, ADMIN), auditsCtl.load, auditsCtl.returnForCorrection);

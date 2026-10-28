@@ -54,14 +54,33 @@
   <h2 id="accept-h">Audyt czeka na przyjęcie</h2>
   <p>Przydzielono Ci ten audyt<%= audit.due_date ? ` z terminem ${fmtDate(audit.due_date)}` : '' %>. Przyjmij go, gdy możesz go wykonać; status zmieni się na „W trakcie”, a koordynator zobaczy to w historii.</p>
   <form method="post" action="/audits/<%= audit.id %>/accept"><button type="submit">Przyjmij audyt</button></form>
+</section>
+<% } %>
+
+<% if (canDecline) { %>
+<section class="decline-section" aria-labelledby="decline-h">
+  <h2 id="decline-h" class="sr-only">Rezygnacja z audytu</h2>
   <details class="decline-box">
-    <summary>Nie mogę wykonać tego audytu</summary>
+    <summary><%= audit.status === 'in_progress' ? 'Rezygnuję z tego audytu (jest w trakcie)' : 'Nie mogę wykonać tego audytu' %></summary>
     <form method="post" action="/audits/<%= audit.id %>/decline">
       <div class="field field-wide">
         <label for="decline-reason">Powód odrzucenia (zobaczy go koordynator)</label>
         <textarea id="decline-reason" name="reason" required minlength="3" maxlength="1000"></textarea>
       </div>
-      <button type="submit" class="btn btn-danger" data-confirm="Odrzucić ten audyt? Wróci do koordynatora do ponownego przydziału.">Odrzuć audyt</button>
+      <button type="submit" class="btn btn-danger" data-confirm="<%= audit.status === 'in_progress' ? 'Odrzucić rozpoczęty audyt? Wprowadzone odpowiedzi zostaną przy audycie, a on wróci do koordynatora do ponownego przydziału.' : 'Odrzucić ten audyt? Wróci do koordynatora do ponownego przydziału.' %>">Odrzuć audyt</button>
+    </form>
+  </details>
+</section>
+<% } %>
+
+<% if (canEditData) { %>
+<section aria-labelledby="edit-h">
+  <details class="edit-box">
+    <summary id="edit-h">Edytuj audyt (termin i scenariusze)</summary>
+    <form method="post" action="/audits/<%= audit.id %>/edit" novalidate>
+      <div class="field"><label for="edit-due">Termin</label><input type="date" id="edit-due" name="dueDate" value="<%= audit.due_date || '' %>"></div>
+      <%- include('../partials/checkgroup', { name: 'scenarioIds', label: 'Scenariusze', required: true, errors: {}, selected: scenarios.map((sc) => sc.id), hint: 'Odznaczenie scenariusza usuwa go z audytu razem z odhaczonymi krokami. Kryteria formularza nie zmieniają się.', options: scenarioOptions }) %>
+      <button type="submit">Zapisz zmiany</button>
     </form>
   </details>
 </section>
