@@ -444,3 +444,24 @@ h2 { margin-top: 2rem; }
 .lead { display: none; }
 
 body { overflow-x: clip; }
+
+/* ===== Nowa strona logowania w układzie portalu: biały pasek z logo, niebieski baner z opisem po lewej i kartą logowania po prawej,
+   pod bannerem „Co możesz tu zrobić”. Tekst leży na białej karcie lub na granacie #1457d1 (biały tekst 6,3:1). ===== */
+body:has(.login-hero) .site-header { display: block; }
+.login-hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; min-height: 0; padding: 2rem 1rem 2.5rem; background: #1457d1;
+  background-image: radial-gradient(circle at 6% 125%, rgba(255, 255, 255, .13) 0 17rem, transparent 17.05rem), radial-gradient(circle at 102% -15%, rgba(234, 143, 0, .5) 0 9rem, transparent 9.05rem); }
+.login-brand { background: transparent; background-image: none; padding: 0; justify-content: center; }
+.login-brand .logo-mark { color: #fff; }
+.login-hero > .login-card { background: #fff; border-radius: 4px; padding: 1.75rem 1.5rem 2rem; max-width: 30rem; width: 100%; justify-self: center; align-self: center; margin: 0; }
+@media (min-width: 56rem) {
+  .login-hero { grid-template-columns: minmax(0, 1fr) 30rem; align-items: center; padding: 3.5rem max(1rem, calc((100vw - 72rem) / 2 + 1rem)); gap: 3rem; }
+  .login-brand { padding: 0; }
+  .login-hero > .login-card { justify-self: end; padding: 2rem 2rem 2.25rem; }
+}
+.login-brand .brand-name { font-size: 2.4rem; }
+.login-brand .brand-tag { font-size: 1.3rem; max-width: 30rem; }
+.login-below { max-width: 72rem; margin: 0 auto; padding: 2rem 1rem 3rem; }
+.about-tiles .app-tile { cursor: default; border-color: var(--line); }
+.about-tiles .app-tile:hover { background: #fff; color: #0e43a6; }
+.about-tiles .app-tile:hover .icon { color: #1457d1; }
+.about-tiles .app-tile:hover .app-tile-desc { color: #3a3a35; }

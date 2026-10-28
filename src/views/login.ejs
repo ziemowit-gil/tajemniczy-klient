@@ -105,4 +105,12 @@
   <% } %>
 </div>
 </div>
+<section class="login-below" aria-labelledby="about-h">
+  <h2 id="about-h" class="portal-h">Co możesz tu zrobić</h2>
+  <ul class="app-tiles about-tiles">
+    <li><div class="app-tile"><%- include('partials/icon', { name: 'audits', size: 36 }) %><span><span class="app-tile-name">Audyty obiektów</span><span class="app-tile-desc">Sklepy, restauracje, urzędy, uczelnie i inne miejsca sprawdzane scenariuszami krok po kroku.</span></span></div></li>
+    <li><div class="app-tile"><%- include('partials/icon', { name: 'education', size: 36 }) %><span><span class="app-tile-name">Dostępność kształcenia</span><span class="app-tile-desc">Ocena biur ds. osób z niepełnosprawnościami z perspektywy kandydata na kierunek.</span></span></div></li>
+    <li><div class="app-tile"><%- include('partials/icon', { name: 'reports', size: 36 }) %><span><span class="app-tile-name">Raporty i rekomendacje</span><span class="app-tile-desc">Wyniki audytów, zdjęcia i wnioski w PDF oraz CSV dla koordynatorów.</span></span></div></li>
+  </ul>
+</section>
 <%- include('partials/footer') %>

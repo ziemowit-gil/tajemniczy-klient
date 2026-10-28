@@ -95,3 +95,14 @@ test('strona logowania w trybie szo nazywa SZO „Panelem Współpracownika”',
     assert.doesNotMatch(await (await fetch(`${b}/login?error=1`)).text(), /SZO/);
   } finally { srv.close(); }
 });
+
+test('nowa strona logowania w układzie portalu: baner z opisem i kartą logowania, sekcja „Co możesz tu zrobić”, pasek z logo bez menu', async () => {
+  const html = await (await fetch(`${base}/login`)).text();
+  assert.match(html, /<header class="site-header">[\s\S]*<span>Tajemniczy Klient<\/span>/);
+  assert.doesNotMatch(html, /<nav aria-label="Główna">/, 'bez menu przed zalogowaniem');
+  assert.match(html, /<aside class="login-brand">[\s\S]*<div class="login-box login-card">/);
+  assert.match(html, /<section class="login-below" aria-labelledby="about-h">\s*<h2 id="about-h"[^>]*>Co możesz tu zrobić<\/h2>/);
+  for (const t of ['Audyty obiektów', 'Dostępność kształcenia', 'Raporty i rekomendacje']) assert.ok(html.includes(t), t);
+  // kolejność nagłówków: h1 przed h2
+  assert.ok(html.indexOf('<h1>') < html.indexOf('<h2'), 'h1 przed h2');
+});
