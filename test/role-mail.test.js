@@ -55,7 +55,7 @@ async function szoLogin(id, name, email) {
 test('treść maila: temat i tekst zgodne z wzorem, czysty tekst, bez emoji', async () => {
   reset();
   const user = services.users.upsertFromIdentity({ externalId: 'szo:50', name: 'Jan Kowalski', email: 'jan@example.pl', role: 'auditor' });
-  assert.equal(services.notifier.roleAssignedAuditor(user), true);
+  assert.equal(services.notifier.roleAssigned(user), true);
   await services.notifier.processOutbox();
 
   const m = roleMails()[0];
@@ -77,18 +77,18 @@ test('treść maila: temat i tekst zgodne z wzorem, czysty tekst, bez emoji', as
 test('wysyłka jest jedna dziennie na osobę, a opt-out i brak e-maila ją wyłączają', async () => {
   reset();
   const user = services.users.upsertFromIdentity({ externalId: 'szo:51', name: 'Ewa', email: 'ewa@example.pl', role: 'auditor' });
-  assert.equal(services.notifier.roleAssignedAuditor(user), true);
-  assert.equal(services.notifier.roleAssignedAuditor(user), false, 'duplikat tego samego dnia');
-  assert.equal(services.notifier.roleAssignedAuditor(user, new Date(Date.now() + 2 * 86400000)), true, 'kolejnego dnia (np. po ponownym nadaniu roli)');
+  assert.equal(services.notifier.roleAssigned(user), true);
+  assert.equal(services.notifier.roleAssigned(user), false, 'duplikat tego samego dnia');
+  assert.equal(services.notifier.roleAssigned(user, new Date(Date.now() + 2 * 86400000)), true, 'kolejnego dnia (np. po ponownym nadaniu roli)');
 
   reset();
   services.users.setNotify(user.id, false);
-  assert.equal(services.notifier.roleAssignedAuditor(services.users.findById(user.id)), false);
+  assert.equal(services.notifier.roleAssigned(services.users.findById(user.id)), false);
   const noMail = services.users.upsertFromIdentity({ externalId: 'szo:52', name: 'Bez maila', email: null, role: 'auditor' });
-  assert.equal(services.notifier.roleAssignedAuditor(noMail), false);
+  assert.equal(services.notifier.roleAssigned(noMail), false);
 });
 
-test('zmiana roli w panelu: mail tylko przy zmianie NA audytora', async () => {
+test('zmiana roli w panelu: mail przy każdej zmianie roli lub reaktywacji, z treścią właściwą dla roli', async () => {
   reset();
   const admin = await adminSession();
   const u = services.users.upsertFromIdentity({ externalId: 'szo:60', name: 'Zmiana', email: 'zmiana@example.pl', role: 'coordinator' });
@@ -99,10 +99,15 @@ test('zmiana roli w panelu: mail tylko przy zmianie NA audytora', async () => {
   assert.equal(roleMails()[0].to, 'zmiana@example.pl');
 
   reset();
-  await call(admin, 'POST', `/users/${u.id}`, { role: 'auditor', active: 'on' });   // bez zmiany roli
-  await call(admin, 'POST', `/users/${u.id}`, { role: 'coordinator', active: 'on' }); // inna rola
+  await call(admin, 'POST', `/users/${u.id}`, { role: 'auditor', active: 'on' });   // bez zmiany roli: bez maila
   await services.notifier.processOutbox();
   assert.equal(roleMails().length, 0);
+  await call(admin, 'POST', `/users/${u.id}`, { role: 'coordinator', active: 'on' }); // zmiana roli: mail z treścią koordynatora
+  await services.notifier.processOutbox();
+  assert.equal(roleMails().length, 1);
+  assert.match(roleMails()[0].subject, /Koordynator dostępności/);
+  assert.match(roleMails()[0].text, /rola Koordynatora dostępności/);
+  assert.match(roleMails()[0].text, /zatwierdzania audytów/);
 
   reset();
   services.users.update(u.id, { role: 'auditor', active: false });                    // konto nieaktywne → przywrócenie = nowe nadanie
@@ -111,13 +116,19 @@ test('zmiana roli w panelu: mail tylko przy zmianie NA audytora', async () => {
   assert.equal(roleMails().length, 1, 'reaktywacja konta audytora');
 });
 
-test('import z SZO: mail tylko dla osób zaimportowanych jako audytor', async () => {
+test('import z SZO: każda zaimportowana osoba dostaje mail o koncie', async () => {
   reset();
   const admin = await adminSession();
-  szo.directory = [{ id: 70, name: 'Audytor Importowany', email: 'aud70@example.pl' }, { id: 71, name: 'Koordynator Importowany', email: 'koord71@example.pl' }];
-  await call(admin, 'POST', '/users/import', [['pick', '70'], ['pick', '71'], ['role_70', 'auditor'], ['role_71', 'coordinator']]);
+  szo.directory = [{ id: 70, name: 'Audytor Importowany', email: 'aud70@example.pl' }, { id: 71, name: 'Koordynator Importowany', email: 'koord71@example.pl' }, { id: 72, name: 'Administrator Importowany', email: 'admin72@example.pl' }];
+  const res = await call(admin, 'POST', '/users/import', [['pick', '70'], ['pick', '71'], ['pick', '72'], ['role_70', 'auditor'], ['role_71', 'coordinator'], ['role_72', 'administrator']]);
+  assert.match(decodeURIComponent((res.headers.getSetCookie().find((c) => c.startsWith('tk_flash=')) || '').replace(/\+/g, ' ')), /Każda z nich dostanie e-mail/);
   await services.notifier.processOutbox();
-  assert.deepEqual(roleMails().map((m) => m.to), ['aud70@example.pl']);
+  assert.deepEqual(roleMails().map((m) => m.to).sort(), ['admin72@example.pl', 'aud70@example.pl', 'koord71@example.pl'], 'mail dostaje każda zaimportowana osoba, niezależnie od roli');
+  const byTo = Object.fromEntries(roleMails().map((m) => [m.to, m]));
+  assert.match(byTo['aud70@example.pl'].subject, /Audytor dostępności/);
+  assert.match(byTo['koord71@example.pl'].subject, /Koordynator dostępności/);
+  assert.match(byTo['admin72@example.pl'].subject, /Administrator/);
+  assert.match(byTo['admin72@example.pl'].text, /zarządzania obiektami, kryteriami, scenariuszami i użytkownikami/);
 });
 
 test('pierwsze logowanie przez SZO: nowa osoba dostaje mail o roli audytora, kolejne logowanie i administrator nie', async () => {

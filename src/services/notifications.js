@@ -12,6 +12,28 @@ const MAX_ATTEMPTS = 5;
 const STALE_CLAIM_MINUTES = 10;
 const SUBJECT_PREFIX = '[Tajemniczy Klient] ';
 
+/** Treści maili o przydzieleniu roli (czysty tekst). Dla audytora: tekst zatwierdzony przez FEER. */
+const ROLE_MAILS = {
+  auditor: {
+    subject: 'Przydzielenie roli: Audytor dostępności (Tajemniczy klient)',
+    name: 'Audytora dostępności / Tajemniczego klienta',
+    panel: 'audytora',
+    scope: 'Przyznana rola uprawnia do realizowania przydzielonych audytów dostępności, wprowadzania formularzy z obserwacji (metodą tajemniczego klienta) oraz weryfikacji wymogów i standardów dostępności w wyznaczonym zakresie.',
+  },
+  coordinator: {
+    subject: 'Przydzielenie roli: Koordynator dostępności (Tajemniczy klient)',
+    name: 'Koordynatora dostępności',
+    panel: 'koordynatora',
+    scope: 'Przyznana rola uprawnia do przeglądania audytów i raportów obiektów, które koordynujesz, oraz do zatwierdzania audytów lub zwracania ich audytorom do poprawy.',
+  },
+  administrator: {
+    subject: 'Przydzielenie roli: Administrator (Tajemniczy klient)',
+    name: 'Administratora aplikacji',
+    panel: 'administratora',
+    scope: 'Przyznana rola uprawnia do zarządzania obiektami, kryteriami, scenariuszami i użytkownikami oraz do przydzielania audytów i ocen.',
+  },
+};
+
 const warsawDate = (now) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Warsaw' }).format(now); // RRRR-MM-DD
 const daysBetween = (fromIso, toIso) => Math.round((Date.parse(`${toIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`)) / 86400000);
 
@@ -60,22 +82,24 @@ function createNotifier(db, { config, mailer, users, objects }) {
     enabled,
 
     /**
-     * Informacja o przydzieleniu roli Audytora dostępności / Tajemniczego klienta. Wysyłana po nadaniu roli
-     * (import z SZO, zmiana roli w panelu, pierwsze logowanie przez SZO). Klucz dedupe: jedna wiadomość na osobę dziennie.
+     * Informacja o założeniu konta i przydzielonej roli (import z SZO, zmiana roli w panelu, pierwsze logowanie).
+     * Treść zależy od roli; klucz dedupe: jedna wiadomość na osobę i rolę dziennie.
      */
-    roleAssignedAuditor(user, now = new Date()) {
+    roleAssigned(user, now = new Date()) {
+      const tpl = ROLE_MAILS[user?.role];
+      if (!tpl) return false;
       const panel = base || 'https://audytor.feer.org.pl';
       const body = [
         'Dzień dobry,',
         '',
-        'Informujemy, że w systemie została Ci przydzielona rola Audytora dostępności / Tajemniczego klienta.',
+        `Informujemy, że w systemie została Ci przydzielona rola ${tpl.name}.`,
         '',
-        'Dostęp do panelu audytora uzyskasz po zalogowaniu na stronie:',
+        `Dostęp do panelu ${tpl.panel} uzyskasz po zalogowaniu na stronie:`,
         panel,
         '',
         'Zaloguj się przyciskiem „Zaloguj przez SZO”, kontem Microsoft 365, którego używasz w SZO.',
         '',
-        'Przyznana rola uprawnia do realizowania przydzielonych audytów dostępności, wprowadzania formularzy z obserwacji (metodą tajemniczego klienta) oraz weryfikacji wymogów i standardów dostępności w wyznaczonym zakresie.',
+        tpl.scope,
         '',
         'W razie pytań lub problemów z logowaniem prosimy o kontakt z zespołem technicznym.',
         '',
@@ -84,7 +108,7 @@ function createNotifier(db, { config, mailer, users, objects }) {
         'Fundacja Edukacji Empatii Rozwoju „FEER”',
         '',
       ].join('\n');
-      const queued = enqueueRaw(user, 'role_assigned_auditor', 'Przydzielenie roli: Audytor dostępności (Tajemniczy klient)', body, `role_auditor:${user?.id}:${warsawDate(now)}`);
+      const queued = enqueueRaw(user, `role_assigned_${user.role}`, tpl.subject, body, `role_${user.role}:${user.id}:${warsawDate(now)}`);
       if (queued) flushSoon();
       return queued;
     },

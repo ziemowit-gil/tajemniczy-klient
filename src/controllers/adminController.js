@@ -216,12 +216,12 @@ function createAdminController({ objects, catalog, users, szoDirectory, notifier
         if (existing.has(`szo:${person.id}`)) { skipped += 1; continue; }
         const role = Object.values(ROLES).includes(req.body[`role_${person.id}`]) ? req.body[`role_${person.id}`] : ROLES.AUDITOR;
         const imported = users.upsertFromIdentity({ externalId: `szo:${person.id}`, name: person.name, email: person.email, role });
-        if (role === ROLES.AUDITOR) notifier.roleAssignedAuditor(imported);
+        notifier.roleAssigned(imported);
         created += 1;
       }
       const missing = [...picked].filter((id) => !people.some((p) => p.id === id)).length;
       res.flash(created ? 'success' : 'error', created
-        ? `Zaimportowano osób: ${created}.${skipped ? ` Pominięto już istniejące: ${skipped}.` : ''}${missing ? ` Pominięto osoby, których SZO nie zwróciło: ${missing}.` : ''}`
+        ? `Zaimportowano osób: ${created}.${notifier.enabled ? ' Każda z nich dostanie e-mail z informacją o koncie.' : ''}${skipped ? ` Pominięto już istniejące: ${skipped}.` : ''}${missing ? ` Pominięto osoby, których SZO nie zwróciło: ${missing}.` : ''}`
         : 'Nie zaimportowano nikogo (osoby są już w aplikacji albo SZO ich nie zwróciło).');
       return res.redirect(303, '/users');
     },
@@ -237,7 +237,7 @@ function createAdminController({ objects, catalog, users, szoDirectory, notifier
         return res.redirect(303, '/users');
       }
       const updated = users.update(id, data);
-      if (updated.active && updated.role === ROLES.AUDITOR && (target.role !== ROLES.AUDITOR || !target.active)) notifier.roleAssignedAuditor(updated);
+      if (updated.active && (target.role !== updated.role || !target.active)) notifier.roleAssigned(updated);
       res.flash('success', `Zapisano użytkownika ${target.name}. Rola przekazywana w tokenie SZO nadpisuje to ustawienie przy kolejnym logowaniu.`);
       res.redirect(303, '/users');
     },

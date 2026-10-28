@@ -36,7 +36,8 @@ function createAuthController({ config, szo, szoPkce, users, sessions, notifier 
         const identity = await szo.verify(token);
         const existed = users.exists(identity.externalId);
         const user = users.upsertFromIdentity(identity);
-        if (!existed && user.role === ROLES.AUDITOR) notifier.roleAssignedAuditor(user);
+        // Administratorzy wskazani w ADMIN_EMAILS konfigurują system, więc nie dostają maila o nadaniu roli.
+        if (!existed && user.role !== ROLES.ADMIN) notifier.roleAssigned(user);
         if (!user.active) throw new AuthError('Konto jest wyłączone.', { status: 403 });
         await sessions.issue(res, user.id);
         return res.redirect(303, '/');
@@ -59,7 +60,7 @@ function createAuthController({ config, szo, szoPkce, users, sessions, notifier 
         const identity = await szoPkce.finish(req, res);
         const existed = users.exists(identity.externalId);
         const user = users.upsertFromIdentity(identity);
-        if (!existed && user.role === ROLES.AUDITOR) notifier.roleAssignedAuditor(user);
+        if (!existed && user.role !== ROLES.ADMIN) notifier.roleAssigned(user);
         if (!user.active) throw new AuthError('Konto jest wyłączone.', { status: 403 });
         await sessions.issue(res, user.id);
         return res.redirect(303, '/');
