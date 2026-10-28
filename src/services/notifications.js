@@ -164,6 +164,13 @@ function createNotifier(db, { config, mailer, users, objects }) {
         '', `Otwórz audyt: ${link(`/audits/${audit.id}`)}`,
       ]);
     },
+    auditDeclined(audit, auditorName, reason) {
+      queueAll(reviewers(audit.object_id), 'audit_declined', `Audyt odrzucony przez TK: ${audit.object_name}`, [
+        `${auditorName} odrzucił(-a) przydzielony audyt obiektu „${audit.object_name}”. Audyt wrócił do statusu „Wprowadzony do systemu” i czeka na nowy przydział.`,
+        '', `Powód: ${reason}`,
+        '', `Przydziel audyt innej osobie: ${link(`/audits/${audit.id}`)}`,
+      ]);
+    },
     auditApproved(audit, comment) {
       queueAll([users.findById(audit.auditor_id)], 'audit_approved', `Audyt zatwierdzony: ${audit.object_name}`, [
         `Twój audyt obiektu „${audit.object_name}” został zatwierdzony.`,

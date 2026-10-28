@@ -54,6 +54,16 @@
   <h2 id="accept-h">Audyt czeka na przyjęcie</h2>
   <p>Przydzielono Ci ten audyt<%= audit.due_date ? ` z terminem ${fmtDate(audit.due_date)}` : '' %>. Przyjmij go, gdy możesz go wykonać; status zmieni się na „W trakcie”, a koordynator zobaczy to w historii.</p>
   <form method="post" action="/audits/<%= audit.id %>/accept"><button type="submit">Przyjmij audyt</button></form>
+  <details class="decline-box">
+    <summary>Nie mogę wykonać tego audytu</summary>
+    <form method="post" action="/audits/<%= audit.id %>/decline">
+      <div class="field field-wide">
+        <label for="decline-reason">Powód odrzucenia (zobaczy go koordynator)</label>
+        <textarea id="decline-reason" name="reason" required minlength="3" maxlength="1000"></textarea>
+      </div>
+      <button type="submit" class="btn btn-danger" data-confirm="Odrzucić ten audyt? Wróci do koordynatora do ponownego przydziału.">Odrzuć audyt</button>
+    </form>
+  </details>
 </section>
 <% } %>
 

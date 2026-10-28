@@ -173,6 +173,22 @@ function createAuditsService(db, { objects, users, snapshots }) {
       return svc.get(audit.id);
     },
 
+    /**
+     * Tajemniczy Klient odrzuca przydzielony mu audyt (np. nie może go wykonać). Audyt wraca do statusu „Wprowadzony do systemu”
+     * bez audytora, żeby koordynator lub administrator mógł przydzielić go komuś innemu. Uzasadnienie jest wymagane.
+     */
+    decline(audit, user, reason) {
+      if (audit.status !== STATUS.ASSIGNED || audit.auditor_id !== user.id || user.role !== ROLES.AUDITOR) {
+        throw new DomainError('Tego audytu nie można teraz odrzucić.', 409);
+      }
+      const text = String(reason ?? '').trim();
+      if (text.length < 3) throw new DomainError('Podaj powód odrzucenia audytu (co najmniej 3 znaki).', 422);
+      if (text.length > 1000) throw new DomainError('Powód odrzucenia jest za długi (maksymalnie 1000 znaków).', 422);
+      db.prepare(`UPDATE audits SET status = ?, auditor_id = NULL, assigned_by = NULL, assigned_at = NULL WHERE id = ? AND status = ?`)
+        .run(STATUS.ENTERED, audit.id, STATUS.ASSIGNED);
+      return { audit: svc.get(audit.id), reason: text };
+    },
+
     submit(audit, user) {
       if (!canTransition(audit.status, STATUS.SUBMITTED, user.role) || audit.auditor_id !== user.id) {
         throw new DomainError('Tego audytu nie można teraz złożyć.', 409);

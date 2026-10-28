@@ -110,3 +110,36 @@ test('strona audytu: etapy z aria-current, panel informacji z postępem, zwijane
   assert.match(html, /class="actions save-bar"/);
   assert.equal((html.match(/<details/g) || []).length, (html.match(/<\/details>/g) || []).length);
 });
+
+test('Odrzuć audyt: tylko przydzielony TK z uzasadnieniem; audyt wraca do „Wprowadzony”, trafia do historii i powiadamia koordynatora', async () => {
+  const { tk, audit, admin } = setup();
+  const other = mk('dev:inny2', 'Inny TK', null);
+  const html = await (await (await as(tk, 'auditor'))('GET', `/audits/${audit.id}`)).text();
+  assert.match(html, new RegExp(`action="/audits/${audit.id}/decline"`));
+  assert.match(html, /Nie mogę wykonać tego audytu/);
+
+  // inni nie mogą; bez powodu nie przejdzie
+  await (await as(other, 'auditor'))('POST', `/audits/${audit.id}/decline`, { reason: 'nie moje' });
+  assert.equal((await (await as(admin, 'administrator'))('POST', `/audits/${audit.id}/decline`, { reason: 'x' })).status, 403);
+  await (await as(tk, 'auditor'))('POST', `/audits/${audit.id}/decline`, { reason: ' ' });
+  assert.equal(services.audits.get(audit.id).status, 'assigned');
+
+  let notified = null;
+  const original = services.notifier.auditDeclined;
+  services.notifier.auditDeclined = (a, name, reason) => { notified = { id: a.id, name, reason }; };
+  const res = await (await as(tk, 'auditor'))('POST', `/audits/${audit.id}/decline`, { reason: 'Mam urlop w terminie audytu' });
+  assert.equal(res.status, 303);
+  const after = services.audits.get(audit.id);
+  assert.equal(after.status, 'entered');
+  assert.equal(after.auditor_id, null);
+  const events = services.history.list('audit', audit.id);
+  assert.equal(events.at(-1).action, 'declined');
+  assert.equal(events.at(-1).note, 'Mam urlop w terminie audytu');
+  services.notifier.auditDeclined = original;
+  assert.deepEqual(notified, { id: audit.id, name: 'Tester', reason: 'Mam urlop w terminie audytu' }, 'koordynator dostaje powiadomienie z powodem');
+  // wrócił do przydziału: administrator może przydzielić ponownie
+  const adminView = await (await (await as(admin, 'administrator'))('GET', `/audits/${audit.id}`)).text();
+  assert.match(adminView, /Przydziel Tajemniczego Klienta/);
+  // po odrzuceniu TK już go nie widzi
+  assert.equal((await (await as(tk, 'auditor'))('GET', `/audits/${audit.id}`)).status, 404);
+});

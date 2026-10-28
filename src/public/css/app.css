@@ -300,3 +300,6 @@ main:has(> .login-hero) { max-width: none; padding: 0; }
 .cat-count { margin-left: auto; font-weight: 500; }
 .save-bar { position: sticky; bottom: 0; background: #fff; padding: .75rem 0; align-items: center; z-index: 5; box-shadow: 0 -6px 12px -8px rgba(0, 0, 0, .25); }
 .save-progress { margin-right: auto; font-weight: 600; }
+.decline-box { margin-top: 1rem; }
+.decline-box > summary { cursor: pointer; font-weight: 600; color: var(--danger); width: fit-content; }
+.decline-box form { margin-top: .75rem; }

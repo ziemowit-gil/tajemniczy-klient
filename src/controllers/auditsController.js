@@ -114,6 +114,22 @@ function createAuditsController({ workItems, audits, objects, users, catalog, at
 
     show: (req, res) => res.render('audits/show', viewData(req, req.audit)),
 
+    /** „Odrzuć audyt”: TK oddaje przydzielony audyt z uzasadnieniem; wraca do koordynatora/administratora do ponownego przydziału. */
+    decline(req, res) {
+      const auditorName = req.audit.auditor_name;
+      try {
+        const { audit, reason } = audits.decline(req.audit, req.user, req.body.reason);
+        history.log('audit', audit.id, req.user, 'declined', reason);
+        notifier.auditDeclined(audit, auditorName, reason);
+        res.flash('success', 'Audyt odrzucony. Wrócił do koordynatora lub administratora do ponownego przydziału.');
+        return res.redirect(303, '/audits');
+      } catch (err) {
+        if (!(err instanceof DomainError)) throw err;
+        res.flash('error', err.message);
+        return res.redirect(303, `/audits/${req.audit.id}`);
+      }
+    },
+
     /** „Przyjmij audyt”: potwierdzenie przez Tajemniczego Klienta, że bierze przydzielony audyt do realizacji. */
     accept(req, res) {
       try {
