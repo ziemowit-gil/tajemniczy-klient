@@ -96,6 +96,7 @@ test('strona logowania opisuje aplikację; nagłówek ma jedną nazwę roli i et
   const header = /<header class="site-header">([\s\S]*?)<\/header>/.exec(page)[1];
   assert.match(header, /<label for="role-switch" class="sr-only">Aktywna rola<\/label>/);
   assert.ok(!/Admin \(/.test(header), 'rola nie jest dublowana w nawiasie przy nazwisku');
+  assert.match(header, /<summary class="menu-btn">Menu<\/summary>/);
   assert.match(header, /aria-current="page"/);
 });
 

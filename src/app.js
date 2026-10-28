@@ -37,6 +37,7 @@ const { createSettingsController } = require('./controllers/settingsController')
 const { createExternalAuthController } = require('./controllers/externalAuthController');
 const { createArchiveService } = require('./services/archive');
 const { createArchiveController } = require('./controllers/archiveController');
+const { menuFor, currentHref } = require('./navigation');
 const { createWorkItems } = require('./services/workItems');
 const { createExternalAuth } = require('./services/externalAuth');
 const { createSmsSender } = require('./services/smsSender');
@@ -99,7 +100,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
     fmtDateTime: (s) => (s ? dateFmt.format(new Date(`${String(s).replace(' ', 'T')}Z`)) : '—'),
     fmtDate: (s) => (s ? dayFmt.format(new Date(`${s}T00:00:00Z`)) : '—'),
     appMode: config.szo.mode,
-    asset, appVersion,
+    asset, appVersion, menuFor, currentHref,
   });
 
   /* --- middleware --- */

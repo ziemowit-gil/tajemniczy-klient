@@ -1,35 +1,58 @@
 <%- include('partials/header') %>
-<div class="page-head">
+<% const groups = menuFor(currentUser.role); %>
+<section class="portal-hero" aria-labelledby="dash-h">
+  <div class="portal-hero-text">
+    <h1 id="dash-h">Pulpit</h1>
+    <p class="portal-lead">Audyty dostępności metodą Tajemniczego Klienta</p>
+    <p class="portal-sub">Witaj, <strong><%= currentUser.name %></strong>. <%= todo.length ? `Masz ${todo.length} ${todo.length === 1 ? 'pozycję' : 'pozycji'} wymagających uwagi.` : 'Nic nie czeka na Twoje działanie.' %></p>
+    <div class="actions">
+      <% if (currentUser.role === 'administrator' || currentUser.role === 'coordinator') { %><a class="btn btn-light" href="/audits/new">Wprowadź audyt</a><% } %>
+      <% if (currentUser.role === 'auditor' || currentUser.role === 'administrator') { %><a class="btn btn-ghost" href="/office/new">Nowa ocena kształcenia</a><% } %>
+    </div>
+  </div>
+  <div class="portal-card">
+    <h2>Twoje konto</h2>
+    <p class="portal-who"><strong><%= currentUser.name %></strong><br><%= roleLabels[currentUser.role] %></p>
+    <div class="portal-card-actions">
+      <a class="btn btn-ghost" href="/account">Moje konto</a>
+      <form method="post" action="/logout"><button type="submit" class="btn btn-light">Wyloguj się</button></form>
+    </div>
+  </div>
+</section>
+
+<div class="portal-grid">
   <div>
-    <h1>Pulpit</h1>
-    <p class="lead">Witaj, <%= currentUser.name %>. <%= todo.length ? `Masz ${todo.length} ${todo.length === 1 ? 'pozycję' : 'pozycji'} wymagających uwagi.` : 'Nic nie czeka na Twoje działanie.' %></p>
+    <% for (const g of groups) { const tiles = g.links.filter((l) => l.href !== '/'); if (!tiles.length) continue; %>
+      <section aria-labelledby="apps-<%= g.id %>">
+        <h2 id="apps-<%= g.id %>" class="portal-h"><%= g.id === 'work' ? 'Aplikacje' : g.title %></h2>
+        <ul class="app-tiles">
+          <% for (const l of tiles) { %>
+            <li><a class="app-tile" href="<%= l.href %>"><%- include('partials/icon', { name: l.icon, size: 36 }) %><span><span class="app-tile-name"><%= l.label %></span><span class="app-tile-desc"><%= l.desc %></span></span></a></li>
+          <% } %>
+        </ul>
+      </section>
+    <% } %>
   </div>
-  <div class="actions">
-    <% if (currentUser.role === 'administrator' || currentUser.role === 'coordinator') { %><a class="btn" href="/audits/new">Wprowadź audyt</a><% } %>
-    <% if (currentUser.role === 'auditor' || currentUser.role === 'administrator') { %><a class="btn btn-secondary" href="/office/new">Nowa ocena kształcenia</a><% } %>
-  </div>
+
+  <aside aria-labelledby="notices-h">
+    <h2 id="notices-h" class="portal-h"><%= todoHeading %></h2>
+    <% if (!todo.length) { %>
+      <p class="empty">Brak pozycji. Gdy pojawi się coś do zrobienia, zobaczysz to tutaj.</p>
+    <% } else { %>
+      <ul class="notices">
+        <% for (const a of todo) { %>
+          <li>
+            <a href="<%= a.href %>" class="notice-title"><%= a.title %></a>
+            <span class="notice-meta"><%= a.kindLabel %><%= a.detail ? `, ${a.detail}` : '' %></span>
+            <span class="notice-meta"><span class="status status-<%= a.status %>"><%= statusLabels[a.status] %></span><%= a.auditor_name ? ` · ${a.auditor_name}` : ' · Nieprzydzielony' %><%= a.due_date ? ` · termin ${fmtDate(a.due_date)}` : '' %></span>
+          </li>
+        <% } %>
+      </ul>
+    <% } %>
+  </aside>
 </div>
 
-<h2><%= todoHeading %></h2>
-<% if (!todo.length) { %>
-  <p class="empty">Brak pozycji. Gdy pojawi się coś do zrobienia, zobaczysz to tutaj.</p>
-<% } else { %>
-  <div class="table-wrap"><table>
-    <thead><tr><th scope="col">Obiekt</th><th scope="col">Rodzaj</th><th scope="col">Zakres</th><th scope="col">Audytor</th><th scope="col">Status</th><th scope="col">Termin</th></tr></thead>
-    <tbody>
-    <% for (const a of todo) { %>
-      <tr>
-        <th scope="row"><a href="<%= a.href %>"><%= a.title %></a></th>
-        <td><%= a.kindLabel %></td><td><%= a.detail || '—' %></td><td><%= a.auditor_name || 'Nieprzydzielony' %></td>
-        <td><span class="status status-<%= a.status %>"><%= statusLabels[a.status] %></span></td>
-        <td><%= a.due_date ? fmtDate(a.due_date) : '—' %></td>
-      </tr>
-    <% } %>
-    </tbody>
-  </table></div>
-<% } %>
-
-<h2>Wszystkie pozycje według statusu</h2>
+<h2 class="portal-h">Wszystkie pozycje według statusu</h2>
 <div class="cards">
   <% for (const [status, label] of Object.entries(statusLabels)) { %>
     <a class="card" href="/audits?status=<%= status %>">

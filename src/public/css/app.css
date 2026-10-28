@@ -374,3 +374,73 @@ a.card:hover .big, a.card:focus-visible .big { color: #fff; }
 .card .big { color: #0e43a6; }
 h2 { margin-top: 2rem; }
 .table-wrap { border-radius: 10px; }
+
+/* ===== Portal: biały pasek z logo i przyciskiem „Menu”, pulpit z bannerem, kafelkami „Aplikacje” i panelem komunikatów. ===== */
+.site-header { background: #fff; color: var(--text); border-bottom: 3px solid #1457d1; }
+.site-header :focus-visible { outline-color: #1457d1; }
+.site-header .inner { max-width: 72rem; flex-wrap: nowrap; padding: .55rem 1rem; gap: 1rem; }
+.brand { color: #0e43a6; font-weight: 700; font-size: 1.2rem; display: inline-flex; align-items: center; gap: .55rem; white-space: nowrap; }
+.brand .logo-mark { color: #1457d1; flex: none; }
+.user-box { margin-left: auto; display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; justify-content: flex-end; }
+.account-link { color: #0e43a6; display: inline-flex; align-items: center; gap: .35rem; font-weight: 600; text-decoration: none; }
+.account-link:hover { text-decoration: underline; }
+.account-link[aria-current="page"] { text-decoration: underline; }
+.site-header .link-button { color: #0e43a6; }
+.role-switch select { border-color: #5b6472; background: #fff; color: var(--text); }
+.role-switch button { background: #fff; color: #0e43a6; border-color: #1457d1; }
+.role-switch button:hover { background: #e8f0fd; color: #0e43a6; }
+.main-menu { position: relative; }
+.menu-btn { list-style: none; cursor: pointer; background: #1457d1; color: #fff; font-weight: 700; padding: .55rem 1rem; border-radius: 4px; display: inline-flex; align-items: center; gap: .5rem; }
+.menu-btn::-webkit-details-marker { display: none; }
+.menu-btn::after { content: ""; width: .5rem; height: .5rem; border: solid currentColor; border-width: 0 2px 2px 0; transform: translateY(-2px) rotate(45deg); }
+.main-menu[open] > .menu-btn::after { transform: translateY(1px) rotate(-135deg); }
+.menu-btn:hover { background: #0e43a6; }
+.menu-btn:focus-visible { outline: 3px solid #1d1d1a; outline-offset: 2px; }
+.menu-panel { position: absolute; right: 0; top: calc(100% + .5rem); z-index: 30; width: min(46rem, 92vw); background: #fff; color: var(--text); border: 2px solid #1457d1; border-radius: 6px; padding: 1rem 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 1rem 1.5rem; box-shadow: 0 10px 30px rgba(0, 0, 0, .2); }
+.menu-group h2 { font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 .35rem; }
+.menu-group ul { list-style: none; margin: 0; padding: 0; }
+.menu-group a { display: flex; align-items: center; gap: .6rem; padding: .45rem .5rem; border-radius: 4px; color: #0e43a6; text-decoration: none; font-weight: 600; }
+.menu-group a:hover { background: #e8f0fd; }
+.menu-group a[aria-current="page"] { background: #1457d1; color: #fff; }
+.menu-group .icon { flex: none; }
+.menu-foot { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: .75rem; }
+.menu-foot form { margin: 0; }
+.menu-foot .link-button { color: #0e43a6; font-weight: 600; }
+.nav-group { display: none; }
+
+.portal-hero { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); background: #1457d1; color: #fff; margin: -1.5rem -1rem 1.5rem; padding: 2rem 1rem;
+  background-image: radial-gradient(circle at 8% 120%, rgba(255, 255, 255, .13) 0 16rem, transparent 16.05rem), radial-gradient(circle at 100% -20%, rgba(234, 143, 0, .5) 0 8rem, transparent 8.05rem); }
+.portal-hero h1 { margin: 0 0 .25rem; font-size: 2rem; color: #fff; }
+.portal-hero p { color: #fff; margin: 0 0 .5rem; }
+.portal-lead { font-size: 1.25rem; }
+.portal-card { background: #0e43a6; padding: 1.1rem 1.25rem; align-self: start; }
+.portal-card h2 { margin: 0 0 .5rem; font-size: 1rem; color: #fff; }
+.portal-card-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.portal-card-actions form { margin: 0; }
+.portal-hero .btn { border-radius: 0; font-weight: 700; }
+.btn-light { background: #fff; color: #0e43a6; border: 2px solid #fff; }
+.btn-light:hover { background: #e8f0fd; color: #0e43a6; border-color: #e8f0fd; }
+.btn-ghost { background: transparent; color: #fff; border: 2px solid #fff; }
+.btn-ghost:hover { background: rgba(255, 255, 255, .16); color: #fff; }
+.portal-hero :focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+@media (min-width: 56rem) { .portal-hero { grid-template-columns: minmax(0, 1fr) 21rem; align-items: center; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); padding: 2.5rem max(1rem, calc((100vw - 72rem) / 2 + 1rem)); } }
+
+.portal-grid { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 56rem) { .portal-grid { grid-template-columns: minmax(0, 1fr) 20rem; } }
+.portal-h { font-size: 1rem; text-transform: none; border-bottom: 2px solid var(--line); padding-bottom: .4rem; margin: 0 0 .9rem; color: var(--muted); font-weight: 600; }
+.app-tiles { list-style: none; margin: 0 0 1.5rem; padding: 0; display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)); }
+.app-tile { display: flex; align-items: center; gap: .9rem; height: 100%; padding: 1rem; background: #fff; border: 1px solid #5b6472; border-radius: 4px; color: #0e43a6; text-decoration: none; }
+.app-tile .icon { flex: none; color: #1457d1; }
+.app-tile-name { display: block; font-weight: 700; font-size: 1.05rem; }
+.app-tile-desc { display: block; font-size: .88rem; color: #3a3a35; margin-top: .15rem; }
+.app-tile:hover, .app-tile:focus-visible { background: #1457d1; color: #fff; }
+.app-tile:hover .icon, .app-tile:focus-visible .icon, .app-tile:hover .app-tile-desc, .app-tile:focus-visible .app-tile-desc { color: #fff; }
+.app-tile:focus-visible { outline: 3px solid #1d1d1a; outline-offset: 2px; }
+.notices { list-style: none; margin: 0; padding: 0; border: 1px solid #5b6472; border-radius: 4px; background: #fff; }
+.notices li { padding: .8rem 1rem; display: grid; gap: .15rem; }
+.notices li + li { border-top: 1px solid var(--line); }
+.notice-title { font-weight: 700; font-size: 1.02rem; color: #0e43a6; }
+.notice-meta { font-size: .9rem; color: #3a3a35; }
+.lead { display: none; }
+
+body { overflow-x: clip; }

@@ -88,7 +88,7 @@ test('dostęp: tylko administrator; pozycja w grupie „Administracja”', async
     assert.equal((await call(cookie, 'POST', '/settings/szo/clear')).status, 403);
   }
   assert.equal((await fetch(`${base}/settings/szo`, { redirect: 'manual' })).status, 303, 'niezalogowany trafia na logowanie');
-  assert.match(await (await call(await admin(), 'GET', '/users')).text(), /href="\/settings\/szo"[^>]*>Integracja z SZO</);
+  assert.match(await (await call(await admin(), 'GET', '/users')).text(), /href="\/settings\/szo"[^>]*>[\s\S]*?<span>Integracja z SZO<\/span>/);
 });
 
 test('wklejanie klucza: zapis zaszyfrowany, klucz nigdy nie wraca do przeglądarki ani do komunikatów', async () => {

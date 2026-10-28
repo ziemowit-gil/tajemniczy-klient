@@ -22,11 +22,11 @@ document.addEventListener('change', (event) => {
 // Menu „Administracja”: Esc zamyka grupę i wraca fokusem na jej nagłówek, kliknięcie poza grupą także ją zamyka.
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
-  const open = document.querySelector('.nav-group[open]');
+  const open = document.querySelector('.nav-group[open], .main-menu[open]');
   if (!open) return;
   open.removeAttribute('open');
   open.querySelector('summary')?.focus();
 });
 document.addEventListener('click', (event) => {
-  for (const group of document.querySelectorAll('.nav-group[open]')) if (!group.contains(event.target)) group.removeAttribute('open');
+  for (const group of document.querySelectorAll('.nav-group[open], .main-menu[open]')) if (!group.contains(event.target)) group.removeAttribute('open');
 });

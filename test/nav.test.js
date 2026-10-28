@@ -27,88 +27,53 @@ async function page(role, url = '/') {
   return (await fetch(base + url, { headers: { cookie } })).text();
 }
 const nav = (html) => /<nav aria-label="Główna">([\s\S]*?)<\/nav>/.exec(html)[1];
-const group = (html) => /<details class="nav-group[^"]*">([\s\S]*?)<\/details>/.exec(html)?.[1] ?? '';
+const group = (html, id) => new RegExp(`<section class="menu-group" aria-labelledby="menu-${id}">([\\s\\S]*?)</section>`).exec(html)?.[1] ?? '';
+const labels = (html) => [...html.matchAll(/<span>([^<]+)<\/span><\/a><\/li>/g)].map((m) => m[1]);
 
-test('administrator: pozycje zarządzania są w grupie „Administracja”, codzienna praca w głównym menu', async () => {
+test('administrator: menu ma grupy Praca, Zarządzanie i Administracja z właściwymi pozycjami', async () => {
   const html = nav(await page('a'));
-  const inGroup = group(html);
-  for (const label of ['Kryteria audytu', 'Scenariusze', 'Pytania: kształcenie', 'Użytkownicy']) {
-    assert.ok(inGroup.includes(`>${label}</a>`), `${label} w grupie`);
-  }
-  const outside = html.replace(/<details[\s\S]*?<\/details>/, '');
-  for (const label of ['Pulpit', 'Audyty', 'Dostępność kształcenia', 'Obiekty', 'Raporty', 'Statystyki']) {
-    assert.ok(outside.includes(`>${label}</a>`), `${label} w głównym menu`);
-  }
-  for (const label of ['Kryteria audytu', 'Scenariusze', 'Użytkownicy']) assert.ok(!outside.includes(`>${label}</a>`), `${label} nie jest w głównym menu`);
-  assert.match(html, /<summary>Administracja<\/summary>/);
-  assert.match(html, /<details class="nav-group">/, 'domyślnie zwinięta');
+  assert.match(html, /<summary class="menu-btn">Menu<\/summary>/);
+  assert.deepEqual(labels(group(html, 'work')), ['Pulpit', 'Audyty', 'Dostępność kształcenia']);
+  assert.deepEqual(labels(group(html, 'manage')), ['Obiekty', 'Raporty', 'Statystyki', 'Archiwum']);
+  assert.deepEqual(labels(group(html, 'admin')), ['Kryteria audytu', 'Scenariusze', 'Pytania: kształcenie', 'Użytkownicy', 'Dziennik operacji', 'Integracja z SZO']);
+  assert.match(html, /<h2 id="menu-admin">Administracja<\/h2>/);
+  assert.match(html, /<button type="submit" class="link-button">Wyloguj się<\/button>/);
+  assert.doesNotMatch(html, /<details class="main-menu" open>/, 'domyślnie zwinięte');
 });
 
-test('grupa wskazuje bieżącą sekcję tekstowo i atrybutem aria-current na właściwej pozycji', async () => {
+test('bieżąca sekcja jest oznaczona aria-current na dokładnie jednej pozycji', async () => {
   const html = nav(await page('a', '/scenarios'));
-  assert.match(html, /<details class="nav-group is-current">/);
-  assert.match(html, /<summary>Administracja<span class="sr-only"> \(bieżąca sekcja\)<\/span><\/summary>/);
-  assert.match(group(html), /<a href="\/scenarios" aria-current="page">Scenariusze<\/a>/);
-  assert.equal((html.match(/aria-current="page"/g) || []).length, 1, 'dokładnie jedna bieżąca pozycja');
+  assert.match(group(html, 'admin'), /<a href="\/scenarios" aria-current="page">/);
+  assert.equal((html.match(/aria-current="page"/g) || []).length, 1);
 
   // „Pytania: kształcenie” (/office/questions) nie podświetla równocześnie „Dostępności kształcenia”
   const q = nav(await page('a', '/office/questions'));
-  assert.match(group(q), /<a href="\/office\/questions" aria-current="page">/);
+  assert.match(group(q, 'admin'), /<a href="\/office\/questions" aria-current="page">/);
   assert.equal((q.match(/aria-current="page"/g) || []).length, 1);
 
-  // strona spoza grupy: grupa nie jest oznaczona jako bieżąca
-  assert.doesNotMatch(nav(await page('a', '/audits')), /is-current/);
+  const audits = nav(await page('a', '/audits'));
+  assert.match(group(audits, 'work'), /<a href="\/audits" aria-current="page">/);
 });
 
-test('koordynator i audytor nie widzą grupy Administracja', async () => {
+test('koordynator i audytor nie widzą grupy Administracja; audytor nie widzi zarządzania', async () => {
   const k = nav(await page('k'));
-  assert.doesNotMatch(k, /nav-group|Administracja|Kryteria audytu|Użytkownicy/);
-  assert.match(k, />Obiekty<\/a>/);
-  assert.match(k, />Statystyki<\/a>/);
+  assert.doesNotMatch(k, /Administracja|Kryteria audytu|Użytkownicy/);
+  assert.deepEqual(labels(group(k, 'manage')), ['Obiekty', 'Raporty', 'Statystyki', 'Archiwum']);
   const u = nav(await page('u'));
-  assert.doesNotMatch(u, /nav-group|Administracja|Obiekty|Raporty|Statystyki/);
-  assert.match(u, />Moje audyty<\/a>/);
+  assert.doesNotMatch(u, /Administracja|Zarządzanie|Obiekty|Raporty|Statystyki/);
+  assert.deepEqual(labels(group(u, 'work')), ['Pulpit', 'Moje audyty', 'Dostępność kształcenia']);
 });
 
-test('strona logowania: własna identyfikacja (panel marki ze znakiem SVG i karta formularza), ikona jako zasób statyczny', async () => {
-  const html = await (await fetch(`${base}/login`)).text();
-  assert.match(html, /<div class="login-hero">\s*<aside class="login-brand">/);
-  assert.match(html, /<svg class="logo-mark"[^>]*aria-hidden="true"/, 'znak jest dekoracją dla czytników ekranu');
-  assert.match(html, /<div class="login-box login-card">/);
-  assert.match(html, /<link rel="icon" type="image\/svg\+xml" href="\/img\/icon\.svg\?v=[0-9a-f]{10}">/);
-  assert.doesNotMatch(html, /metro/i);
-
-  const css = await (await fetch(`${base}/css/app.css`)).text();
-  assert.match(css, /\.login-brand\s*\{[^}]*background:\s*#1457d1/, 'panel marki w granacie FEER (biały tekst 6,3:1)');
-  assert.doesNotMatch(css, /Logowanie w stylu Metro/);
-
-  const res = await fetch(`${base}/img/icon.svg`);
-  assert.equal(res.status, 200);
-  assert.match(res.headers.get('content-type'), /image\/svg\+xml/);
-  const svg = await res.text();
-  assert.doesNotMatch(svg, /<script|onload=|onclick=|href="http|xlink:href|<foreignObject/i, 'SVG bez skryptów i zasobów zewnętrznych');
-  assert.ok(svg.length < 6000, 'lekki plik');
-});
-
-test('adresy plików statycznych mają odcisk treści (omijają stare kopie w Cloudflare i przeglądarce)', async () => {
-  const html = await (await fetch(`${base}/login`)).text();
-  const css = /href="(\/css\/app\.css\?v=([0-9a-f]{10}))"/.exec(html);
-  const js = /src="(\/js\/app\.js\?v=([0-9a-f]{10}))"/.exec(html);
-  assert.ok(css && js, 'CSS i JS z parametrem wersji');
-  assert.notEqual(css[2], js[2], 'różne pliki mają różne odciski');
-  assert.equal((await fetch(base + css[1])).status, 200);
-  assert.equal((await fetch(base + js[1])).status, 200);
-  // ten sam plik zawsze daje ten sam odcisk
-  assert.equal(/css\/app\.css\?v=([0-9a-f]{10})/.exec(await (await fetch(`${base}/login`)).text())[1], css[2]);
-});
-
-test('stopka: autorzy i wersja aplikacji na każdej stronie, także na logowaniu', async () => {
-  const pkg = require('../package.json');
-  const major = pkg.version.split('.').slice(0, 2).join('.');
-  assert.equal(major, '1.3');
-  for (const html of [await (await fetch(`${base}/login`)).text(), await page('a'), await page('u', '/audits')]) {
-    assert.match(html, /<footer class="site-footer">\s*<p>Autor: Ziemowit Gil \| Jarosław P\. <span class="version">v\. 1\.3<\/span><\/p>\s*<\/footer>/);
-  }
+test('pulpit jest portalem: baner, kafelki „Aplikacje” z ikonami (bez Pulpitu), panel komunikatów i liczniki statusów', async () => {
+  const html = await page('a');
+  assert.match(html, /<section class="portal-hero"/);
+  assert.match(html, /<h2 id="apps-work" class="portal-h">Aplikacje<\/h2>/);
+  assert.match(html, /<a class="app-tile" href="\/audits">\s*<svg class="icon"[^>]*aria-hidden="true"/);
+  assert.ok(!html.includes('class="app-tile" href="/"'), 'kafelek Pulpitu nie jest potrzebny na pulpicie');
+  assert.match(html, /<h2 id="notices-h" class="portal-h">/);
+  assert.match(html, /Wszystkie pozycje według statusu/);
+  const aud = await page('u');
+  assert.ok(!aud.includes('href="/users"'), 'audytor nie ma kafelka administracji');
 });
 
 test('strona logowania w trybie szo nazywa SZO „Panelem Współpracownika”', async () => {

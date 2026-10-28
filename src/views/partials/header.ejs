@@ -12,45 +12,15 @@
 <a class="skip-link" href="#main">Przejdź do treści</a>
 <header class="site-header">
   <div class="inner">
-    <a class="brand" href="/"><svg class="logo-mark" viewBox="0 0 64 64" width="28" height="28" aria-hidden="true" focusable="false"><circle cx="27" cy="27" r="19" fill="none" stroke="#fff" stroke-width="5"/><circle cx="27" cy="21" r="6" fill="#fff"/><path d="M15.5 38.5c1.6-6.2 6.4-9.5 11.5-9.5s9.9 3.3 11.5 9.5" fill="#fff"/><path d="M41 41l15 15" stroke="#ea8f00" stroke-width="7" stroke-linecap="round"/></svg><span>Tajemniczy Klient</span></a>
+    <a class="brand" href="/"><svg class="logo-mark" viewBox="0 0 64 64" width="30" height="30" aria-hidden="true" focusable="false"><circle cx="27" cy="27" r="19" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="27" cy="21" r="6" fill="currentColor"/><path d="M15.5 38.5c1.6-6.2 6.4-9.5 11.5-9.5s9.9 3.3 11.5 9.5" fill="currentColor"/><path d="M41 41l15 15" stroke="#ea8f00" stroke-width="7" stroke-linecap="round"/></svg><span>Tajemniczy Klient</span></a>
     <% if (currentUser) {
-         const role = currentUser.role;
-         // Praca na co dzień (główne menu) oraz zarządzanie słownikami (grupa „Administracja”, tylko administrator).
-         const links = [['/', 'Pulpit']];
-         links.push(['/audits', role === 'auditor' ? 'Moje audyty' : 'Audyty']);
-         links.push(['/office', 'Dostępność kształcenia']);
-         if (role === 'administrator' || role === 'coordinator') { links.push(['/objects', 'Obiekty']); links.push(['/reports', 'Raporty']); links.push(['/stats', 'Statystyki']); links.push(['/archive', 'Archiwum']); }
-         const adminLinks = role === 'administrator'
-           ? [['/criteria', 'Kryteria audytu'], ['/scenarios', 'Scenariusze'], ['/office/questions', 'Pytania: kształcenie'], ['/users', 'Użytkownicy'], ['/log', 'Dziennik operacji'], ['/settings/szo', 'Integracja z SZO']]
-           : [];
-         const all = links.concat(adminLinks);
-         const best = all.filter(([h]) => h === '/' ? currentPath === '/' : (currentPath === h || currentPath.startsWith(h + '/'))).sort((a, b) => b[0].length - a[0].length)[0];
-         const adminCurrent = Boolean(best && adminLinks.some(([h]) => h === best[0]));
+         const groups = menuFor(currentUser.role);
+         const best = currentHref(groups, currentPath);
+         const multi = currentUser.roles && currentUser.roles.length > 1;
     %>
-    <% if (!locals.hideNav) { %>
-    <nav aria-label="Główna">
-      <ul>
-        <% for (const [href, label] of links) { const here = best && best[0] === href; %>
-          <li><a href="<%= href %>"<% if (here) { %> aria-current="page"<% } %>><%= label %></a></li>
-        <% } %>
-        <% if (adminLinks.length) { %>
-          <li class="nav-group-item">
-            <details class="nav-group<%= adminCurrent ? ' is-current' : '' %>">
-              <summary>Administracja<% if (adminCurrent) { %><span class="sr-only"> (bieżąca sekcja)</span><% } %></summary>
-              <ul>
-                <% for (const [href, label] of adminLinks) { const here = best && best[0] === href; %>
-                  <li><a href="<%= href %>"<% if (here) { %> aria-current="page"<% } %>><%= label %></a></li>
-                <% } %>
-              </ul>
-            </details>
-          </li>
-        <% } %>
-      </ul>
-    </nav>
-    <% } %>
     <div class="user-box">
-      <a href="/account" class="account-link"<% if (currentPath === '/account') { %> aria-current="page"<% } %>><%= currentUser.name %><% if (!(currentUser.roles && currentUser.roles.length > 1)) { %><span class="sr-only"> (<%= roleLabels[currentUser.role] %>)</span><% } %></a>
-      <% if (currentUser.roles && currentUser.roles.length > 1) { %>
+      <a href="/account" class="account-link"<% if (currentPath === '/account') { %> aria-current="page"<% } %>><%- include('icon', { name: 'account', size: 18 }) %><span><%= currentUser.name %></span><% if (!multi) { %><span class="sr-only"> (<%= roleLabels[currentUser.role] %>)</span><% } %></a>
+      <% if (multi) { %>
         <form method="post" action="/role" class="role-switch">
           <label for="role-switch" class="sr-only">Aktywna rola</label>
           <select id="role-switch" name="role">
@@ -59,7 +29,30 @@
           <button type="submit" class="btn-small">Przełącz</button>
         </form>
       <% } %>
+      <% if (!locals.hideNav) { %>
+      <nav aria-label="Główna">
+        <details class="main-menu">
+          <summary class="menu-btn">Menu</summary>
+          <div class="menu-panel">
+            <% for (const g of groups) { %>
+              <section class="menu-group" aria-labelledby="menu-<%= g.id %>">
+                <h2 id="menu-<%= g.id %>"><%= g.title %></h2>
+                <ul>
+                  <% for (const l of g.links) { %>
+                    <li><a href="<%= l.href %>"<% if (best === l.href) { %> aria-current="page"<% } %>><%- include('icon', { name: l.icon, size: 20 }) %><span><%= l.label %></span></a></li>
+                  <% } %>
+                </ul>
+              </section>
+            <% } %>
+            <div class="menu-foot">
+              <form method="post" action="/logout"><button type="submit" class="link-button">Wyloguj się</button></form>
+            </div>
+          </div>
+        </details>
+      </nav>
+      <% } else { %>
       <form method="post" action="/logout"><button type="submit" class="link-button">Wyloguj</button></form>
+      <% } %>
     </div>
     <% } %>
   </div>
