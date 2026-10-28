@@ -1,0 +1,27 @@
+<%- include('partials/header') %>
+<div class="declaration">
+  <h1><%= heading %></h1>
+  <p class="muted">Aby korzystać z aplikacji, musisz złożyć poniższe oświadczenie. Składasz je jednorazowo; ponownie zostaniesz o to poproszony(-a) tylko po zmianie jego treści.</p>
+
+  <% if (errors.accept) { %><div class="error-summary" role="alert"><%= errors.accept %></div><% } %>
+
+  <section aria-labelledby="decl-h" class="declaration-text">
+    <h2 id="decl-h" class="sr-only">Treść oświadczenia</h2>
+    <p><strong>Osoba składająca oświadczenie:</strong> <%= person.name %><%= person.email ? ` (${person.email})` : '' %></p>
+    <% for (const paragraph of paragraphs) { %><p><%= paragraph %></p><% } %>
+    <p class="muted">Data i godzina złożenia oświadczenia zostaną zapisane w chwili jego złożenia.</p>
+  </section>
+
+  <form method="post" action="/declaration" novalidate>
+    <div class="field check">
+      <input type="checkbox" id="accept" name="accept" required<% if (errors.accept) { %> aria-invalid="true" aria-describedby="accept-err"<% } %>>
+      <label for="accept">Składam powyższe oświadczenie</label>
+    </div>
+    <% if (errors.accept) { %><p class="field-error" id="accept-err"><%= errors.accept %></p><% } %>
+    <div class="actions">
+      <button type="submit">Składam oświadczenie i przechodzę dalej</button>
+    </div>
+  </form>
+  <form method="post" action="/logout" class="declaration-logout"><button type="submit" class="link-button">Nie składam oświadczenia, wyloguj mnie</button></form>
+</div>
+<%- include('partials/footer') %>

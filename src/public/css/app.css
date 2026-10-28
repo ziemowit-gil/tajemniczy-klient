@@ -186,7 +186,7 @@ td.actions form, .actions form { margin: 0; }
 /* Strona logowania: dekoracyjne tło (obraz CSS, bez treści dla czytników ekranu) + biała karta z formularzem,
    więc kontrast tekstu nie zależy od tła. W trybie wysokiego kontrastu przeglądarka i tak usuwa obrazy tła. */
 .login-hero {
-  margin: 0; padding: 3rem 1rem 5rem; min-height: calc(100vh - 5.5rem);
+  margin: 0; padding: 3rem 1rem 5rem; min-height: calc(100vh - 8rem);
   background: #eef3fc url("/img/login-bg.svg") center / cover no-repeat;
 }
 /* Strona logowania zajmuje całą szerokość okna (reszta stron ma wąską kolumnę). */
@@ -204,3 +204,16 @@ main:has(> .login-hero) { max-width: none; padding: 0; }
 .steps-editor-list .step-no { min-width: 2rem; text-align: right; font-weight: 600; color: var(--muted); }
 .steps-editor-list input[type="text"] { flex: 1 1 14rem; width: auto; }
 .steps-editor-list button:disabled { opacity: 1; background: #e4e7ec; border-color: #c9ced6; color: #4a4a45; cursor: not-allowed; }
+
+/* Stopka z informacją o autorach i wersji */
+.site-footer { border-top: 1px solid var(--line); background: var(--bg); }
+.site-footer p { max-width: 72rem; margin: 0 auto; padding: 1rem; font-size: .9rem; color: var(--muted); }
+.site-footer .version { white-space: nowrap; }
+@media print { .site-footer { border: 0; } }
+
+/* Oświadczenie przy logowaniu */
+.declaration { max-width: 46rem; }
+.declaration-text { background: var(--surface); border-radius: var(--radius); padding: 1.25rem 1.5rem; margin: 1.25rem 0; }
+.declaration-text p:last-child { margin-bottom: 0; }
+.declaration-logout { margin-top: 1.5rem; }
+.declaration-logout .link-button { color: var(--muted); }

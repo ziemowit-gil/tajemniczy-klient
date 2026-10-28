@@ -116,6 +116,38 @@ const UCZELNIE = [
       'Omów, co można poprawić: przypomnienia o terminach, długość i układ informacji, formularze, sposób prowadzenia rozmowy.',
     ],
   },
+  {
+    usage: E, persona: null, estimatedMinutes: 120,
+    title: 'Kandydat zainteresowany kierunkiem: to samo pytanie przy różnych niepełnosprawnościach',
+    description: 'Wybierz jeden kierunek i sprawdź, jak uczelnia odpowiada kandydatom z różnymi niepełnosprawnościami. Wykonaj scenariusz co najmniej dwa razy, za każdym razem jako osobną ocenę z tym samym kierunkiem i inną wybraną grupą potrzeb (pole „Wcielam się w osobę z”): np. ruchowa, wzroku, słuchu, poznawcza lub neuroróżnorodność. Nie ujawniaj diagnozy ponad to, co konieczne.',
+    goal: 'Ocenić, czy uczelnia rzetelnie, konkretnie i jednakowo życzliwie odpowiada na pytanie „czy mogę studiować ten kierunek” niezależnie od rodzaju niepełnosprawności.',
+    expectedResult: 'Porównanie odpowiedzi uczelni dla różnych niepełnosprawności tego samego kierunku (rzetelność, konkretność, przejrzystość wymagań zdrowotnych i dostosowań) oraz lista rekomendacji, w tym czego brakuje w opisie kierunku.',
+    steps: [
+      'Wybierz kierunek studiów, którym jesteś zainteresowany, i zapisz jego nazwę, poziom i tryb studiów (te dane wpisujesz przy rozpoczęciu oceny).',
+      'Przeczytaj na stronie kierunku i uczelni informacje przydatne kandydatowi z niepełnosprawnością: wymagania rekrutacyjne i zdrowotne, opis zajęć praktycznych, laboratoriów, praktyk i egzaminów oraz informacje o dostosowaniach. Oceń, czy da się z nich ustalić, czy kierunek jest dla Ciebie dostępny.',
+      'Wciel się w pierwszą wybraną grupę potrzeb i napisz do uczelni (mail, formularz lub SMS) z pytaniem, czy możesz studiować ten kierunek i jakie dostosowania zaproponują w zajęciach praktycznych, laboratoriach, praktykach, wyjazdach i na egzaminach. Zanotuj kanał, czas i treść odpowiedzi.',
+      'Powtórz kontakt jako osobna ocena dla drugiej, innej grupy potrzeb (i kolejnych, jeśli to możliwe), zadając to samo pytanie o ten sam kierunek.',
+      'Porównaj odpowiedzi: czy uczelnia traktuje wszystkie grupy równie rzetelnie i konkretnie, czy odpowiada ogólnikami, zniechęca, wymaga zbędnych dokumentów albo ujawniania diagnozy.',
+      'Zapytaj o rozmowę z osobą z biura wsparcia i z opiekunem kierunku oraz o możliwość kontaktu ze studentem lub absolwentem z podobną niepełnosprawnością (jeśli uczelnia to oferuje).',
+      'Zapisz, co można poprawić: informacje o dostępności w opisie kierunku, jednolitość odpowiedzi, szybkość reakcji i konkretność dostosowań.',
+    ],
+  },
+  {
+    usage: E, persona: null, estimatedMinutes: 90,
+    title: 'Wizyta w Centrum Dostępności uczelni: oferta wsparcia i sprzęt asystujący',
+    description: 'Odwiedź Centrum Dostępności (lub biuro ds. osób z niepełnosprawnościami) wybranej uczelni jako kandydat lub student. Wizytę umów wcześniej albo przyjdź w godzinach przyjęć; wciel się w wybraną grupę potrzeb (pole „Wcielam się w osobę z”).',
+    goal: 'Ocenić, czy Centrum Dostępności jest łatwe do znalezienia i dostępne, czy oferuje konkretne wsparcie i sprzęt oraz czy procedura zgłoszenia potrzeb jest prosta.',
+    expectedResult: 'Ocena informacji o centrum, dojścia i lokalu, wyposażenia (pętla indukcyjna, stanowisko z czytnikiem ekranu, powiększalnik, druk Braille’a), oferty wsparcia, procedury zgłoszenia i taktu pracowników oraz lista rekomendacji.',
+    steps: [
+      'Sprawdź na stronie uczelni, czy działa Centrum Dostępności lub biuro ds. osób z niepełnosprawnościami: czy łatwo je znaleźć, czy podano adres, godziny przyjęć, kontakt i informację o dostępności lokalu.',
+      'Umów wizytę lub przyjdź w godzinach przyjęć. Zanotuj, jak łatwo było się umówić i czy zaproponowano formę dostosowaną do Twoich potrzeb (asysta, tłumacz, cichy pokój).',
+      'Oceń dojście do centrum i sam lokal: oznaczenia, wejście, drzwi, winda, toaleta oraz miejsce do rozmowy bez rozpraszaczy.',
+      'Sprawdź wyposażenie: pętla indukcyjna, stanowisko z czytnikiem ekranu, powiększalnik, druk powiększony lub Braille’a, sprzęt do wypożyczenia. Zapytaj, czy zespół umie z niego korzystać.',
+      'Zapytaj o ofertę wsparcia: asystent, tłumacz PJM, notatki, dostosowanie materiałów i egzaminów, kontakt z wykładowcami, doradztwo zawodowe. Zanotuj konkretne informacje.',
+      'Przejdź procedurę zgłoszenia potrzeb: jakie dokumenty są wymagane, ile trwa załatwienie sprawy i czy musisz ujawniać diagnozę. Wypełnij formularz zgłoszenia potrzeb i ankietę oceny.',
+      'Omów, co można poprawić w działaniu i wyposażeniu centrum oraz w informacjach o nim.',
+    ],
+  },
 
   /* ------------------------- wizyty bez zapowiedzi (audyty obiektów) ------------------------- */
   {
@@ -216,12 +248,28 @@ const UCZELNIE = [
       'Zapytaj o przypomnienie o terminie (mail lub SMS) i zanotuj czas obsługi oraz komfort rozmowy.',
     ],
   },
+  {
+    usage: A, areas: 'BOTH', persona: null, estimatedMinutes: 60,
+    title: 'Wizyta w Centrum Dostępności: dojście, lokal i wyposażenie',
+    description: 'Wizyta audytora w Centrum Dostępności uczelni (lub biurze ds. osób z niepełnosprawnościami) jako w obiekcie: oceń dostępność samego lokalu i jego wyposażenia. Możesz przyjść bez zapowiedzi jako „tajemniczy klient” albo umówić wizytę.',
+    goal: 'Ocenić, czy lokal Centrum Dostępności i jego wyposażenie są dostępne dla osób z różnymi niepełnosprawnościami.',
+    expectedResult: 'Opis trasy do lokalu, lista barier architektonicznych i komunikacyjnych oraz ocena wyposażenia asystującego, oznaczeń i zachowania pracownika.',
+    steps: [
+      'Przejdź trasę od wejścia do budynku do Centrum Dostępności: oznaczenia, tyflomapa lub plan, winda, kontrast i szerokość korytarzy.',
+      'Oceń wejście do lokalu: drzwi, progi, szerokość, sposób otwierania, oznaczenie i kontrast.',
+      'Oceń przestrzeń wewnątrz: miejsce manewru wózkiem, wysokość stanowiska obsługi, meble, oświetlenie i poziom hałasu.',
+      'Sprawdź wyposażenie: oznaczoną i działającą pętlę indukcyjną, stanowisko komputerowe z czytnikiem ekranu i powiększalnikiem.',
+      'Zapytaj o informacje w formatach alternatywnych (druk powiększony, Braille, wersja łatwa do czytania, PJM) i sprawdź, czy są dostępne na miejscu.',
+      'Sprawdź, czy w pobliżu jest toaleta dostosowana, i zanotuj jej stan.',
+      'Zanotuj czas obsługi oraz zachowanie pracownika wobec osoby z niepełnosprawnością.',
+    ],
+  },
 ];
 
 const PACKS = {
   uczelnie: {
     label: 'Przykładowe scenariusze dla uczelni',
-    description: 'Siedem grup potrzeb (Głusi, niedosłyszący, ruchowe, wzroku, poznawcze, kryzys psychiczny, ADHD), każda w wariancie zaplanowanym (Dostępność kształcenia) i wizyty bez zapowiedzi (audyty obiektów).',
+    description: 'Siedem grup potrzeb (Głusi, niedosłyszący, ruchowe, wzroku, poznawcze, kryzys psychiczny, ADHD), każda w wariancie zaplanowanym (Dostępność kształcenia) i wizyty bez zapowiedzi (audyty obiektów), oraz scenariusze: porównawczy (ten sam kierunek przy różnych niepełnosprawnościach) i wizyta w Centrum Dostępności (zaplanowana i kontrola lokalu).',
     scenarios: UCZELNIE,
   },
 };

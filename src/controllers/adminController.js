@@ -9,7 +9,7 @@ const { STATUS_LABELS } = require('../domain/workflow');
 const { DirectoryError } = require('../services/szoDirectory');
 const { paramId, httpError } = require('./helpers');
 
-function createAdminController({ objects, catalog, users, szoDirectory, notifier }) {
+function createAdminController({ objects, catalog, users, szoDirectory, notifier, importDomains = [], declarations, declarationRequired = true }) {
   const objectFormData = (extra = {}) => ({
     title: 'Obiekt', objectTypes: OBJECT_TYPES, errors: {}, values: {}, object: null,
     coordinators: users.listByRole(ROLES.COORDINATOR, ROLES.ADMIN), parents: objects.parentOptions(), ...extra,
@@ -178,11 +178,11 @@ function createAdminController({ objects, catalog, users, szoDirectory, notifier
     },
 
     /* ---------- Użytkownicy ---------- */
-    usersIndex: (req, res) => res.render('users/index', { title: 'Użytkownicy', users: users.list(), roleLabels: ROLE_LABELS, importEnabled: szoDirectory.enabled }),
+    usersIndex: (req, res) => res.render('users/index', { title: 'Użytkownicy', users: users.list(), roleLabels: ROLE_LABELS, importEnabled: szoDirectory.enabled, declared: declarations.acceptedMap(), declarationRequired }),
 
     /** Import osób z SZO: lista kont z uprawnieniem „Tajemniczy Klient”, których jeszcze nie ma w aplikacji. */
     async usersImportForm(req, res) {
-      const view = { title: 'Importuj użytkowników z SZO', roleLabels: ROLE_LABELS, enabled: szoDirectory.enabled, people: [], error: null, defaultRole: ROLES.AUDITOR };
+      const view = { title: 'Importuj użytkowników z SZO', importDomains, roleLabels: ROLE_LABELS, enabled: szoDirectory.enabled, people: [], error: null, defaultRole: ROLES.AUDITOR };
       if (!szoDirectory.enabled) return res.render('users/import', view);
       try {
         const existing = users.existingExternalIds();
@@ -193,6 +193,53 @@ function createAdminController({ objects, catalog, users, szoDirectory, notifier
         res.status(err.status === 400 ? 200 : 502);
       }
       return res.render('users/import', view);
+    },
+
+    /**
+     * Import po adresie e-mail: administrator wpisuje adresy osób (np. imie.nazwisko@feer.org.pl), aplikacja szuka ich wśród
+     * kont SZO z uprawnieniem do aplikacji i zakłada konta z wybraną rolą. Adresy muszą należeć do dozwolonych domen
+     * (IMPORT_EMAIL_DOMAINS, domyślnie feer.org.pl). Dane osoby zawsze pochodzą z SZO, nie z formularza.
+     */
+    async usersImportByEmail(req, res) {
+      const MAX = 50;
+      const addresses = [...new Set(String(req.body.emails || '').split(/[\s,;]+/).map((e) => e.trim().toLowerCase()).filter(Boolean))];
+      if (!addresses.length) { res.flash('error', 'Podaj adres e-mail osoby, którą chcesz zaimportować.'); return res.redirect(303, '/users/import'); }
+      if (addresses.length > MAX) { res.flash('error', `Za dużo adresów naraz (maksymalnie ${MAX}).`); return res.redirect(303, '/users/import'); }
+
+      const rejected = []; const valid = [];
+      for (const a of addresses) {
+        const m = /^[^\s@]+@([^\s@]+\.[^\s@]+)$/.exec(a);
+        if (!m || (importDomains.length && !importDomains.includes(m[1]))) rejected.push(a); else valid.push(a);
+      }
+      if (!valid.length) {
+        res.flash('error', `Nieprawidłowy adres lub domena spoza dozwolonych${importDomains.length ? ` (${importDomains.map((d) => `@${d}`).join(', ')})` : ''}: ${rejected.slice(0, 5).join(', ')}.`);
+        return res.redirect(303, '/users/import');
+      }
+      let people;
+      try { people = await szoDirectory.listUsers(); } catch (err) {
+        if (!(err instanceof DirectoryError)) throw err;
+        res.flash('error', err.message);
+        return res.redirect(303, '/users/import');
+      }
+      const role = Object.values(ROLES).includes(req.body.role) ? req.body.role : ROLES.AUDITOR;
+      const existing = users.existingExternalIds();
+      const byEmail = new Map(people.map((p) => [p.email, p]));
+      const imported = []; const already = []; const notFound = [];
+      for (const address of valid) {
+        const person = byEmail.get(address);
+        if (!person) { notFound.push(address); continue; }
+        if (existing.has(`szo:${person.id}`)) { already.push(address); continue; }
+        notifier.roleAssigned(users.upsertFromIdentity({ externalId: `szo:${person.id}`, name: person.name, email: person.email, role }));
+        imported.push(address);
+      }
+      const list = (a) => a.slice(0, 5).join(', ') + (a.length > 5 ? ` i ${a.length - 5} więcej` : '');
+      const parts = [];
+      if (imported.length) parts.push(`Zaimportowano (${imported.length}): ${list(imported)}.${notifier.enabled ? ' Każda z tych osób dostanie e-mail z informacją o koncie.' : ''}`);
+      if (already.length) parts.push(`Już w aplikacji (${already.length}): ${list(already)}.`);
+      if (notFound.length) parts.push(`Nie znaleziono w SZO (${notFound.length}): ${list(notFound)}. Sprawdź adres i nadaj tym osobom w SZO uprawnienie „Tajemniczy Klient” (konto musi być aktywne).`);
+      if (rejected.length) parts.push(`Odrzucono niepoprawne lub spoza dozwolonej domeny (${rejected.length}): ${list(rejected)}.`);
+      res.flash(imported.length ? 'success' : 'error', parts.join(' '));
+      return res.redirect(303, imported.length ? '/users' : '/users/import');
     },
 
     /**

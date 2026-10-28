@@ -73,7 +73,7 @@ test('formularz scenariusza: markup edytora, skrypt i uczciwy fallback bez JavaS
 
     const html = await (await fetch(`${base}/scenarios/${id}/edit`, { headers: { cookie } })).text();
     assert.match(html, /<textarea [^>]*name="steps"[^>]*data-steps-editor data-max-steps="30" data-max-length="300"[^>]*>Pierwszy\nDrugi<\/textarea>/, 'pole tekstowe jako źródło danych i fallback');
-    assert.match(html, /<script src="\/js\/steps-editor\.js" defer><\/script>/);
+    assert.match(html, /<script src="\/js\/steps-editor\.js\?v=[0-9a-f]{10}" defer><\/script>/);
     assert.match(html, /Bez JavaScriptu: jeden krok w wierszu/);
 
     const js = await fetch(`${base}/js/steps-editor.js`);

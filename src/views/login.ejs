@@ -44,14 +44,14 @@
       <button type="submit">Zaloguj (test)</button>
     </form>
   <% } else { %>
-    <p>Aplikacja korzysta z konta w systemie SZO. Zaloguj się w SZO – po powrocie zostaniesz automatycznie zalogowany.</p>
+    <p>Aplikacja korzysta z konta w Panelu Współpracownika. Zaloguj się w Panelu Współpracownika – po powrocie zostaniesz automatycznie zalogowany.</p>
     <% if (mode === 'szo') { %>
-      <a class="btn" href="/auth/szo/start">Zaloguj przez SZO</a>
-      <p class="muted">Zalogujesz się kontem Microsoft 365 w systemie SZO i potwierdzisz dostęp aplikacji.</p>
+      <a class="btn" href="/auth/szo/start">Zaloguj przez Panel Współpracownika</a>
+      <p class="muted">Zalogujesz się kontem Microsoft 365 w Panelu Współpracownika i potwierdzisz dostęp aplikacji.</p>
     <% } else if (loginUrl) { %>
-      <a class="btn" href="<%= loginUrl %>">Zaloguj przez SZO</a>
+      <a class="btn" href="<%= loginUrl %>">Zaloguj przez Panel Współpracownika</a>
     <% } else { %>
-      <p class="muted">Adres logowania SZO nie jest skonfigurowany (SZO_LOGIN_URL). Skontaktuj się z administratorem.</p>
+      <p class="muted">Adres logowania Panelu Współpracownika nie jest skonfigurowany (SZO_LOGIN_URL). Skontaktuj się z administratorem.</p>
     <% } %>
   <% } %>
 </div>

@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= title %> – Tajemniczy Klient</title>
-  <link rel="icon" type="image/svg+xml" href="/img/icon.svg">
-  <link rel="stylesheet" href="/css/app.css">
-  <script src="/js/app.js" defer></script>
+  <link rel="icon" type="image/svg+xml" href="<%= asset('img/icon.svg') %>">
+  <link rel="stylesheet" href="<%= asset('css/app.css') %>">
+  <script src="<%= asset('js/app.js') %>" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Przejdź do treści</a>
@@ -27,6 +27,7 @@
          const best = all.filter(([h]) => h === '/' ? currentPath === '/' : (currentPath === h || currentPath.startsWith(h + '/'))).sort((a, b) => b[0].length - a[0].length)[0];
          const adminCurrent = Boolean(best && adminLinks.some(([h]) => h === best[0]));
     %>
+    <% if (!locals.hideNav) { %>
     <nav aria-label="Główna">
       <ul>
         <% for (const [href, label] of links) { const here = best && best[0] === href; %>
@@ -46,6 +47,7 @@
         <% } %>
       </ul>
     </nav>
+    <% } %>
     <div class="user-box">
       <a href="/account" class="account-link"<% if (currentPath === '/account') { %> aria-current="page"<% } %>><%= currentUser.name %> (<%= roleLabels[currentUser.role] %>)</a>
       <form method="post" action="/logout"><button type="submit" class="link-button">Wyloguj</button></form>

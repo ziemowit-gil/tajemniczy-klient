@@ -36,12 +36,12 @@ const call = (cookie, method, url, data) => fetch(base + url, { method, headers:
 const pack = PACKS.uczelnie;
 
 test('paczka „uczelnie”: 7 grup potrzeb × (scenariusz zaplanowany + wizyta bez zapowiedzi), kompletna i poprawna', () => {
-  assert.equal(pack.scenarios.length, 14);
+  assert.equal(pack.scenarios.length, 17);
   const byUsage = (u) => pack.scenarios.filter((s) => s.usage === u);
-  assert.equal(byUsage('education').length, 7, 'moduł Dostępność kształcenia');
-  assert.equal(byUsage('audit').length, 7, 'audyty obiektów (bez zapowiedzi)');
-  assert.ok(byUsage('audit').every((s) => /^Bez zapowiedzi:/.test(s.title)));
-  assert.equal(new Set(pack.scenarios.map((s) => s.title.toLowerCase())).size, 14, 'tytuły są unikalne');
+  assert.equal(byUsage('education').length, 9, 'moduł Dostępność kształcenia');
+  assert.equal(byUsage('audit').length, 8, 'audyty obiektów');
+  assert.equal(byUsage('audit').filter((s) => /^Bez zapowiedzi:/.test(s.title)).length, 7, 'wizyty bez zapowiedzi');
+  assert.equal(new Set(pack.scenarios.map((s) => s.title.toLowerCase())).size, 17, 'tytuły są unikalne');
 
   // wszystkie grupy potrzeb z wiadomości źródłowej są pokryte
   const personas = new Set(pack.scenarios.map((s) => s.persona));
@@ -52,14 +52,27 @@ test('paczka „uczelnie”: 7 grup potrzeb × (scenariusz zaplanowany + wizyta 
     assert.ok(sc.goal && sc.expectedResult && sc.description, sc.title);
     assert.ok(sc.steps.length >= 4 && sc.steps.every((x) => x.length > 15 && x.length <= 300), `kroki: ${sc.title}`);
     assert.ok(sc.estimatedMinutes >= 1 && sc.estimatedMinutes <= 600);
-    assert.ok(Object.hasOwn(DISABILITIES, sc.persona) && Object.hasOwn(SCENARIO_USAGE, sc.usage));
+    assert.ok((sc.persona === null || Object.hasOwn(DISABILITIES, sc.persona)) && Object.hasOwn(SCENARIO_USAGE, sc.usage));
     // ten sam walidator co formularz administratora
     const { ok, errors } = parseForm(scenarioSchema, {
-      title: sc.title, description: sc.description, goal: sc.goal, persona: sc.persona, expectedResult: sc.expectedResult,
+      title: sc.title, description: sc.description, goal: sc.goal, persona: sc.persona || '', expectedResult: sc.expectedResult,
       estimatedMinutes: String(sc.estimatedMinutes), steps: sc.steps.join('\n'), areas: sc.areas || 'KSZTALCENIE', usage: sc.usage, active: 'on',
     });
     assert.ok(ok, `${sc.title}: ${JSON.stringify(errors)}`);
   }
+  // wizyta w Centrum Dostępności: wariant zaplanowany (kształcenie) i kontrola lokalu (audyt)
+  const centre = pack.scenarios.filter((s) => /^Wizyta w Centrum Dostępności/.test(s.title));
+  assert.deepEqual(centre.map((s) => s.usage).sort(), ['audit', 'education']);
+  assert.ok(centre.every((s) => s.persona === null && s.steps.some((x) => /pętl/i.test(x)) && s.steps.some((x) => /czytnik/i.test(x))));
+  assert.equal(centre.find((s) => s.usage === 'audit').areas, 'BOTH');
+  // scenariusz porównawczy: ten sam kierunek, różne niepełnosprawności, bez przypisanej jednej persony
+  const compare = pack.scenarios.find((s) => /^Kandydat zainteresowany kierunkiem/.test(s.title));
+  assert.ok(compare, 'jest scenariusz porównawczy dla kierunku');
+  assert.equal(compare.usage, 'education');
+  assert.equal(compare.persona, null, 'obejmuje różne grupy potrzeb');
+  assert.match(compare.description, /co najmniej dwa razy/);
+  assert.match(compare.description, /Wcielam się w osobę z/);
+  assert.ok(compare.steps.some((x) => /drugiej, innej grupy potrzeb/.test(x)) && compare.steps.some((x) => /Porównaj odpowiedzi/.test(x)));
   // scenariusze „kryzys” mają zabezpieczenie etyczne; scenariusze ADHD przypominają, by nie ujawniać diagnozy
   assert.ok(pack.scenarios.filter((s) => /kryzys|trudnej sytuacji psychicznej/.test(s.title)).every((s) => /bez odgrywania realnego kryzysu/.test(s.description)));
   const adhd = pack.scenarios.filter((s) => /ADHD/.test(s.title));
@@ -69,12 +82,12 @@ test('paczka „uczelnie”: 7 grup potrzeb × (scenariusz zaplanowany + wizyta 
   assert.ok(adhd.every((s) => s.steps.some((x) => /przypomnie|podsumowani/i.test(x))), 'kroki dotyczą przypomnień i pisemnych podsumowań');
 });
 
-test('import: dodaje 14 scenariuszy z krokami, jest idempotentny i nie nadpisuje zmian administratora', () => {
+test('import: dodaje 17 scenariuszy z krokami, jest idempotentny i nie nadpisuje zmian administratora', () => {
   const before = services.catalog.scenarios.list().length;
   const first = importPack(db, 'uczelnie');
-  assert.equal(first.added.length, 14);
+  assert.equal(first.added.length, 17);
   assert.equal(first.skipped.length, 0);
-  assert.equal(services.catalog.scenarios.list().length, before + 14);
+  assert.equal(services.catalog.scenarios.list().length, before + 17);
 
   const g = db.prepare(`SELECT * FROM scenarios WHERE title = 'Osoba Głucha: kontakt z uczelnią i wideorozmowa z tłumaczem PJM'`).get();
   assert.equal(g.usage, 'education');
@@ -89,7 +102,7 @@ test('import: dodaje 14 scenariuszy z krokami, jest idempotentny i nie nadpisuje
   db.prepare('DELETE FROM scenarios WHERE id = ?').run(removed);
   const second = importPack(db, 'uczelnie');
   assert.equal(second.added.length, 1, 'odtworzony tylko usunięty');
-  assert.equal(second.skipped.length, 13);
+  assert.equal(second.skipped.length, 16);
   assert.equal(db.prepare('SELECT goal FROM scenarios WHERE id = ?').get(g.id).goal, 'Cel zmieniony przez administratora');
 
   assert.throws(() => importPack(db, 'nie-ma'), /Nieznana paczka/);

@@ -97,7 +97,7 @@ function createNotifier(db, { config, mailer, users, objects }) {
         `Dostęp do panelu ${tpl.panel} uzyskasz po zalogowaniu na stronie:`,
         panel,
         '',
-        'Zaloguj się przyciskiem „Zaloguj przez SZO”, kontem Microsoft 365, którego używasz w SZO.',
+        'Zaloguj się przyciskiem „Zaloguj przez Panel Współpracownika”, kontem Microsoft 365, którego używasz w Panelu Współpracownika.',
         '',
         tpl.scope,
         '',

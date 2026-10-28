@@ -15,5 +15,5 @@
   <div class="field check"><input type="checkbox" id="active" name="active"<% if (values.active) { %> checked<% } %>><label for="active">Aktywny (można go przydzielać)</label></div>
   <div class="actions"><button type="submit">Zapisz</button><a class="btn btn-secondary" href="<%= scenario ? `/scenarios/${scenario.id}` : '/scenarios' %>">Anuluj</a></div>
 </form>
-<script src="/js/steps-editor.js" defer></script>
+<script src="<%= asset('js/steps-editor.js') %>" defer></script>
 <%- include('../partials/footer') %>

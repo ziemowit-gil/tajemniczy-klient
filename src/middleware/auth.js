@@ -46,6 +46,20 @@ function requireAuth(req, res, next) {
   return res.redirect(303, '/login');
 }
 
+/**
+ * Bramka oświadczenia: zalogowany użytkownik (sesja w przeglądarce) musi złożyć oświadczenie o poufności w aktualnej wersji,
+ * zanim skorzysta z aplikacji. Wyjątki: sama strona oświadczenia, wylogowanie i żądania API z tokenem Bearer.
+ */
+function requireDeclaration({ declarations, enabled }) {
+  return (req, res, next) => {
+    if (!enabled || req.authVia === 'bearer' || !req.user) return next();
+    if (req.path === '/declaration' || req.path === '/logout') return next();
+    if (declarations.isAccepted(req.user.id)) return next();
+    if (wantsJson(req)) return res.status(403).json({ error: 'Wymagane złożenie oświadczenia o poufności.' });
+    return res.redirect(303, '/declaration');
+  };
+}
+
 function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.user) return requireAuth(req, res, next);
@@ -86,4 +100,4 @@ function sameOriginOnly(cfg) {
   };
 }
 
-module.exports = { attachUser, requireAuth, requireRole, sameOriginOnly };
+module.exports = { attachUser, requireAuth, requireDeclaration, requireRole, sameOriginOnly };

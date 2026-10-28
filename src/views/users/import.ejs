@@ -4,6 +4,27 @@
   <a class="btn btn-secondary" href="/users">Wróć do użytkowników</a>
 </div>
 
+<% if (enabled) { %>
+<section aria-labelledby="by-email-h">
+  <h2 id="by-email-h">Dodaj osobę po adresie e-mail</h2>
+  <form method="post" action="/users/import/email" novalidate>
+    <div class="field field-wide">
+      <label for="emails">Adres e-mail osoby<%= importDomains.length ? ` (${importDomains.map((d) => '@' + d).join(', ')})` : '' %></label>
+      <p class="hint" id="emails-hint">Np. imie.nazwisko@<%= importDomains[0] || 'feer.org.pl' %>. Możesz wpisać kilka adresów, każdy w osobnym wierszu lub po przecinku. Konto musi być aktywne w SZO i mieć uprawnienie „Tajemniczy Klient”.</p>
+      <textarea id="emails" name="emails" rows="3" autocomplete="off" spellcheck="false" aria-describedby="emails-hint" required></textarea>
+    </div>
+    <div class="field">
+      <label for="email-role">Rola w aplikacji</label>
+      <select id="email-role" name="role">
+        <% for (const [v, l] of Object.entries(roleLabels)) { %><option value="<%= v %>"<% if (v === defaultRole) { %> selected<% } %>><%= l %></option><% } %>
+      </select>
+    </div>
+    <button type="submit">Importuj po adresie</button>
+  </form>
+</section>
+<h2>Albo wybierz z listy kont SZO</h2>
+<% } %>
+
 <% if (!enabled) { %>
   <div class="note-box">
     <p>Import z SZO nie jest skonfigurowany. Aby go włączyć:</p>

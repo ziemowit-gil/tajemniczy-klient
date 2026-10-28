@@ -1,10 +1,13 @@
 const path = require('node:path');
+const fs = require('node:fs');
+const crypto = require('node:crypto');
 const express = require('express');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 
 const { openDatabase } = require('./db');
 const { createSzoClient } = require('./services/szoAuth');
+const { createDeclarationsService } = require('./services/declarations');
 const { createSettingsService } = require('./services/settings');
 const { createSzoDirectory } = require('./services/szoDirectory');
 const { createSzoPkceClient } = require('./services/szoPkce');
@@ -29,6 +32,7 @@ const { createAdminController } = require('./controllers/adminController');
 const { createAuditsController } = require('./controllers/auditsController');
 const { createReportsController } = require('./controllers/reportsController');
 const { createOfficeController } = require('./controllers/officeController');
+const { createDeclarationController } = require('./controllers/declarationController');
 const { createSettingsController } = require('./controllers/settingsController');
 const { createStatsController } = require('./controllers/statsController');
 const { buildRouter } = require('./routes');
@@ -62,8 +66,21 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
   const mailer = mailerOverride || createMailer(config.mail, { szo: { ...config.szo, getApiKey: () => settings.szoApiKey() }, fetchImpl });
   const sessions = createSessionService(config);
   const stats = createStatsService(db, { objects, reports, office, audits });
+  const declarations = createDeclarationsService(db);
   const history = createHistoryService(db);
   const notifier = createNotifier(db, { config, mailer, users, objects });
+
+  /* --- adresy plików statycznych z odciskiem treści (?v=…): po wdrożeniu przeglądarka i CDN (Cloudflare) pobierają nową wersję --- */
+  const assetHashes = new Map();
+  const asset = (file) => {
+    let hash = assetHashes.get(file);
+    if (!hash) {
+      try { hash = crypto.createHash('sha1').update(fs.readFileSync(path.join(__dirname, 'public', file))).digest('hex').slice(0, 10); } catch { hash = '0'; }
+      if (config.isProd) assetHashes.set(file, hash);   // w rozwoju liczymy na bieżąco, żeby zmiany były od razu widoczne
+    }
+    return `/${file}?v=${hash}`;
+  };
+  const appVersion = require('../package.json').version.split('.').slice(0, 2).join('.');
 
   /* --- globalne dane widoków --- */
   Object.assign(app.locals, {
@@ -72,6 +89,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
     fmtDateTime: (s) => (s ? dateFmt.format(new Date(`${String(s).replace(' ', 'T')}Z`)) : '—'),
     fmtDate: (s) => (s ? dayFmt.format(new Date(`${s}T00:00:00Z`)) : '—'),
     appMode: config.szo.mode,
+    asset, appVersion,
   });
 
   /* --- middleware --- */
@@ -91,10 +109,11 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
 
   /* --- routing --- */
   app.use(buildRouter({
-    config,
-    auth: createAuthController({ config, szo, szoPkce, users, sessions, notifier }),
-    admin: createAdminController({ objects, catalog, users, szoDirectory, notifier }),
+    config, declarations,
+    auth: createAuthController({ config, szo, szoPkce, users, sessions, notifier, declarations }),
+    admin: createAdminController({ objects, catalog, users, szoDirectory, notifier, importDomains: config.szo.importDomains, declarations, declarationRequired: config.declarationRequired }),
     settingsCtl: createSettingsController({ settings, szoDirectory, config }),
+    declarationCtl: createDeclarationController({ declarations }),
     auditsCtl: createAuditsController({ audits, objects, users, catalog, attachments, reports, history, notifier }),
     reportsCtl: createReportsController({ reports, objects, audits }),
     statsCtl: createStatsController({ stats }),
@@ -118,7 +137,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
     return res.status(status).render('error', { title: 'Błąd', status, message });
   });
 
-  return { app, db, services: { users, objects, catalog, audits, attachments, reports, office, snapshots, sessions, history, notifier, stats, settings } };
+  return { app, db, services: { users, objects, catalog, audits, attachments, reports, office, snapshots, sessions, history, notifier, stats, settings, declarations } };
 }
 
 module.exports = { createApp };

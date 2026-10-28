@@ -4,6 +4,7 @@
   <div><dt>Imię i nazwisko</dt><dd><%= user.name %></dd></div>
   <div><dt>E-mail</dt><dd><%= user.email || 'brak (konto z SZO bez adresu e-mail)' %></dd></div>
   <div><dt>Rola</dt><dd><%= roleLabels[user.role] %></dd></div>
+  <div><dt>Oświadczenie o poufności</dt><dd><%= declaredAt ? `złożone ${fmtDateTime(declaredAt)}` : 'niezłożone' %></dd></div>
 </dl>
 
 <h2>Powiadomienia e-mail</h2>

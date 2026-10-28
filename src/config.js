@@ -21,6 +21,10 @@ const envSchema = z.object({
   SZO_BASE_URL: optional(z.url()),
   SZO_SCOPE: z.string().regex(/^[a-z0-9:_-]+$/).default('audytor:access'),
   ADMIN_EMAILS: z.string().default(''),
+  // Domeny adresów e-mail dozwolone przy imporcie osoby po adresie (panel Użytkownicy). Pusta wartość = dowolna domena.
+  // Wymóg złożenia oświadczenia o poufności po zalogowaniu. Domyślnie włączony (poza testami automatycznymi).
+  DECLARATION_REQUIRED: z.enum(['true', 'false']).optional(),
+  IMPORT_EMAIL_DOMAINS: z.string().default('feer.org.pl'),
   SZO_LOGIN_URL: optional(z.url()),
   SZO_JWT_SECRET: optional(z.string().min(16)),
   SZO_JWT_PUBLIC_KEY: optional(z.string()),
@@ -95,6 +99,7 @@ function loadConfig(env = process.env) {
     // Poza produkcją wolno użyć stałego sekretu, aby restart nie wylogowywał developera.
     sessionSecret: e.SESSION_SECRET || 'dev-only-secret-change-me-dev-only-secret',
     sessionTtlSeconds: Math.round(e.SESSION_TTL_HOURS * 3600),
+    declarationRequired: e.DECLARATION_REQUIRED ? e.DECLARATION_REQUIRED === 'true' : e.NODE_ENV !== 'test',
     mail: {
       mode: e.MAIL_MODE,
       from: e.MAIL_FROM,
@@ -107,6 +112,7 @@ function loadConfig(env = process.env) {
       loginUrl: e.SZO_LOGIN_URL,
       baseUrl: e.SZO_BASE_URL,
       scope: e.SZO_SCOPE,
+      importDomains: e.IMPORT_EMAIL_DOMAINS.split(',').map((x) => x.trim().toLowerCase().replace(/^@/, '')).filter(Boolean),
       adminEmails: e.ADMIN_EMAILS.split(',').map((x) => x.trim().toLowerCase()).filter(Boolean),
       jwtSecret: e.SZO_JWT_SECRET,
       jwtPublicKey: e.SZO_JWT_PUBLIC_KEY ? e.SZO_JWT_PUBLIC_KEY.replace(/\\n/g, '\n') : undefined,

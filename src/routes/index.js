@@ -1,10 +1,10 @@
 const express = require('express');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requireDeclaration, requireRole } = require('../middleware/auth');
 const { ROLES } = require('../domain/constants');
 
 const { ADMIN, AUDITOR, COORDINATOR } = ROLES;
 
-function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, settingsCtl, attachments, config }) {
+function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, settingsCtl, declarationCtl, declarations, attachments, config }) {
   const r = express.Router();
 
   /* --- publiczne --- */
@@ -18,6 +18,9 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, 
 
   /* --- wszystko poniżej wymaga zalogowania --- */
   r.use(requireAuth);
+  r.use(requireDeclaration({ declarations, enabled: config.declarationRequired }));
+  r.get('/declaration', declarationCtl.show);
+  r.post('/declaration', declarationCtl.accept);
   r.post('/logout', auth.logout);
   r.get('/', reportsCtl.dashboard);
   r.get('/account', auth.showAccount);
@@ -53,6 +56,7 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, 
   r.get('/users', requireRole(ADMIN), admin.usersIndex);
   r.get('/users/import', requireRole(ADMIN), admin.usersImportForm);
   r.post('/users/import', requireRole(ADMIN), admin.usersImport);
+  r.post('/users/import/email', requireRole(ADMIN), admin.usersImportByEmail);
   r.post('/users/:id', requireRole(ADMIN), admin.userUpdate);
 
   /* --- ustawienia: integracja z SZO (klucz API) --- */

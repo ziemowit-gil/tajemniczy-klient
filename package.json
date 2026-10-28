@@ -1,7 +1,7 @@
 {
   "name": "tajemniczy-klient",
-  "version": "1.0.0",
-  "description": "Audyty dostępności uczelni w ramach akcji „Tajemniczy Klient” (OZN + proces kształcenia)",
+  "version": "1.3.0",
+  "description": "Audyty dost\u0119pno\u015bci uczelni w ramach akcji \u201eTajemniczy Klient\u201d (OZN + proces kszta\u0142cenia)",
   "main": "src/server.js",
   "scripts": {
     "start": "node --env-file-if-exists=.env src/server.js",

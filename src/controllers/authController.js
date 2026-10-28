@@ -9,7 +9,7 @@ const devLoginSchema = z.object({
   role: z.enum(Object.values(ROLES), { error: 'Wybierz rolę' }),
 });
 
-function createAuthController({ config, szo, szoPkce, users, sessions, notifier }) {
+function createAuthController({ config, szo, szoPkce, users, sessions, notifier, declarations }) {
   const ssoEnabled = config.szo.mode === 'jwt' || config.szo.mode === 'api';
 
   return {
@@ -23,8 +23,8 @@ function createAuthController({ config, szo, szoPkce, users, sessions, notifier 
         values: {},
         demoUsers: config.szo.mode === 'dev' ? users.list().filter((u) => u.active && u.external_id.startsWith('dev:')) : [],
         authError: req.query.error === 'denied'
-          ? 'Twoje konto nie ma dostępu do aplikacji. Poproś administratora SZO o nadanie uprawnienia „Tajemniczy Klient”.'
-          : req.query.error ? 'Logowanie przez SZO nie powiodło się. Spróbuj ponownie.' : null,
+          ? 'Twoje konto nie ma dostępu do aplikacji. Poproś administratora Panelu Współpracownika o nadanie uprawnienia „Tajemniczy Klient”.'
+          : req.query.error ? 'Logowanie przez Panel Współpracownika nie powiodło się. Spróbuj ponownie.' : null,
       });
     },
 
@@ -82,7 +82,7 @@ function createAuthController({ config, szo, szoPkce, users, sessions, notifier 
     },
 
     showAccount(req, res) {
-      res.render('account', { title: 'Moje konto', mailEnabled: notifier.enabled, user: users.findById(req.user.id) });
+      res.render('account', { title: 'Moje konto', mailEnabled: notifier.enabled, user: users.findById(req.user.id), declaredAt: declarations.acceptedAt(req.user.id) });
     },
 
     updateAccount(req, res) {

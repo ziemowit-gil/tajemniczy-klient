@@ -135,3 +135,86 @@ test('strona użytkowników pokazuje przycisk importu, gdy klucz jest ustawiony'
   const admin = await session(withKey, { externalId: 'szo:1', name: 'Admin', email: 'admin@example.pl', role: 'administrator' });
   assert.match(await (await call(admin, 'GET', '/users')).text(), /href="\/users\/import"/);
 });
+
+const flashOf = (res) => decodeURIComponent((res.headers.getSetCookie().find((c) => c.startsWith('tk_flash=')) || '').split(';')[0].replace(/^tk_flash=/, '').replace(/\+/g, ' '));
+const roleOf = (externalId) => withKey.db.prepare('SELECT role FROM users WHERE external_id = ?').get(externalId)?.role;
+const importByEmail = (cookie, emails, role) => call(cookie, 'POST', '/users/import/email', { emails, ...(role ? { role } : {}) });
+
+test('import po adresie e-mail: konta z SZO po adresie @feer.org.pl, rola, wiele adresów i dane z SZO', async () => {
+  const admin = await session(withKey, { externalId: 'szo:1', name: 'Admin', email: 'admin@example.pl', role: 'administrator' });
+  szo.response = list(P(100, 'Jan Kowalski', 'jan.kowalski@feer.org.pl'), P(101, 'Maria Nowak', 'maria.nowak@feer.org.pl'), P(102, 'Ola Test', 'ola.test@feer.org.pl'));
+
+  // formularz jest widoczny, z informacją o dozwolonej domenie
+  const page = await (await call(admin, 'GET', '/users/import')).text();
+  assert.match(page, /Dodaj osobę po adresie e-mail/);
+  assert.match(page, /@feer\.org\.pl/);
+
+  // jeden adres, wielkie litery i spacje; rola domyślna audytor; dane (nazwa) z SZO
+  let res = await importByEmail(admin, '  Jan.Kowalski@FEER.org.pl  ');
+  assert.equal(res.status, 303);
+  assert.equal(res.headers.get('location'), '/users');
+  assert.match(flashOf(res), /Zaimportowano \(1\): jan\.kowalski@feer\.org\.pl/);
+  const jan = withKey.db.prepare(`SELECT name, email, role FROM users WHERE external_id = 'szo:100'`).get();
+  assert.deepEqual({ ...jan }, { name: 'Jan Kowalski', email: 'jan.kowalski@feer.org.pl', role: 'auditor' });
+
+  // kilka adresów (przecinek, średnik, nowa linia) z wybraną rolą
+  res = await importByEmail(admin, 'maria.nowak@feer.org.pl,\nola.test@feer.org.pl; maria.nowak@feer.org.pl', 'coordinator');
+  assert.match(flashOf(res), /Zaimportowano \(2\)/);
+  assert.equal(roleOf('szo:101'), 'coordinator');
+  assert.equal(roleOf('szo:102'), 'coordinator');
+});
+
+test('import po adresie: nieznany w SZO, już w aplikacji, zła domena i zły format są raportowane osobno', async () => {
+  const admin = await session(withKey, { externalId: 'szo:1', name: 'Admin', email: 'admin@example.pl', role: 'administrator' });
+  szo.response = list(P(110, 'Ewa Nowa', 'ewa.nowa@feer.org.pl'), P(111, 'Stały Użytkownik', 'staly@feer.org.pl'));
+  withKey.services.users.upsertFromIdentity({ externalId: 'szo:111', name: 'Stały Użytkownik', email: 'staly@feer.org.pl', role: 'auditor' });
+
+  const res = await importByEmail(admin, 'ewa.nowa@feer.org.pl brak.takiego@feer.org.pl staly@feer.org.pl obcy@gmail.com niepoprawny feer.org.pl');
+  const flash = flashOf(res);
+  assert.match(flash, /Zaimportowano \(1\): ewa\.nowa@feer\.org\.pl/);
+  assert.match(flash, /Już w aplikacji \(1\): staly@feer\.org\.pl/);
+  assert.match(flash, /Nie znaleziono w SZO \(1\): brak\.takiego@feer\.org\.pl\. Sprawdź adres i nadaj/);
+  assert.match(flash, /Odrzucono niepoprawne lub spoza dozwolonej domeny \(3\): obcy@gmail\.com, niepoprawny, feer\.org\.pl/);
+  assert.ok(flash.length < 1200, 'komunikat mieści się w ciasteczku flash');
+  assert.equal(roleOf('szo:110'), 'auditor');
+  assert.equal(withKey.db.prepare(`SELECT COUNT(*) AS n FROM users WHERE email = 'obcy@gmail.com'`).get().n, 0);
+});
+
+test('import po adresie: tylko obcy lub niepoprawny adres nie pyta SZO i wraca na formularz; puste i zbyt wiele', async () => {
+  const admin = await session(withKey, { externalId: 'szo:1', name: 'Admin', email: 'admin@example.pl', role: 'administrator' });
+  szo.calls.length = 0;
+  let res = await importByEmail(admin, 'ktos@example.pl');
+  assert.equal(res.headers.get('location'), '/users/import');
+  assert.match(flashOf(res), /domena spoza dozwolonych \(@feer\.org\.pl\): ktos@example\.pl/);
+  assert.equal(szo.calls.length, 0, 'odrzucone adresy nie powodują zapytania do SZO');
+
+  res = await importByEmail(admin, '   ');
+  assert.match(flashOf(res), /Podaj adres e-mail/);
+  const many = Array.from({ length: 51 }, (_, i) => `os${i}@feer.org.pl`).join(',');
+  res = await importByEmail(admin, many);
+  assert.match(flashOf(res), /Za dużo adresów naraz \(maksymalnie 50\)/);
+});
+
+test('import po adresie: błąd SZO, uprawnienia i konfiguracja domen', async () => {
+  const admin = await session(withKey, { externalId: 'szo:1', name: 'Admin', email: 'admin@example.pl', role: 'administrator' });
+  const auditor = await session(withKey, { externalId: 'szo:2', name: 'Audytor', email: 'a@example.pl', role: 'auditor' });
+  assert.equal((await importByEmail(auditor, 'x@feer.org.pl')).status, 403);
+
+  szo.response = { status: 401, json: {} };
+  const res = await importByEmail(admin, 'ktos@feer.org.pl');
+  assert.equal(res.headers.get('location'), '/users/import');
+  assert.match(flashOf(res), /odrzuciło klucz API/);
+
+  // domyślnie feer.org.pl, pusta wartość = dowolna domena, można podać kilka
+  assert.deepEqual(loadConfig(envBase).szo.importDomains, ['feer.org.pl']);
+  assert.deepEqual(loadConfig({ ...envBase, IMPORT_EMAIL_DOMAINS: '' }).szo.importDomains, []);
+  assert.deepEqual(loadConfig({ ...envBase, IMPORT_EMAIL_DOMAINS: ' @feer.org.pl, Example.PL ' }).szo.importDomains, ['feer.org.pl', 'example.pl']);
+  const open = boot({ SZO_API_KEY: 'klucz-importu-1234567890', IMPORT_EMAIL_DOMAINS: '' });
+  const srv = open.app.listen(0, '127.0.0.1'); await new Promise((r) => srv.once('listening', r));
+  try {
+    szo.response = list(P(120, 'Obca Domena', 'ktos@example.pl'));
+    const cookie = await session(open, { externalId: 'szo:1', name: 'Admin', email: 'admin@example.pl', role: 'administrator' });
+    const r = await fetch(`http://127.0.0.1:${srv.address().port}/users/import/email`, { method: 'POST', headers: { cookie }, body: new URLSearchParams({ emails: 'ktos@example.pl' }), redirect: 'manual' });
+    assert.match(flashOf(r), /Zaimportowano \(1\)/);
+  } finally { srv.close(); }
+});
