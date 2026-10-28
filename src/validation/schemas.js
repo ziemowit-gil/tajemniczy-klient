@@ -115,6 +115,14 @@ const officeQuestionSchema = criterionSchema.omit({ area: true });
 /** Import z SZO: zaznaczone id (`pick`) i role per osoba (`role_<id>`) – id i dane osób i tak są weryfikowane w SZO. */
 const importSchema = z.object({ pick: idList });
 
+/** Klucz API SZO wklejany w panelu: bez spacji i znaków sterujących, rozsądna długość. */
+const szoKeySchema = z.object({
+  apiKey: z.string({ error: 'Klucz API: wklej klucz z SZO' }).trim()
+    .min(16, 'Klucz API: zbyt krótki (minimum 16 znaków)')
+    .max(300, 'Klucz API: zbyt długi')
+    .regex(/^[A-Za-z0-9_\-.~+\/=]+$/, 'Klucz API: dozwolone litery, cyfry i znaki _ - . ~ + / = (bez spacji)'),
+});
+
 const idParam = z.coerce.number().int().positive();
 
 /** Zwraca { ok, data, errors } gdzie errors to mapa pole → komunikat (pierwszy błąd pola). */
@@ -131,5 +139,5 @@ function parseForm(schema, body) {
 
 module.exports = {
   objectSchema, criterionSchema, scenarioSchema, auditCreateSchema, answersSchema,
-  reviewSchema, returnSchema, userUpdateSchema, officeReviewSchema, scenarioAssignSchema, officeDetailsSchema, officeQuestionSchema, importSchema, idParam, parseForm,
+  reviewSchema, returnSchema, userUpdateSchema, officeReviewSchema, scenarioAssignSchema, officeDetailsSchema, officeQuestionSchema, importSchema, szoKeySchema, idParam, parseForm,
 };

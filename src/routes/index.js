@@ -4,7 +4,7 @@ const { ROLES } = require('../domain/constants');
 
 const { ADMIN, AUDITOR, COORDINATOR } = ROLES;
 
-function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, attachments, config }) {
+function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, settingsCtl, attachments, config }) {
   const r = express.Router();
 
   /* --- publiczne --- */
@@ -54,6 +54,12 @@ function buildRouter({ auth, admin, auditsCtl, reportsCtl, officeCtl, statsCtl, 
   r.get('/users/import', requireRole(ADMIN), admin.usersImportForm);
   r.post('/users/import', requireRole(ADMIN), admin.usersImport);
   r.post('/users/:id', requireRole(ADMIN), admin.userUpdate);
+
+  /* --- ustawienia: integracja z SZO (klucz API) --- */
+  r.get('/settings/szo', requireRole(ADMIN), settingsCtl.show);
+  r.post('/settings/szo', requireRole(ADMIN), settingsCtl.save);
+  r.post('/settings/szo/check', requireRole(ADMIN), settingsCtl.check);
+  r.post('/settings/szo/clear', requireRole(ADMIN), settingsCtl.clear);
 
   /* --- audyty --- */
   r.get('/audits', auditsCtl.index);

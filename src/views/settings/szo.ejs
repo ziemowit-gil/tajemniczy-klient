@@ -1,0 +1,66 @@
+<%- include('../partials/header') %>
+<h1>Integracja z SZO</h1>
+<p class="muted">Klucz API z SZO (Zarządzaj API) daje aplikacji dwie możliwości: <strong>import użytkowników</strong> (uprawnienie „Tajemniczy Klient — lista użytkowników”, <code>audytor:users</code>) i <strong>wysyłkę powiadomień e-mail</strong> przez SZO (uprawnienie „Tajemniczy Klient — wysyłka powiadomień”, <code>audytor:mail</code>).</p>
+
+<% if (!szoMode) { %><div class="note-box">Logowanie przez SZO nie jest włączone w tej instalacji (tryb inny niż <code>szo</code>), więc import użytkowników jest niedostępny. Klucz nadal można zapisać dla wysyłki e-mail.</div><% } %>
+
+<section aria-labelledby="state-h">
+  <h2 id="state-h">Stan</h2>
+  <dl class="audit-meta">
+    <div><dt>Adres SZO</dt><dd><%= baseUrl || 'nie ustawiono (SZO_BASE_URL)' %></dd></div>
+    <div>
+      <dt>Klucz API</dt>
+      <dd>
+        <% if (info.source === 'panel') { %>
+          zapisany w panelu (kończy się na „<%= info.tail || '…' %>”), zaszyfrowany w bazie<br>
+          <span class="muted"><%= fmtDateTime(info.updatedAt) %><%= info.updatedBy ? `, ${info.updatedBy}` : '' %></span>
+        <% } else if (info.source === 'env') { %>
+          z pliku <code>.env</code> (kończy się na „<%= info.tail || '…' %>”)
+        <% } else { %>
+          brak
+        <% } %>
+      </dd>
+    </div>
+    <div><dt>Powiadomienia e-mail</dt><dd><%= mailMode === 'szo' ? 'włączone, wysyłka przez SZO' : mailMode === 'smtp' ? 'włączone, własny SMTP' : mailMode === 'log' ? 'tryb testowy (tylko konsola)' : 'wyłączone' %></dd></div>
+  </dl>
+  <% if (info.unreadable) { %><div class="error-summary" role="alert">Zapisanego w panelu klucza nie da się odczytać (zmieniono <code>SESSION_SECRET</code>). Wklej klucz ponownie.</div><% } %>
+  <% if (mailMode === 'off') { %><p class="muted">Aby powiadomienia ruszyły, ustaw w pliku <code>.env</code> <code>MAIL_MODE=szo</code> i zrestartuj stronę. Samo wklejenie klucza ich nie włącza.</p><% } %>
+</section>
+
+<% if (results) { %>
+<section aria-labelledby="res-h" role="status">
+  <h2 id="res-h">Wynik sprawdzenia</h2>
+  <ul>
+    <li><strong>Import użytkowników:</strong> <%= results.users.ok ? 'OK, ' : 'błąd: ' %><%= results.users.message %></li>
+    <li><strong>Wysyłka e-mail:</strong> <%= results.mail.ok ? 'OK, ' : 'błąd: ' %><%= results.mail.message %></li>
+  </ul>
+</section>
+<% } %>
+
+<section aria-labelledby="key-h">
+  <h2 id="key-h"><%= info.source === 'panel' ? 'Zmień klucz API' : 'Wklej klucz API' %></h2>
+  <% if (Object.keys(errors).length) { %><div class="error-summary" role="alert">Klucz nie został zapisany. Popraw zaznaczone pole.</div><% } %>
+  <form method="post" action="/settings/szo" novalidate>
+    <div class="field">
+      <label for="apiKey">Klucz API z SZO</label>
+      <p class="hint" id="apiKey-hint">Klucz jest widoczny w SZO tylko raz, zaraz po utworzeniu. Po zapisaniu nie będzie już wyświetlany, a w bazie jest przechowywany zaszyfrowany.</p>
+      <input type="password" id="apiKey" name="apiKey" autocomplete="new-password" spellcheck="false" autocapitalize="off" required
+        aria-describedby="apiKey-hint<%= errors.apiKey ? ' apiKey-err' : '' %>"<% if (errors.apiKey) { %> aria-invalid="true"<% } %>>
+      <% if (errors.apiKey) { %><p class="field-error" id="apiKey-err"><%= errors.apiKey %></p><% } %>
+    </div>
+    <button type="submit">Zapisz i sprawdź</button>
+  </form>
+</section>
+
+<% if (info.source) { %>
+<section aria-labelledby="act-h">
+  <h2 id="act-h">Działania</h2>
+  <div class="actions">
+    <form method="post" action="/settings/szo/check"><button type="submit" class="btn-secondary">Sprawdź połączenie i uprawnienia</button></form>
+    <% if (info.source === 'panel') { %>
+      <form method="post" action="/settings/szo/clear" data-confirm="Usunąć klucz zapisany w panelu?<%= info.envFallback ? ' Aplikacja wróci do klucza z pliku .env.' : ' Import użytkowników i wysyłka przez SZO przestaną działać.' %>"><button type="submit" class="btn btn-danger">Usuń klucz zapisany w panelu</button></form>
+    <% } %>
+  </div>
+</section>
+<% } %>
+<%- include('../partials/footer') %>

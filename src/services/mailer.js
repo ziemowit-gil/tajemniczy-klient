@@ -39,7 +39,7 @@ function createMailer(mail, { logger = console, szo = {}, fetchImpl = globalThis
     try {
       res = await fetchImpl(url, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${szo.apiKey}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: { Authorization: `Bearer ${szo.getApiKey ? szo.getApiKey() : szo.apiKey}`, 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ recipients: [{ email: to }], subject: singleLine(subject), message: text }),
         signal: AbortSignal.timeout(szo.timeoutMs || 10000),
       });

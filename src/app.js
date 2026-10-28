@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 
 const { openDatabase } = require('./db');
 const { createSzoClient } = require('./services/szoAuth');
+const { createSettingsService } = require('./services/settings');
 const { createSzoDirectory } = require('./services/szoDirectory');
 const { createSzoPkceClient } = require('./services/szoPkce');
 const { createSessionService } = require('./services/session');
@@ -28,6 +29,7 @@ const { createAdminController } = require('./controllers/adminController');
 const { createAuditsController } = require('./controllers/auditsController');
 const { createReportsController } = require('./controllers/reportsController');
 const { createOfficeController } = require('./controllers/officeController');
+const { createSettingsController } = require('./controllers/settingsController');
 const { createStatsController } = require('./controllers/statsController');
 const { buildRouter } = require('./routes');
 const { ROLE_LABELS, AREA_LABELS, OBJECT_TYPES } = require('./domain/constants');
@@ -37,7 +39,7 @@ const { pct, answerLabel } = require('./services/exporters');
 const dateFmt = new Intl.DateTimeFormat('pl-PL', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Warsaw' });
 const dayFmt = new Intl.DateTimeFormat('pl-PL', { dateStyle: 'long', timeZone: 'UTC' });
 
-function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), szoClient, mailer = createMailer(config.mail, { szo: config.szo, fetchImpl }) } = {}) {
+function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), szoClient, mailer: mailerOverride } = {}) {
   const app = express();
   app.disable('x-powered-by');
   if (config.trustProxy) app.set('trust proxy', 1);
@@ -55,7 +57,9 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
   const office = createOfficeReviewsService(db, { objects, users, snapshots });
   const szo = szoClient || createSzoClient(config.szo);
   const szoPkce = createSzoPkceClient(config, { fetchImpl });
-  const szoDirectory = createSzoDirectory(config, { fetchImpl });
+  const settings = createSettingsService(db, config);
+  const szoDirectory = createSzoDirectory(config, { fetchImpl, getApiKey: () => settings.szoApiKey() });
+  const mailer = mailerOverride || createMailer(config.mail, { szo: { ...config.szo, getApiKey: () => settings.szoApiKey() }, fetchImpl });
   const sessions = createSessionService(config);
   const stats = createStatsService(db, { objects, reports, office, audits });
   const history = createHistoryService(db);
@@ -90,6 +94,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
     config,
     auth: createAuthController({ config, szo, szoPkce, users, sessions, notifier }),
     admin: createAdminController({ objects, catalog, users, szoDirectory, notifier }),
+    settingsCtl: createSettingsController({ settings, szoDirectory, config }),
     auditsCtl: createAuditsController({ audits, objects, users, catalog, attachments, reports, history, notifier }),
     reportsCtl: createReportsController({ reports, objects, audits }),
     statsCtl: createStatsController({ stats }),
@@ -113,7 +118,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
     return res.status(status).render('error', { title: 'Błąd', status, message });
   });
 
-  return { app, db, services: { users, objects, catalog, audits, attachments, reports, office, snapshots, sessions, history, notifier, stats } };
+  return { app, db, services: { users, objects, catalog, audits, attachments, reports, office, snapshots, sessions, history, notifier, stats, settings } };
 }
 
 module.exports = { createApp };

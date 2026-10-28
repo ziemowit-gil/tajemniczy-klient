@@ -1,5 +1,6 @@
 <%- include('partials/header') %>
-<div class="login-box">
+<div class="login-hero">
+<div class="login-box login-card">
   <h1>Logowanie</h1>
   <% if (authError) { %><div class="error-summary" role="alert"><%= authError %></div><% } %>
 
@@ -53,5 +54,6 @@
       <p class="muted">Adres logowania SZO nie jest skonfigurowany (SZO_LOGIN_URL). Skontaktuj się z administratorem.</p>
     <% } %>
   <% } %>
+</div>
 </div>
 <%- include('partials/footer') %>

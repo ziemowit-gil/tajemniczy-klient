@@ -67,7 +67,8 @@ function loadConfig(env = process.env) {
     problems.push('Tryb jwt wymaga SZO_JWT_SECRET albo SZO_JWT_PUBLIC_KEY');
   }
   if (e.MAIL_MODE === 'smtp' && (!e.SMTP_HOST || !e.MAIL_FROM)) problems.push('Tryb smtp wymaga SMTP_HOST i MAIL_FROM');
-  if (e.MAIL_MODE === 'szo' && (!e.SZO_BASE_URL || !e.SZO_API_KEY)) problems.push('Tryb szo (wysyłka przez SZO / Microsoft Graph) wymaga SZO_BASE_URL i SZO_API_KEY');
+  // Klucz API SZO może pochodzić z .env albo zostać wklejony w panelu (Administracja → Integracja z SZO), więc nie jest wymagany przy starcie.
+  if (e.MAIL_MODE === 'szo' && !e.SZO_BASE_URL) problems.push('Tryb szo (wysyłka przez SZO / Microsoft Graph) wymaga SZO_BASE_URL');
   if (e.MAIL_MODE !== 'off' && !e.APP_URL) problems.push('Powiadomienia e-mail wymagają APP_URL (odnośniki w wiadomościach)');
   if (e.SZO_AUTH_MODE === 'szo' && !e.SZO_BASE_URL) problems.push('Tryb szo wymaga SZO_BASE_URL (np. https://szo.feer.org.pl)');
   if (e.SZO_AUTH_MODE === 'szo' && !e.APP_URL) problems.push('Tryb szo wymaga APP_URL (adres powrotu z SZO)');

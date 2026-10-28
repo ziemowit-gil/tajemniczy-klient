@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= title %> – Tajemniczy Klient</title>
+  <link rel="icon" type="image/svg+xml" href="/img/icon.svg">
   <link rel="stylesheet" href="/css/app.css">
   <script src="/js/app.js" defer></script>
 </head>
@@ -20,7 +21,7 @@
          links.push(['/office', 'Dostępność kształcenia']);
          if (role === 'administrator' || role === 'coordinator') { links.push(['/objects', 'Obiekty']); links.push(['/reports', 'Raporty']); links.push(['/stats', 'Statystyki']); }
          const adminLinks = role === 'administrator'
-           ? [['/criteria', 'Kryteria audytu'], ['/scenarios', 'Scenariusze'], ['/office/questions', 'Pytania: kształcenie'], ['/users', 'Użytkownicy']]
+           ? [['/criteria', 'Kryteria audytu'], ['/scenarios', 'Scenariusze'], ['/office/questions', 'Pytania: kształcenie'], ['/users', 'Użytkownicy'], ['/settings/szo', 'Integracja z SZO']]
            : [];
          const all = links.concat(adminLinks);
          const best = all.filter(([h]) => h === '/' ? currentPath === '/' : (currentPath === h || currentPath.startsWith(h + '/'))).sort((a, b) => b[0].length - a[0].length)[0];

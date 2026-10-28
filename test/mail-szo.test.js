@@ -48,11 +48,13 @@ test('szo: klasyfikacja błędów na trwałe i przejściowe', async () => {
   await assert.rejects(failing.send(msg), (err) => err.permanent === false && /niedostępne/.test(err.message));
 });
 
-test('konfiguracja: MAIL_MODE=szo wymaga SZO_BASE_URL i SZO_API_KEY oraz APP_URL', () => {
-  const env = { NODE_ENV: 'test', SZO_AUTH_MODE: 'dev', MAIL_MODE: 'szo', APP_URL: 'https://a.example.pl' };
-  assert.throws(() => loadConfig(env), /SZO_BASE_URL i SZO_API_KEY/);
-  assert.throws(() => loadConfig({ ...env, SZO_BASE_URL: 'https://szo.example.pl' }), /SZO_API_KEY/);
-  assert.equal(loadConfig({ ...env, SZO_BASE_URL: 'https://szo.example.pl', SZO_API_KEY: 'k'.repeat(20) }).mail.mode, 'szo');
+test('konfiguracja: MAIL_MODE=szo wymaga SZO_BASE_URL i APP_URL, a klucz API może pochodzić z panelu', () => {
+  const env = { NODE_ENV: 'test', SZO_AUTH_MODE: 'dev', MAIL_MODE: 'szo' };
+  assert.throws(() => loadConfig(env), /SZO_BASE_URL/);
+  assert.throws(() => loadConfig({ ...env, SZO_BASE_URL: 'https://szo.example.pl' }), /APP_URL/);
+  const cfg = loadConfig({ ...env, SZO_BASE_URL: 'https://szo.example.pl', APP_URL: 'https://a.example.pl' });
+  assert.equal(cfg.mail.mode, 'szo');
+  assert.equal(cfg.szo.apiKey, undefined, 'bez klucza w .env start jest możliwy (klucz wklejany w panelu)');
 });
 
 /** Integracja: zdarzenie → kolejka → wysyłka przez (atrapę) SZO. */

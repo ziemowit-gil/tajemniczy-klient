@@ -5,7 +5,7 @@
  *
  * Paczka „uczelnie” przenosi na grunt szkolnictwa wyższego układ scenariuszy testowych stosowany przy ocenie
  * obsługi osób ze szczególnymi potrzebami: informacje na stronie → kontakt i prośba o spotkanie → spotkanie
- * z asystą/tłumaczem → formularz i ankieta → omówienie poprawek. Dla każdej grupy potrzeb są dwa warianty:
+ * z asystą/tłumaczem → formularz i ankieta → omówienie poprawek. Dla każdej z siedmiu grup potrzeb są dwa warianty:
  *   • scenariusz zaplanowany (moduł „Dostępność kształcenia”: audytor jako kandydat lub student),
  *   • wizyta „tajemniczego klienta” bez zapowiedzi (audyty obiektów).
  */
@@ -101,6 +101,21 @@ const UCZELNIE = [
       'Omów, co można poprawić: dostępność terminów, informacje w nagłych sytuacjach, poufność.',
     ],
   },
+  {
+    usage: E, persona: 'psychiczna', estimatedMinutes: 75,
+    title: 'Osoba z ADHD: kontakt z uczelnią, jasne instrukcje i spokojne spotkanie',
+    description: 'Wciel się w kandydata lub studenta z ADHD (neuroróżnorodność): trudno Ci utrzymać uwagę przy długich, nieuporządkowanych informacjach, łatwo gubisz terminy i męczą Cię bodźce. Nie ujawniaj diagnozy ponad to, co konieczne do uzyskania dostosowań.',
+    goal: 'Ocenić, czy uczelnia komunikuje się krótko i konkretnie, pomaga pilnować terminów i oferuje dostosowania dla osób z ADHD.',
+    expectedResult: 'Ocena czytelności informacji i formularzy, sposobu przypominania o terminach, warunków spotkania (spokój, tempo, podsumowanie pisemne) oraz dostępnych dostosowań na zajęciach i egzaminach.',
+    steps: [
+      'Przeczytaj na stronie uczelni informacje o wsparciu i oceń ich przydatność: czy są krótkie, uporządkowane, z listą kroków, terminami i wyróżnionymi najważniejszymi sprawami.',
+      'Skontaktuj się z uczelnią (mail, SMS lub formularz) z prośbą o spotkanie i informację, jak zgłosić potrzebę dostosowań. Zanotuj dostępne kanały, czas odpowiedzi i to, czy odpowiedź jest zwięzła i zawiera konkretne kolejne kroki.',
+      'Umów spotkanie. Zanotuj, czy zaproponowano przypomnienie o terminie (mail lub SMS), krótsze spotkanie albo możliwość przerwy.',
+      'Na spotkaniu oceń warunki: miejsce bez rozpraszaczy, jedna sprawa naraz, spokojne tempo. Poproś o pisemne podsumowanie kroków i terminów. Wypełnij z pracownikiem formularz zgłoszenia potrzeb i ankietę.',
+      'Zapytaj o dostosowania typowe dla ADHD: dodatkowy czas i osobne, ciche pomieszczenie na egzaminach, przerwy, elastyczne terminy zadań, materiały podzielone na części oraz wsparcie w planowaniu nauki. Zanotuj odpowiedzi.',
+      'Omów, co można poprawić: przypomnienia o terminach, długość i układ informacji, formularze, sposób prowadzenia rozmowy.',
+    ],
+  },
 
   /* ------------------------- wizyty bez zapowiedzi (audyty obiektów) ------------------------- */
   {
@@ -187,12 +202,26 @@ const UCZELNIE = [
       'Zanotuj, czy pracownik zaproponował umówienie wizyty od razu.',
     ],
   },
+  {
+    usage: A, areas: 'BOTH', persona: 'psychiczna', estimatedMinutes: 45,
+    title: 'Bez zapowiedzi: osoba z ADHD w dziekanacie w godzinach największego ruchu',
+    description: 'Wizyta „tajemniczego klienta” bez uprzedzenia. Wciel się w osobę z ADHD, która przychodzi do dziekanatu w godzinach największego ruchu i potrzebuje załatwić sprawę wymagającą kilku kroków. Nie ujawniaj diagnozy, dopóki pracownik o nią nie zapyta lub nie będzie to konieczne.',
+    goal: 'Sprawdzić, czy obsługa i otoczenie są przyjazne dla osoby, której przeszkadzają bodźce i długie, rozproszone instrukcje.',
+    expectedResult: 'Ocena hałasu i rozpraszaczy, czytelności kolejki i oznaczeń, sposobu dzielenia sprawy na kroki, pisemnych podsumowań oraz możliwości przerwy lub spokojniejszego miejsca.',
+    steps: [
+      'Wejdź w godzinach największego ruchu. Oceń hałas, tłok, czytelność kolejki (numerki, tablica) i oznaczeń oraz to, czy łatwo zorientować się, do kogo podejść.',
+      'Poproś o załatwienie sprawy wymagającej kilku kroków (np. zaświadczenie i ustalenie terminu odbioru). Obserwuj, czy pracownik dzieli sprawę na kroki, mówi krótko i sprawdza, czy rozumiesz.',
+      'Poproś o spisanie kroków i terminów (kartka, mail lub wiadomość). Zanotuj, czy otrzymujesz pisemne podsumowanie.',
+      'Zapytaj, czy możliwa jest chwila przerwy lub rozmowa w spokojniejszym miejscu. Zanotuj odpowiedź.',
+      'Zapytaj o przypomnienie o terminie (mail lub SMS) i zanotuj czas obsługi oraz komfort rozmowy.',
+    ],
+  },
 ];
 
 const PACKS = {
   uczelnie: {
     label: 'Przykładowe scenariusze dla uczelni',
-    description: 'Sześć grup potrzeb (Głusi, niedosłyszący, ruchowe, wzroku, poznawcze, kryzys psychiczny), każda w wariancie zaplanowanym (Dostępność kształcenia) i wizyty bez zapowiedzi (audyty obiektów).',
+    description: 'Siedem grup potrzeb (Głusi, niedosłyszący, ruchowe, wzroku, poznawcze, kryzys psychiczny, ADHD), każda w wariancie zaplanowanym (Dostępność kształcenia) i wizyty bez zapowiedzi (audyty obiektów).',
     scenarios: UCZELNIE,
   },
 };

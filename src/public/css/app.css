@@ -182,3 +182,17 @@ td.actions form, .actions form { margin: 0; }
 @media (max-width: 40rem) {
   .nav-group > ul { position: static; border-width: 0; padding: 0 0 0 .75rem; margin: 0; min-width: 0; }
 }
+
+/* Strona logowania: dekoracyjne tło (obraz CSS, bez treści dla czytników ekranu) + biała karta z formularzem,
+   więc kontrast tekstu nie zależy od tła. W trybie wysokiego kontrastu przeglądarka i tak usuwa obrazy tła. */
+.login-hero {
+  margin: 0; padding: 3rem 1rem 5rem; min-height: calc(100vh - 5.5rem);
+  background: #eef3fc url("/img/login-bg.svg") center / cover no-repeat;
+}
+/* Strona logowania zajmuje całą szerokość okna (reszta stron ma wąską kolumnę). */
+main:has(> .login-hero) { max-width: none; padding: 0; }
+.login-card { background: #fff; border-radius: 12px; padding: 2rem 2rem 1.75rem; margin: 0 auto; }
+.login-card h1 { margin-top: 0; }
+@media (min-width: 64rem) { .login-hero { padding-top: 5rem; } .login-card { margin-left: max(8%, calc((100% - 72rem) / 2 + 1rem)); margin-right: auto; } }
+@media (max-width: 40rem) { .login-card { padding: 1.25rem; } }
+@media print { .login-hero { background: none; } }

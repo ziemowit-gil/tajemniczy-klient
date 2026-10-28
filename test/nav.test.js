@@ -69,3 +69,26 @@ test('koordynator i audytor nie widzą grupy Administracja', async () => {
   assert.doesNotMatch(u, /nav-group|Administracja|Obiekty|Raporty|Statystyki/);
   assert.match(u, />Moje audyty<\/a>/);
 });
+
+test('strona logowania: dekoracyjne tło i ikona jako zasoby statyczne, formularz na białej karcie', async () => {
+  const html = await (await fetch(`${base}/login`)).text();
+  assert.match(html, /<div class="login-hero">\s*<div class="login-box login-card">/);
+  assert.match(html, /<link rel="icon" type="image\/svg\+xml" href="\/img\/icon\.svg">/);
+  assert.doesNotMatch(html, /login-bg/, 'tło jest w CSS, nie w treści strony (dekoracja)');
+
+  const css = await (await fetch(`${base}/css/app.css`)).text();
+  assert.match(css, /\.login-hero\s*\{[^}]*url\("\/img\/login-bg\.svg"\)/);
+  assert.match(css, /\.login-card\s*\{[^}]*background:\s*#fff/, 'tekst leży na białej karcie');
+
+  for (const file of ['login-bg.svg', 'icon.svg']) {
+    const res = await fetch(`${base}/img/${file}`);
+    assert.equal(res.status, 200, file);
+    assert.match(res.headers.get('content-type'), /image\/svg\+xml/);
+    const svg = await res.text();
+    assert.doesNotMatch(svg, /<script|onload=|onclick=|href="http|xlink:href|<foreignObject/i, 'SVG bez skryptów i zasobów zewnętrznych');
+    assert.ok(svg.length < 6000, 'lekki plik');
+  }
+  // CSP dopuszcza obrazy z własnej domeny
+  const csp = (await fetch(`${base}/login`)).headers.get('content-security-policy');
+  assert.match(csp, /img-src 'self'/);
+});

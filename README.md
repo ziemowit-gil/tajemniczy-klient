@@ -55,9 +55,13 @@ Nazwy pól tokenu ustawiasz w `SZO_CLAIM_*`. Role z SZO mapuje `SZO_ROLE_MAP`, n
 
 > **Założenie:** format tokenu i endpointu SZO nie był dostępny przy tworzeniu aplikacji, dlatego pola są w pełni konfigurowalne. Przed wdrożeniem dopasuj `SZO_CLAIM_*`, `SZO_ROLE_MAP` i tryb do rzeczywistego SZO.
 
+## Integracja z SZO: klucz API w panelu
+
+Klucz API z SZO wklejasz w **Administracja → Integracja z SZO** (bez edycji `.env` na serwerze). Jest zapisywany w bazie **zaszyfrowany** (AES-256-GCM, klucz pochodny od `SESSION_SECRET`), nigdy nie jest wyświetlany ponownie (panel pokazuje tylko ostatnie 4 znaki, kto i kiedy go zapisał) i ma pierwszeństwo przed `SZO_API_KEY` z `.env`. Przycisk „Zapisz i sprawdź” (oraz „Sprawdź połączenie i uprawnienia”) weryfikuje, czy klucz działa dla importu użytkowników (`audytor:users`) i wysyłki poczty (`audytor:mail`). Usunięcie klucza z panelu przywraca klucz z `.env` (jeśli jest). Zmiana `SESSION_SECRET` unieważnia zapisany klucz: panel to zgłasza i trzeba wkleić go ponownie. Wysyłkę e-mail włącza dopiero `MAIL_MODE=szo` w `.env`.
+
 ## Import użytkowników z SZO
 
-W panelu **Użytkownicy → Importuj z SZO** administrator wybiera osoby z SZO i nadaje im role, zamiast czekać na ich pierwsze logowanie. Lista pochodzi z endpointu SZO `api/v1/audytor_users.php` (aktywne konta z uprawnieniem „Tajemniczy Klient”, tylko id, imię i nazwisko, e-mail). Dane osób są zawsze pobierane z SZO przy zapisie, nie z formularza, a konto ma ten sam identyfikator (`szo:<id>`) co przy logowaniu, więc po pierwszym logowaniu osoba trafia na zaimportowane konto. Wymaga klucza API z uprawnieniem `audytor:users` w `SZO_API_KEY`.
+W panelu **Użytkownicy → Importuj z SZO** administrator wybiera osoby z SZO i nadaje im role, zamiast czekać na ich pierwsze logowanie. Lista pochodzi z endpointu SZO `api/v1/audytor_users.php` (aktywne konta z uprawnieniem „Tajemniczy Klient”, tylko id, imię i nazwisko, e-mail). Dane osób są zawsze pobierane z SZO przy zapisie, nie z formularza, a konto ma ten sam identyfikator (`szo:<id>`) co przy logowaniu, więc po pierwszym logowaniu osoba trafia na zaimportowane konto. Wymaga klucza API z uprawnieniem `audytor:users` (wklejonego w panelu lub w `SZO_API_KEY`).
 
 ## Role i uprawnienia
 
