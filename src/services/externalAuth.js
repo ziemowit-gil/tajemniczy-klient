@@ -41,7 +41,8 @@ function createExternalAuth(db, { config, users, sms }) {
 
   const svc = {
     LIMITS, normalizePhone, maskPhone,
-    get enabled() { return sms.enabled; },
+    // Przy logowaniu jednokrotnym (tryb logto) konta zewnętrzne są wyłączone: jedyną drogą jest FEER SSO.
+    get enabled() { return config.szo.mode !== 'logto' && sms.enabled; },
 
     /** Tworzy konto zewnętrzne (rola Audytor) i zwraca użytkownika oraz jednorazowy token ustawienia hasła. */
     createUser({ name, email, phone }) {

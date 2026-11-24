@@ -2,11 +2,17 @@
 <aside class="login-info" aria-labelledby="info-h">
   <div class="info-head"><span class="info-i" aria-hidden="true">i</span><h2 id="info-h">Dostępne sposoby logowania</h2></div>
   <p><strong>Pracownicy i współpracownicy FEER:</strong> <%= sso ? 'FEER SSO (jedno konto FEER do wszystkich systemów).' : 'Panel Współpracownika (konto Microsoft 365).' %></p>
-  <p><strong>Osoby spoza FEER:</strong> konto zewnętrzne: e-mail, hasło i kod SMS. Konto zakłada administrator FEER albo możesz je założyć kodem rejestracyjnym od administratora.</p>
+  <% if (!sso) { %><p><strong>Osoby spoza FEER:</strong> konto zewnętrzne: e-mail, hasło i kod SMS. Konto zakłada administrator FEER albo możesz je założyć kodem rejestracyjnym od administratora.</p><% } else { %>
+  <p><strong>Osoby spoza FEER:</strong> konto FEER SSO zakłada administrator FEER.</p><% } %>
   <p>Dla bezpieczeństwa, gdy skończysz pracę, <strong>wyloguj się</strong>.</p>
-  <p>Nie udostępniaj swojego hasła ani kodów SMS osobom trzecim. Administrator FEER nigdy nie poprosi Cię o hasło.</p>
+  <p>Nie udostępniaj swojego hasła<%= sso ? '' : ' ani kodów SMS' %> osobom trzecim. Administrator FEER nigdy nie poprosi Cię o hasło.</p>
+  <% if (!sso) { %>
   <h3 id="nie-pamietam">Nie pamiętam hasła</h3>
   <p>Poproś administratora FEER o nowy link do ustawienia hasła; przyjdzie e-mailem i będzie ważny 72 godziny.</p>
+  <% } else { %>
+  <h3 id="nie-pamietam">Nie pamiętam hasła</h3>
+  <p>Hasło zmienisz na stronie logowania FEER SSO albo w Panelu Współpracownika; w razie kłopotu napisz do administratora FEER.</p>
+  <% } %>
   <details class="login-help">
     <summary>Instrukcja logowania krok po kroku</summary>
     <% if (sso) { %>
@@ -24,6 +30,7 @@
       <li>Za pierwszym razem złożysz oświadczenie o poufności.</li>
     </ol>
     <% } %>
+<% if (!sso) { %>
     <h3>Konto zewnętrzne</h3>
     <ol>
       <li>Wpisz e-mail i hasło, wybierz „Zaloguj”.</li>
@@ -36,6 +43,7 @@
       <li>Wybierz „Załóż konto kodem rejestracyjnym”.</li>
       <li>Wpisz kod, e-mail, imię i nazwisko, telefon oraz hasło (co najmniej 12 znaków).</li>
     </ol>
+    <% } %>
     <p>Do obsługi wystarczy klawiatura: Tab przechodzi do kolejnego elementu, Enter wybiera przycisk lub link.</p>
   </details>
 </aside>

@@ -8,7 +8,7 @@ const wantsJson = (req) => req.path.startsWith('/api/') || req.accepts(['html', 
  *  2) cookie sesji wystawione po zalogowaniu przez SZO.
  * Konto wyłączone w aplikacji (active = 0) jest traktowane jak brak logowania.
  */
-function attachUser({ szo, users, sessions }) {
+function attachUser({ szo, users, sessions, externalAllowed = () => true }) {
   return async (req, res, next) => {
     try {
       req.user = null;
@@ -24,7 +24,8 @@ function attachUser({ szo, users, sessions }) {
         const session = await sessions.read(req);
         const user = session ? users.findById(session.id) : null;
         // Rola aktywna w tej sesji (przełącznik ról); nieaktualna lub odebrana rola jest ignorowana.
-        req.user = user?.active ? { ...user, role: users.effectiveRole(user, session.role), storedRole: user.role } : null;
+        // Sesja konta zewnętrznego wygasa od razu, gdy konta zewnętrzne zostały wyłączone (tryb logto).
+        req.user = user?.active && (user.kind !== 'external' || externalAllowed()) ? { ...user, role: users.effectiveRole(user, session.role), storedRole: user.role } : null;
         req.authVia = 'session';
       }
       res.locals.currentUser = req.user;

@@ -84,12 +84,14 @@ function createExternalAuthController({ externalAuth, sessions, config, enabled 
     },
 
     showSetPassword(req, res) {
+      if (config.szo.mode === 'logto') return res.redirect(303, '/login');
       const found = externalAuth.userForToken(String(req.query.token || ''));
       if (!found) return res.status(400).render('set-password', { title: 'Ustaw hasło', valid: false, token: '', person: null, error: null });
       return res.render('set-password', { title: 'Ustaw hasło', valid: true, token: String(req.query.token), person: found.user, error: null });
     },
 
     setPassword(req, res) {
+      if (config.szo.mode === 'logto') return res.redirect(303, '/login');
       const token = String(req.body.token || '');
       try {
         externalAuth.setPassword(token, String(req.body.password ?? ''), String(req.body.password2 ?? ''));

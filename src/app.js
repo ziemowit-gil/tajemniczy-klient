@@ -117,7 +117,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
   app.use(flashMiddleware);
-  app.use(attachUser({ szo, users, sessions }));
+  app.use(attachUser({ szo, users, sessions, externalAllowed: () => config.szo.mode !== 'logto' }));
   app.use(sameOriginOnly(config));
 
   /* --- routing --- */

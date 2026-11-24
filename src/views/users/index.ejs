@@ -12,7 +12,7 @@
   <% for (const u of users) { %>
     <tr>
       <th scope="row"><%= u.name %></th><td><%= u.email || '—' %><% if (u.email && duplicates.has(u.email.toLowerCase())) { %><br><strong>Uwaga: ten adres jest też na innym koncie (możliwy duplikat).</strong><% } %></td>
-      <td><% if (u.kind === 'external') { %>Zewnętrzne (hasło + SMS)<br><span class="muted"><%= u.hasPassword ? 'Hasło ustawione' : 'Czeka na ustawienie hasła' %>; telefon: <%= u.phone ? u.phone.slice(0, 3) + ' ••• ••• ' + u.phone.slice(-3) : 'brak' %></span><% } else { %>Panel Współpracownika<% } %></td>
+      <td><% if (u.kind === 'external') { %>Zewnętrzne (hasło + SMS)<br><span class="muted"><%= u.hasPassword ? 'Hasło ustawione' : 'Czeka na ustawienie hasła' %>; telefon: <%= u.phone ? u.phone.slice(0, 3) + ' ••• ••• ' + u.phone.slice(-3) : 'brak' %></span><% if (appMode === 'logto') { %><br><span class="muted">wyłączone: logowanie tylko przez FEER SSO</span><% } %><% } else { %><%= appMode === 'logto' ? 'FEER SSO' : 'Panel Współpracownika' %><% } %></td>
       <td>
         
         <fieldset class="role-set">
@@ -51,7 +51,7 @@
 <h2 id="inv-heading">Zaproś użytkownika zewnętrznego kodem</h2>
 <p class="muted">Wygenerujesz 7-cyfrowy kod (ważny 7 dni, jednorazowy). Osoba spoza FEER zakłada konto sama na stronie rejestracji: podaje kod, e-mail, imię i nazwisko, telefon i hasło. Kod widzisz tylko raz.</p>
 <% if (!externalEnabled) { %>
-  <p class="note-box" role="note">Zaproszenia są wyłączone: wysyłka SMS nie jest skonfigurowana (SMS_MODE=szo i klucz API SZO), więc nowa osoba nie mogłaby się zalogować.</p>
+  <p class="note-box" role="note"><% if (appMode === 'logto') { %>Zaproszenia są wyłączone: logowanie odbywa się wyłącznie przez FEER SSO (Logto). Konto w Logto zakłada administrator Logto lub SZO.<% } else { %>Zaproszenia są wyłączone: wysyłka SMS nie jest skonfigurowana (SMS_MODE=szo i klucz API SZO), więc nowa osoba nie mogłaby się zalogować.<% } %></p>
 <% } else { %>
 <form method="post" action="/users/invitations" aria-labelledby="inv-heading" novalidate class="stack-form">
   <div class="field"><label for="inv-email">Adres e-mail, na który wystawiasz kod</label><input type="email" id="inv-email" name="email" autocomplete="off" required maxlength="200"></div>
@@ -75,7 +75,7 @@
 <h2 id="ext-heading">Dodaj użytkownika zewnętrznego (z linkiem w e-mailu)</h2>
 <p class="muted">Dla osób spoza Panelu Współpracownika. Dostają rolę Audytora / Tajemniczego Klienta, e-mail z linkiem do ustawienia hasła (ważnym 72 godziny), a przy każdym logowaniu podają hasło i kod SMS wysłany na zapisany numer.</p>
 <% if (!externalEnabled || !mailEnabled) { %>
-  <p class="note-box" role="note">Dodawanie jest wyłączone: <%= !externalEnabled ? 'wysyłka SMS nie jest skonfigurowana (SMS_MODE=szo i klucz API SZO).' : 'wysyłka e-mail jest wyłączona (MAIL_MODE).' %></p>
+  <p class="note-box" role="note">Dodawanie jest wyłączone: <%= appMode === 'logto' ? 'logowanie odbywa się wyłącznie przez FEER SSO (Logto).' : !externalEnabled ? 'wysyłka SMS nie jest skonfigurowana (SMS_MODE=szo i klucz API SZO).' : 'wysyłka e-mail jest wyłączona (MAIL_MODE).' %></p>
 <% } else { %>
 <form method="post" action="/users/external" aria-labelledby="ext-heading" novalidate class="stack-form">
   <div class="field"><label for="ext-name">Imię i nazwisko</label><input type="text" id="ext-name" name="name" autocomplete="off" required maxlength="100"></div>

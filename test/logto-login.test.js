@@ -208,3 +208,31 @@ test('konfiguracja trybu logto wymaga adresu, aplikacji, sekretu i APP_URL', () 
   assert.equal(cfg.logto.endpoint, 'https://l.pl');
   assert.deepEqual(cfg.logto.allowedDomains, ['feer.org.pl', 'x.pl']);
 });
+
+test('tylko FEER SSO: bez formularza hasła i rejestracji, trasy kont zewnętrznych nieczynne, sesja konta zewnętrznego nieważna', async () => {
+  const b = new Browser();
+  const html = await (await b.get('/login')).text();
+  assert.doesNotMatch(html, /type="password"/);
+  assert.doesNotMatch(html, /\/register/);
+  assert.doesNotMatch(html, /kod SMS/i);
+  assert.equal(services.externalAuth.enabled, false);
+  for (const url of ['/register', '/ext/set-password?token=x']) assert.equal((await b.get(url)).headers.get('location'), '/login', url);
+  for (const url of ['/login/external', '/register', '/ext/set-password']) {
+    const res = await fetch(base + url, { method: 'POST', body: new URLSearchParams({ email: 'a@b.pl', password: 'x', code: '1234567', token: 'x' }), redirect: 'manual', headers: { origin: base } });
+    assert.equal(res.headers.get('location'), '/login', url);
+  }
+
+  // istniejące konto zewnętrzne z ważnym ciasteczkiem sesji nie wchodzi do aplikacji
+  const info = db.prepare(`INSERT INTO users (external_id, name, email, role, kind) VALUES ('ext:1', 'Zewn', 'z@gmail.com', 'auditor', 'external')`).run();
+  db.prepare(`INSERT INTO user_roles (user_id, role) VALUES (?, 'auditor')`).run(info.lastInsertRowid);
+  let cookie = '';
+  await services.sessions.issue({ cookie: (name, value) => { cookie = `${name}=${value}`; } }, Number(info.lastInsertRowid), 'auditor');
+  const res = await fetch(`${base}/audits`, { headers: { cookie }, redirect: 'manual' });
+  assert.equal(res.status, 303);
+  assert.match(res.headers.get('location'), /^\/login/);
+
+  // kontrola: ten sam sposób wystawienia sesji działa dla pracownika
+  const staff = db.prepare(`SELECT id FROM users WHERE external_id = 'logto:boss'`).get().id;
+  await services.sessions.issue({ cookie: (name, value) => { cookie = `${name}=${value}`; } }, staff, 'administrator');
+  assert.equal((await fetch(`${base}/audits`, { headers: { cookie }, redirect: 'manual' })).status, 200);
+});
