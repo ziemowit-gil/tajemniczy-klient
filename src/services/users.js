@@ -43,6 +43,12 @@ function createUsersService(db, { defaultRole }) {
     /** Aktywna rola w sesji: wybrana w sesji, w przeciwnym razie ostatnio używana, w ostateczności najwyższa przyznana. */
     effectiveRole: (user, preferred) => (user.roles.includes(preferred) ? preferred : (user.roles.includes(user.role) ? user.role : highestRole(user.roles))),
 
+    /** Konta pracowników (nie zewnętrzne, nie testowe) o danym adresie e-mail. */
+    staffByEmail: (email) => db.prepare(`SELECT * FROM users WHERE lower(email) = ? AND kind = 'szo' AND external_id NOT LIKE 'dev:%'`).all(String(email).trim().toLowerCase()),
+
+    /** Czy tożsamość może przejąć istniejące konto pracownika po adresie e-mail (SZO zawsze, Logto tylko z potwierdzonym adresem). */
+    linkableByEmail: (identity) => Boolean(identity.email) && (identity.externalId.startsWith('szo:') || (identity.externalId.startsWith('logto:') && identity.emailVerified === true)),
+
     hasRole: (id, role) => db.prepare('SELECT 1 FROM user_roles WHERE user_id = ? AND role = ?').get(id, role) !== undefined,
 
     /**
@@ -54,8 +60,9 @@ function createUsersService(db, { defaultRole }) {
       let existing = byExternal.get(identity.externalId);
       // To samo konto SZO mogło wcześniej powstać pod innym identyfikatorem (np. z dawnego logowania): jedyny pasujący
       // adres e-mail wśród kont z SZO przejmuje nowy identyfikator zamiast tworzyć zdublowane konto bez przypisanych audytów.
-      if (!existing && identity.email && identity.externalId.startsWith('szo:')) {
-        const same = db.prepare(`SELECT * FROM users WHERE lower(email) = ? AND kind = 'szo' AND external_id NOT LIKE 'dev:%'`).all(identity.email.trim().toLowerCase());
+      // Logowanie przez Logto przejmuje w ten sam sposób konto pracownika (z SZO), ale tylko przy potwierdzonym adresie e-mail.
+      if (!existing && svc.linkableByEmail(identity)) {
+        const same = svc.staffByEmail(identity.email);
         if (same.length === 1) {
           db.prepare('UPDATE users SET external_id = ? WHERE id = ?').run(identity.externalId, same[0].id);
           existing = byExternal.get(identity.externalId);

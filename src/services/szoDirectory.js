@@ -19,7 +19,7 @@ function createSzoDirectory(config, { fetchImpl = globalThis.fetch, getApiKey = 
 
   return {
     /** Import jest dostępny w trybie szo, gdy znamy adres SZO i klucz API (z panelu lub z .env). */
-    get enabled() { return cfg.mode === 'szo' && Boolean(getApiKey()) && Boolean(cfg.baseUrl); },
+    get enabled() { return ['szo', 'logto'].includes(cfg.mode) && Boolean(getApiKey()) && Boolean(cfg.baseUrl); },
 
     /** @returns {Promise<Array<{id:number,name:string,email:string}>>} */
     async listUsers() {

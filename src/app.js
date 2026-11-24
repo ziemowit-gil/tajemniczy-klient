@@ -11,6 +11,7 @@ const { createDeclarationsService } = require('./services/declarations');
 const { createSettingsService } = require('./services/settings');
 const { createSzoDirectory } = require('./services/szoDirectory');
 const { createSzoPkceClient } = require('./services/szoPkce');
+const { createLogtoClient } = require('./services/logtoOidc');
 const { createSessionService } = require('./services/session');
 const { createUsersService } = require('./services/users');
 const { createObjectsService } = require('./services/objects');
@@ -50,7 +51,7 @@ const { pct, answerLabel } = require('./services/exporters');
 const dateFmt = new Intl.DateTimeFormat('pl-PL', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Warsaw' });
 const dayFmt = new Intl.DateTimeFormat('pl-PL', { dateStyle: 'long', timeZone: 'UTC' });
 
-function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), szoClient, mailer: mailerOverride } = {}) {
+function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), szoClient, logtoJwks, mailer: mailerOverride } = {}) {
   const app = express();
   app.disable('x-powered-by');
   if (config.trustProxy) app.set('trust proxy', 1);
@@ -68,6 +69,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
   const office = createOfficeReviewsService(db, { objects, users, snapshots });
   const szo = szoClient || createSzoClient(config.szo);
   const szoPkce = createSzoPkceClient(config, { fetchImpl });
+  const logto = createLogtoClient(config, { fetchImpl, jwks: logtoJwks });
   const settings = createSettingsService(db, config);
   const szoDirectory = createSzoDirectory(config, { fetchImpl, getApiKey: () => settings.szoApiKey() });
   const mailer = mailerOverride || createMailer(config.mail, { szo: { ...config.szo, getApiKey: () => settings.szoApiKey() }, fetchImpl });
@@ -121,7 +123,7 @@ function createApp(config, { fetchImpl, db = openDatabase(config.databasePath), 
   /* --- routing --- */
   app.use(buildRouter({
     config, declarations,
-    auth: createAuthController({ config, szo, szoPkce, users, sessions, notifier, declarations, externalEnabled: () => externalAuth.enabled }),
+    auth: createAuthController({ config, szo, szoPkce, logto, users, sessions, notifier, declarations, externalEnabled: () => externalAuth.enabled }),
     archiveCtl: createArchiveController({ archive, objects }),
     extAuth: createExternalAuthController({ externalAuth, sessions, config, enabled: () => externalAuth.enabled }),
     admin: createAdminController({ objects, catalog, users, szoDirectory, notifier, externalAuth, mailer, importDomains: config.szo.importDomains, declarations, declarationRequired: config.declarationRequired }),

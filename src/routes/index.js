@@ -21,6 +21,8 @@ function buildRouter({ auth, extAuth, archiveCtl, admin, auditsCtl, reportsCtl, 
   r.post('/ext/set-password', extAuth.setPassword);
   r.get('/auth/callback', auth.szoCallback);
   r.get('/auth/szo/start', auth.szoStart);
+  r.get('/auth/logto/start', auth.logtoStart);
+  r.get('/auth/logto/callback', auth.logtoReturn);
   r.get('/auth/szo/callback', auth.szoReturn);
   r.post('/auth/callback', auth.szoCallback);
   if (config.szo.mode === 'dev' && !config.isProd) r.post('/auth/dev', auth.devLogin);

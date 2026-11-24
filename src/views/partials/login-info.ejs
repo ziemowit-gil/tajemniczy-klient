@@ -1,6 +1,7 @@
+<% const sso = locals.mode === 'logto'; %>
 <aside class="login-info" aria-labelledby="info-h">
   <div class="info-head"><span class="info-i" aria-hidden="true">i</span><h2 id="info-h">Dostępne sposoby logowania</h2></div>
-  <p><strong>Pracownicy i współpracownicy FEER:</strong> Panel Współpracownika (konto Microsoft 365).</p>
+  <p><strong>Pracownicy i współpracownicy FEER:</strong> <%= sso ? 'FEER SSO (jedno konto FEER do wszystkich systemów).' : 'Panel Współpracownika (konto Microsoft 365).' %></p>
   <p><strong>Osoby spoza FEER:</strong> konto zewnętrzne: e-mail, hasło i kod SMS. Konto zakłada administrator FEER albo możesz je założyć kodem rejestracyjnym od administratora.</p>
   <p>Dla bezpieczeństwa, gdy skończysz pracę, <strong>wyloguj się</strong>.</p>
   <p>Nie udostępniaj swojego hasła ani kodów SMS osobom trzecim. Administrator FEER nigdy nie poprosi Cię o hasło.</p>
@@ -8,12 +9,21 @@
   <p>Poproś administratora FEER o nowy link do ustawienia hasła; przyjdzie e-mailem i będzie ważny 72 godziny.</p>
   <details class="login-help">
     <summary>Instrukcja logowania krok po kroku</summary>
+    <% if (sso) { %>
+    <h3>FEER SSO</h3>
+    <ol>
+      <li>Wybierz „FEER SSO”.</li>
+      <li>Zaloguj się kontem FEER (tym samym co w Panelu Współpracownika i chmurze). Jeśli jesteś już zalogowany, ten krok zostanie pominięty.</li>
+      <li>Za pierwszym razem złożysz oświadczenie o poufności.</li>
+    </ol>
+    <% } else { %>
     <h3>Panel Współpracownika</h3>
     <ol>
       <li>Wybierz „Panel Współpracownika”.</li>
       <li>Zaloguj się kontem Microsoft 365 i potwierdź dostęp aplikacji.</li>
       <li>Za pierwszym razem złożysz oświadczenie o poufności.</li>
     </ol>
+    <% } %>
     <h3>Konto zewnętrzne</h3>
     <ol>
       <li>Wpisz e-mail i hasło, wybierz „Zaloguj”.</li>

@@ -3,7 +3,7 @@ const { szoKeySchema, parseForm } = require('../validation/schemas');
 /** Ustawienia integracji z SZO: wklejanie, sprawdzanie i usuwanie klucza API (wartość nigdy nie wraca do przeglądarki). */
 function createSettingsController({ settings, szoDirectory, config }) {
   const view = (extra = {}) => ({
-    title: 'Integracja z SZO', info: settings.szoApiKeyInfo(), szoMode: config.szo.mode === 'szo', baseUrl: config.szo.baseUrl,
+    title: 'Integracja z SZO', info: settings.szoApiKeyInfo(), szoMode: ['szo', 'logto'].includes(config.szo.mode), baseUrl: config.szo.baseUrl,
     mailMode: config.mail.mode, errors: {}, results: null, ...extra,
   });
   const summarize = (r) => `Import użytkowników: ${r.users.message} Wysyłka e-mail: ${r.mail.message}`;

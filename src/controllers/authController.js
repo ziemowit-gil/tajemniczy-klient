@@ -9,7 +9,7 @@ const devLoginSchema = z.object({
   role: z.enum(Object.values(ROLES), { error: 'Wybierz rolę' }),
 });
 
-function createAuthController({ config, szo, szoPkce, users, sessions, notifier, declarations, externalEnabled }) {
+function createAuthController({ config, szo, szoPkce, logto, users, sessions, notifier, declarations, externalEnabled }) {
   const ssoEnabled = config.szo.mode === 'jwt' || config.szo.mode === 'api';
 
   return {
@@ -23,9 +23,13 @@ function createAuthController({ config, szo, szoPkce, users, sessions, notifier,
         errors: {},
         values: {},
         demoUsers: config.szo.mode === 'dev' ? users.list().filter((u) => u.active && u.external_id.startsWith('dev:')) : [],
-        authError: req.query.error === 'denied'
-          ? 'Twoje konto nie ma dostępu do aplikacji. Poproś administratora Panelu Współpracownika o nadanie uprawnienia „Tajemniczy Klient”.'
-          : req.query.error ? 'Logowanie przez Panel Współpracownika nie powiodło się. Spróbuj ponownie.' : null,
+        authError: config.szo.mode === 'logto'
+          ? (req.query.error === 'denied'
+            ? 'Twoje konto FEER SSO nie ma dostępu do aplikacji. Poproś administratora Tajemniczego Klienta o dodanie konta.'
+            : req.query.error ? 'Logowanie przez FEER SSO nie powiodło się. Spróbuj ponownie.' : null)
+          : req.query.error === 'denied'
+            ? 'Twoje konto nie ma dostępu do aplikacji. Poproś administratora Panelu Współpracownika o nadanie uprawnienia „Tajemniczy Klient”.'
+            : req.query.error ? 'Logowanie przez Panel Współpracownika nie powiodło się. Spróbuj ponownie.' : null,
       });
     },
 
@@ -62,6 +66,43 @@ function createAuthController({ config, szo, szoPkce, users, sessions, notifier,
         const existed = users.exists(identity.externalId);
         const user = users.upsertFromIdentity(identity);
         if (!existed && user.role !== ROLES.ADMIN) notifier.roleAssigned(user);
+        if (!user.active) throw new AuthError('Konto jest wyłączone.', { status: 403 });
+        await sessions.issue(res, user.id, user.role);
+        return res.redirect(303, '/');
+      } catch (err) {
+        if (!(err instanceof AuthError)) throw err;
+        return res.redirect(303, `/login?error=${err.status === 403 ? 'denied' : '1'}`);
+      }
+    },
+
+    /** Tryb logto: przekierowanie do Logto (OpenID Connect + PKCE). */
+    async logtoStart(req, res) {
+      if (config.szo.mode !== 'logto') return res.redirect(303, '/login');
+      try {
+        return res.redirect(303, await logto.start(res));
+      } catch (err) {
+        if (!(err instanceof AuthError)) throw err;
+        return res.redirect(303, '/login?error=1');
+      }
+    },
+
+    /**
+     * Tryb logto: powrót z Logto. Istniejące konto (także pracownika zaimportowanego z SZO, po potwierdzonym e-mailu)
+     * loguje się zawsze; nowe konto powstaje tylko dla potwierdzonego adresu z LOGTO_ALLOWED_DOMAINS albo ADMIN_EMAILS.
+     */
+    async logtoReturn(req, res) {
+      if (config.szo.mode !== 'logto') return res.redirect(303, '/login');
+      try {
+        const identity = await logto.finish(req, res);
+        const existed = users.exists(identity.externalId);
+        const linkable = !existed && users.linkableByEmail(identity) && users.staffByEmail(identity.email).length === 1;
+        if (!existed && !linkable) {
+          const domain = identity.email ? identity.email.split('@').pop() : null;
+          const allowed = identity.emailVerified && (identity.role === ROLES.ADMIN || config.logto.allowedDomains.includes(domain));
+          if (!allowed) throw new AuthError('Brak konta w aplikacji dla tego użytkownika Logto.', { status: 403 });
+        }
+        const user = users.upsertFromIdentity(identity);
+        if (!existed && !linkable && user.role !== ROLES.ADMIN) notifier.roleAssigned(user);
         if (!user.active) throw new AuthError('Konto jest wyłączone.', { status: 403 });
         await sessions.issue(res, user.id, user.role);
         return res.redirect(303, '/');

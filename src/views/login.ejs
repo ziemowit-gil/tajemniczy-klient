@@ -45,7 +45,8 @@
       <button type="submit">Zaloguj (test)</button>
     </form>
   <% } else {
-       const szoHref = mode === 'szo' ? '/auth/szo/start' : (loginUrl || null);
+       const logtoMode = mode === 'logto';
+       const szoHref = logtoMode ? '/auth/logto/start' : mode === 'szo' ? '/auth/szo/start' : (loginUrl || null);
        const ext = Boolean(locals.externalEnabled); %>
     <% if (ext) { %>
     <form method="post" action="/login/external" novalidate class="ext-form" aria-label="Logowanie kontem zewnętrznym">
@@ -62,8 +63,13 @@
     <% } %>
     <% if (szoHref) { %>
     <h2 id="alt-h"><%= ext ? 'Lub zaloguj przez:' : 'Zaloguj się przez:' %></h2>
+    <% if (logtoMode) { %>
+    <a class="btn btn-outline" href="<%= szoHref %>" aria-describedby="alt-note">FEER SSO</a>
+    <p class="small" id="alt-note">Zalogujesz się jednym kontem FEER (to samo co w Panelu Współpracownika i chmurze). Jeśli jesteś już zalogowany w FEER SSO, wejdziesz bez podawania hasła.</p>
+    <% } else { %>
     <a class="btn btn-outline" href="<%= szoHref %>" aria-describedby="alt-note">Panel Współpracownika</a>
     <p class="small" id="alt-note">Zalogujesz się kontem Microsoft 365 w Panelu Współpracownika i potwierdzisz dostęp aplikacji.</p>
+    <% } %>
     <% } else { %>
     <p class="muted">Adres logowania Panelu Współpracownika nie jest skonfigurowany (SZO_LOGIN_URL). Skontaktuj się z administratorem.</p>
     <% } %>

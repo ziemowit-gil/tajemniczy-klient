@@ -18,7 +18,14 @@ const envSchema = z.object({
   SESSION_SECRET: optional(z.string().min(32, 'SESSION_SECRET musi mieć min. 32 znaki')),
   SESSION_TTL_HOURS: z.coerce.number().positive().default(8),
 
-  SZO_AUTH_MODE: z.enum(['jwt', 'api', 'szo', 'dev']).default('jwt'),
+  SZO_AUTH_MODE: z.enum(['jwt', 'api', 'szo', 'logto', 'dev']).default('jwt'),
+  // Logowanie jednokrotne przez Logto (tryb logto): adres Logto i aplikacja typu „Traditional web”.
+  LOGTO_ENDPOINT: optional(z.url()),
+  LOGTO_APP_ID: optional(z.string().regex(/^[A-Za-z0-9_-]+$/)),
+  LOGTO_APP_SECRET: optional(z.string().min(16)),
+  // Domeny potwierdzonych adresów e-mail, którym logowanie przez Logto może założyć nowe konto (rola domyślna).
+  // Osoby spoza tych domen logują się tylko na konto już istniejące w aplikacji (np. zaimportowane z SZO).
+  LOGTO_ALLOWED_DOMAINS: z.string().default('feer.org.pl'),
   SZO_BASE_URL: optional(z.url()),
   SZO_SCOPE: z.string().regex(/^[a-z0-9:_-]+$/).default('audytor:access'),
   ADMIN_EMAILS: z.string().default(''),
@@ -81,6 +88,10 @@ function loadConfig(env = process.env) {
   if (e.MAIL_MODE !== 'off' && !e.APP_URL) problems.push('Powiadomienia e-mail wymagają APP_URL (odnośniki w wiadomościach)');
   if (e.SZO_AUTH_MODE === 'szo' && !e.SZO_BASE_URL) problems.push('Tryb szo wymaga SZO_BASE_URL (np. https://szo.feer.org.pl)');
   if (e.SZO_AUTH_MODE === 'szo' && !e.APP_URL) problems.push('Tryb szo wymaga APP_URL (adres powrotu z SZO)');
+  if (e.SZO_AUTH_MODE === 'logto' && (!e.LOGTO_ENDPOINT || !e.LOGTO_APP_ID || !e.LOGTO_APP_SECRET)) {
+    problems.push('Tryb logto wymaga LOGTO_ENDPOINT, LOGTO_APP_ID i LOGTO_APP_SECRET');
+  }
+  if (e.SZO_AUTH_MODE === 'logto' && !e.APP_URL) problems.push('Tryb logto wymaga APP_URL (adres powrotu z Logto)');
   if (e.SZO_AUTH_MODE === 'api' && !e.SZO_VERIFY_URL) problems.push('Tryb api wymaga SZO_VERIFY_URL');
 
   let roleMap;
@@ -113,6 +124,12 @@ function loadConfig(env = process.env) {
       autoFlush: e.MAIL_AUTOFLUSH === 'true',
       reminderDays: e.MAIL_REMINDER_DAYS,
       smtp: { host: e.SMTP_HOST, port: e.SMTP_PORT, secure: e.SMTP_SECURE === 'true', user: e.SMTP_USER, pass: e.SMTP_PASS },
+    },
+    logto: {
+      endpoint: e.LOGTO_ENDPOINT ? e.LOGTO_ENDPOINT.replace(/\/$/, '') : undefined,
+      appId: e.LOGTO_APP_ID,
+      appSecret: e.LOGTO_APP_SECRET,
+      allowedDomains: e.LOGTO_ALLOWED_DOMAINS.split(',').map((x) => x.trim().toLowerCase().replace(/^@/, '')).filter(Boolean),
     },
     szo: {
       mode: e.SZO_AUTH_MODE,
